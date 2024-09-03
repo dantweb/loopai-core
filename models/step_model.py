@@ -1,0 +1,260 @@
+# src/models/step_model.py
+import importlib.util
+import os
+from typing import List, Dict
+
+from PIL.Image import Image
+from dotenv import load_dotenv
+
+from core.adapters.broadcast_adapter import BroadcastAdapter
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
+    get_file_system_by_user_and_loop
+from core.adapters.filesystem_adapter import FilesystemAdapter
+from core.databus import global_vars
+import config
+from core.looper.executors.bash_executor import BashExecutor
+from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
+from core.looper.executors.gpt_executor import GptExecutor
+from core.looper.executors.wordpress_executor import WordpressExecutor
+from core.models.action_config import ActionConfig
+from core.models.input_config import InputConfig
+from core.models.output_config import OutputConfig
+from core.services.logger_service import LoggerService
+
+
+class StepModel:
+    def __init__(self,
+                 name: str,
+                 description: str,
+                 step_type: str,
+                 step_input: List[InputConfig],
+                 output: List[OutputConfig],
+                 action: ActionConfig,
+                 loop_data: str,
+                 code_source: str
+                ):
+        self.logger_service = LoggerService()
+        self.loop_python_src = None
+        self.packed_blob = {}
+        self.name = name
+        self.env_filename = '.env'
+        self.description = description
+        self.type = step_type
+        self.input = step_input
+        self.output = output
+        self.action = action
+        self.max_tokens = action.max_tokens
+
+        self.executor = None
+        self.output_adapters = []
+        self.input_adapters = []
+
+        global_vars.global_step_name = name
+        global_vars.global_loop_index = 'start'
+
+        # Parse the loop YAML file to get the code source path
+        self.loop_data = loop_data
+        self.code_source = code_source
+        self.code_module = self.load_code_module(self.code_source)
+
+        for output_config in self.output:
+            if output_config.csv:
+                output_adapter_class = self.load_adapter('csv')
+                self.output_adapters.append(output_adapter_class(output_config.csv['name']))
+            if output_config.text:
+                output_adapter_class = self.load_adapter('text')
+                self.output_adapters.append(output_adapter_class(output_config.text['name']))
+            if output_config.image:
+                output_adapter_class = self.load_adapter('image')
+                self.output_adapters.append(output_adapter_class(output_config.image['name']))
+            if output_config.wordpress:
+                output_adapter_class = self.load_adapter('wordpress')
+                self.output_adapters.append(output_adapter_class(output_config.wordpress['connector']))
+            if output_config.filesystem:
+                output_adapter_class = self.load_adapter('filesystem')
+                self.output_adapters.append(
+                    output_adapter_class(
+                        output_config.filesystem['code_dir'],
+                        config.GLOBAL_USER_ID,
+                        config.GLOBAL_LOOP_ID
+                    )
+                )
+            if output_config.broadcast:
+                output_adapter_class = self.load_adapter('broadcast')
+                if isinstance(output_config.broadcast, dict) and 'image_file' in output_config.broadcast:
+                    self.broadcast_image_file = output_config.broadcast['image_file']
+                self.output_adapters.append(output_adapter_class())
+
+        for input_config in self.input:
+            if input_config.csv:
+                input_adapter_class = self.load_adapter('csv')
+                self.input_adapters.append(input_adapter_class(input_config.csv['name']))
+            if input_config.text:
+                input_adapter_class = self.load_adapter('text')
+                self.input_adapters.append(input_adapter_class(input_config.text['name']))
+            if input_config.image:
+                input_adapter_class = self.load_adapter('image')
+                self.input_adapters.append(input_adapter_class(input_config.image['name']))
+            if input_config.broadcast:
+                input_adapter_class = self.load_adapter('broadcast')
+                self.input_adapters.append(input_adapter_class())
+            if input_config.filesystem:
+                input_adapter_class = self.load_adapter('filesystem')
+                self.input_adapters.append(
+                    input_adapter_class(
+                        input_config.filesystem['code_dir'],
+                        config.GLOBAL_USER_ID,
+                        config.GLOBAL_LOOP_ID
+                    )
+                )
+
+    def get_system_content(self, variable_name: str) -> str:
+        # Load the module from the specified file path
+        spec = importlib.util.spec_from_file_location(
+            "module.name", os.getcwd() + '/../..' + self.loop_python_src
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        # Return the value of the specified variable
+        return getattr(module, variable_name)
+
+    def load_adapter(self, adapter_type: str):
+        module_name = f"src.adapters.{adapter_type}_adapter"
+        class_name = f"{adapter_type.capitalize()}Adapter"
+        module = importlib.import_module(module_name)
+        adapter_class = getattr(module, class_name)
+        return adapter_class
+
+    def load_executor(self, executor_type: str):
+        module_name = f"src.looper.executors.{executor_type}_executor"
+        class_name = f"{executor_type.capitalize()}Executor"
+        module = importlib.import_module(module_name)
+        executor_class = getattr(module, class_name)
+
+        return executor_class
+
+    def execute(self, step_name: str, loop_index: str):
+        global_vars.global_step_name = step_name
+        global_vars.global_loop_index = loop_index
+        step_input_data = []
+        # Load executor
+        executor_class = self.load_executor(self.action.executor)
+        self.executor = executor_class(self.action.model)
+
+        for index, input_adapter in enumerate(self.input_adapters):
+
+            if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
+                first_parameter = self.input[index].broadcast['source']
+                second_parameter = self.name
+            else:
+                first_parameter = self.name
+                second_parameter = None
+
+            if self.input[index].field is not None and self.input[index].output_format is not None:
+                input_adapter.setAdditionalParams(
+                    self.input[index].output_format,
+                    self.input[index].field,
+                )
+
+            if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
+                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
+            elif isinstance(self.executor, Gpt2codeExecutor) and isinstance(input_adapter, FilesystemAdapter):
+                fresh_data_from_input = input_adapter.read(first_parameter)
+            else:
+                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
+
+            step_input_data.append(fresh_data_from_input)
+
+        step_id = self.name
+        if step_input_data is None:
+            raise RuntimeError(f"step_input_data is None at step  {step_id}")
+
+        if self.type == 'foreach':
+            self.run_foreach(step_input_data)
+            return 'foreach_end'
+
+        prompt_template = self.get_prompt_templates().get(self.action.prompt)
+        system_content = self.get_system_content_templates().get(self.action.system_content)
+
+        # Create prompt - reading context only from first input source
+        prompt = self.executor.prepare_prompt(
+            step_input_data,
+            prompt_template
+        )
+
+        if isinstance(self.executor, WordpressExecutor):
+            result = step_input_data
+        elif isinstance(self.executor, BashExecutor):
+            config = self.action.config if hasattr(self.action, 'config') else {}
+            result = self.executor.run(
+                self.action.model,
+                system_content,
+                prompt,
+                self.action.max_tokens,
+                config
+            )
+        else:
+            result = self.executor.run(
+                self.action.model,
+                system_content,
+                prompt,
+                self.action.max_tokens
+            )
+
+        # Write output
+        step_id = self.name  # or another appropriate identifier
+
+        self.packed_blob['model_id'] = self.action.model
+        self.packed_blob['step_id'] = step_id
+        self.packed_blob['prompt'] = prompt
+        self.packed_blob['result'] = result
+
+        self.write(step_id)
+        self.cleanup(step_id)
+
+        return self.packed_blob
+
+    def write(self, step_id: str):
+        for output_adapter in self.output_adapters:
+
+            if isinstance(output_adapter, BroadcastAdapter) and isinstance(self.packed_blob['result'], Image):
+                self.packed_blob['image_file'] = FileAdapterInterface.get_full_path(self, self.broadcast_image_file)
+            self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__}")
+            try:
+                a = output_adapter.write(step_id, self.packed_blob)
+                if a is True:
+                    self.logger_service.log(f"Saved {self.name} by adapter {output_adapter.__class__}")
+                else:
+                    self.logger_service.error(f"Cannot save blob {self.name} by adapter {output_adapter.__class__}")
+            except Exception as e:
+                self.logger_service.error(e)
+                raise
+
+    def run_foreach(self, input_data):
+        self.executor.set_loop(self.loop_data)
+        self.executor.set_parent_step(self.name)
+        self.executor.set_foreach_data(input_data)
+        self.executor.set_output_adapters(self.output_adapters)
+        self.executor.run(self.action.model, '', '', '')
+
+    def cleanup(self, step_id):
+
+        pass
+
+    def get_prompt_templates(self):
+        return getattr(self.code_module, 'PROMPT_TEMPLATES')
+
+    def get_system_content_templates(self):
+        return getattr(self.code_module, 'SYSTEM_CONTENT_TEMPLATES')
+
+    def load_code_module(self, module_path: str):
+        module_absolute_path = os.path.join(
+            get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID),
+            module_path
+        )
+        module_name = os.path.basename(module_path).replace('.py', '')
+        spec = importlib.util.spec_from_file_location(module_name, module_absolute_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
