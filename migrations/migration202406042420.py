@@ -1,17 +1,15 @@
 import sys
 import os
-from core.services.postgres_db_connect import DatabaseConnection
+from core.services.postgres_db_connect import get_db_cursor
 
 # Add the project base directory to the sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-
 def create_table():
-    connection = DatabaseConnection()
-
+    # Use the context manager provided by get_db_cursor()
     try:
-        with connection.cursor() as cursor:
+        with get_db_cursor() as cursor:
             create_table_query = """
             CREATE TABLE loopai_broadcast (
                 id SERIAL PRIMARY KEY,
@@ -24,11 +22,8 @@ def create_table():
             """
             cursor.execute(create_table_query)
             print("Table created successfully.")
-        connection.commit()
     except Exception as e:
         print(f"Error creating table: {e}")
-    finally:
-        connection.close()
 
 
 if __name__ == "__main__":
