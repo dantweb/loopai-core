@@ -1,12 +1,10 @@
 import sys
 import os
-import psycopg2
-from psycopg2 import sql
+from core.services.postgres_db_connect import DatabaseConnection
 
 # Add the project base directory to the sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.services.postgres_db_connect import DatabaseConnection
 
 
 def create_table():
