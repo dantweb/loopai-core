@@ -6,7 +6,6 @@ from flask_socketio import SocketIO, emit
 
 socketio = SocketIO()
 
-
 class LoggerService:
     _instance = None
     _lock = threading.Lock()
