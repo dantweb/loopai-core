@@ -11,7 +11,7 @@ def create_table():
     try:
         with get_db_cursor() as cursor:
             create_table_query = """
-            CREATE TABLE loopai_broadcast (
+            CREATE TABLE IF NOT EXISTS loopai_broadcast (
                 id SERIAL PRIMARY KEY,
                 sessionid TEXT NOT NULL,
                 stepid TEXT NOT NULL,
