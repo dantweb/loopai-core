@@ -1,0 +1,20 @@
+# loops/test_loop.yaml
+session:
+  name: test_session
+  environment:
+  loop:
+    step1:
+      description: "Test step to verify integration."
+      type: gpt
+      input:
+        type: csv
+        source: ../_data/input/test-input.csv
+      output:
+        - text:
+            name: ../_data/output/test-output.text
+        - csv:
+            name: ../_data/output/test-output.csv
+      action:
+        executor: gpt
+        model: gpt-3.5-turbo
+        prompt: "test run got correct result"

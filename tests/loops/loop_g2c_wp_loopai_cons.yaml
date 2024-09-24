@@ -1,0 +1,36 @@
+session:
+  name: try to update wp chat for loopAI
+  code_source: '/tests/loops/python/loop_gpt2code.py'
+  environment:
+  loop:
+    gpt2code_step1:
+      description: "Process Input with GPT-4"
+      type: gpt2code_chunk
+      input:
+        - filesystem:
+            code_dir: /tests/_data/gpt2code-src/loopai-wp-cons
+        - text:
+            name: /tests/_data/gpt2code-src/loopai-wp-cons/task_from_master.txt
+            field: user_task
+      output:
+        - filesystem:
+            code_dir: /tests/_data/generated/gpt2code/loopai-wp-cons/
+      action:
+        executor: gpt2code_chunk
+        model: gpt-4-turbo
+        prompt: PROMPT_STEP_1_JSON
+        system_content: SYSTEM_CONTENT_STEP_1
+        max_tokens: 3000
+    gpt2code_step2:
+      description: Bash
+      type: bash
+      input:
+        - text:
+            name: /tests/_data/gpt2code-src/loopai-wp-cons/task_from_master.txt
+      output:
+        - text:
+            name: /tests/_data/gpt2code-src/loopai-wp-cons/task_from_master.txt
+      action:
+        executor: bash
+        config:
+          bash_script_path: /tests/_data/loops/bash/g2c_wp_loop.sh

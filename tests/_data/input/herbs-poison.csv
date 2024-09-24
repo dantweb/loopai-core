@@ -1,0 +1,127 @@
+id;Herb_Name;Scientific_Name;Part_Used;Preparation;Usage
+110;Lavender;Lavandula angustifolia;Flowers;Oil or Infusion;Applied to soothe and reduce skin irritation
+101;St. John's Wort;Hypericum perforatum;Leaves and Flowers;Infusion or Oil;Topical application for reducing inflammation
+102;Comfrey;Symphytum officinale;Leaves and Roots;Poultice or Salve;Applied to reduce skin inflammation and promote healing
+103;Chamomile;Matricaria chamomilla;Flowers;Infusion or Compress;Used as a compress to soothe irritated skin
+104;Calendula;Calendula officinalis;Flowers;Salve or Infusion;Applied to promote healing and reduce inflammation
+105;Plantain;Plantago major;Leaves;Poultice or Salve;Used to reduce inflammation and promote healing
+106;Yarrow;Achillea millefolium;Leaves and Flowers;Poultice or Infusion;Applied to reduce inflammation and promote healing
+107;Elderberry;Sambucus nigra;Flowers and Berries;Infusion or Salve;Used to soothe irritated skin
+108;Thyme;Thymus vulgaris;Leaves and Flowers;Infusion or Oil;Applied to reduce skin inflammation
+109;Nettle;Urtica dioica;Leaves;Infusion or Salve;Used to reduce inflammation and promote healing
+111;Foxglove;Digitalis purpurea;Leaves;N/A;Poisonous, can cause heart problems if ingested
+112;Belladonna;Atropa belladonna;Leaves and Berries;N/A;Highly poisonous, can cause hallucinations and death
+113;Aconite;Aconitum napellus;Roots and Flowers;N/A;Highly poisonous, can cause severe gastrointestinal distress and death
+114;Hemlock;Conium maculatum;Leaves and Seeds;N/A;Highly poisonous, can cause respiratory failure
+115;Deadly Nightshade;Solanum dulcamara;Leaves and Berries;N/A;Highly poisonous, can cause delirium and death
+116;Oleander;Nerium oleander;Leaves and Flowers;N/A;Highly poisonous, can cause cardiac arrest
+117;Jimsonweed;Datura stramonium;Leaves and Seeds;N/A;Highly poisonous, can cause hallucinations and death
+118;Monkshood;Aconitum variegatum;Roots and Flowers;N/A;Highly poisonous, can cause cardiac and respiratory arrest
+119;Lily of the Valley;Convallaria majalis;Leaves and Flowers;N/A;Highly poisonous, can cause heart problems and death
+120;Wolfsbane;Aconitum lycoctonum;Roots and Flowers;N/A;Highly poisonous, can cause cardiac and respiratory failure
+121;Mugwort;Artemisia vulgaris;Leaves;Infusion or Compress;Used to relieve itching and skin irritation
+122;Self-heal;Prunella vulgaris;Leaves and Flowers;Poultice or Salve;Used to promote wound healing
+123;Dandelion;Taraxacum officinale;Leaves and Roots;Infusion or Salve;Used to soothe skin irritation
+124;Ribwort Plantain;Plantago lanceolata;Leaves;Poultice or Salve;Used to reduce inflammation and promote healing
+125;Marshmallow;Althaea officinalis;Roots;Infusion or Salve;Used to soothe and heal skin
+126;Borage;Borago officinalis;Leaves and Flowers;Poultice or Infusion;Used to reduce inflammation and promote healing
+127;Speedwell;Veronica officinalis;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+128;Agrimony;Agrimonia eupatoria;Leaves and Flowers;Infusion or Compress;Used to promote wound healing
+129;Lady's Mantle;Alchemilla vulgaris;Leaves and Flowers;Infusion or Compress;Used to soothe and heal skin
+130;Horsetail;Equisetum arvense;Leaves and Stems;Infusion or Salve;Used to promote wound healing
+131;Greater Celandine;Chelidonium majus;Leaves and Stems;Infusion or Salve;Used to treat warts and skin irritations
+132;Violet;Viola odorata;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+133;Woodruff;Galium odoratum;Leaves and Stems;Infusion or Compress;Used to soothe and heal skin
+134;Betony;Stachys officinalis;Leaves and Flowers;Infusion or Compress;Used to promote wound healing
+135;Rue;Ruta graveolens;Leaves and Stems;Infusion or Compress;Used to soothe skin irritation
+136;Meadowsweet;Filipendula ulmaria;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation and soothe skin
+137;Goldenrod;Solidago virgaurea;Leaves and Flowers;Infusion or Salve;Used to promote wound healing
+138;Yellow Dock;Rumex crispus;Roots and Leaves;Infusion or Salve;Used to reduce skin irritation
+139;Feverfew;Tanacetum parthenium;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation and soothe skin
+140;Hops;Humulus lupulus;Flowers;Infusion or Compress;Used to soothe skin irritation
+141;Lungwort;Pulmonaria officinalis;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+142;Goat's Beard;Aruncus dioicus;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation and promote healing
+143;Chervil;Anthriscus cerefolium;Leaves;Infusion or Compress;Used to soothe skin irritation
+144;Bistort;Bistorta officinalis;Roots and Leaves;Infusion or Salve;Used to reduce inflammation and promote healing
+145;Ground Ivy;Glechoma hederacea;Leaves;Infusion or Compress;Used to soothe skin irritation
+146;Bugle;Ajuga reptans;Leaves and Flowers;Infusion or Compress;Used to promote wound healing
+147;Cat's Foot;Antennaria dioica;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+
+148;Burdock;Arctium lappa;Roots;Infusion or Salve;Used to soothe skin irritation
+149;Butterbur;Petasites hybridus;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+150;Chickweed;Stellaria media;Leaves and Stems;Infusion or Salve;Used to soothe skin irritation
+151;Cleavers;Galium aparine;Leaves and Stems;Infusion or Salve;Used to promote wound healing
+152;Coltsfoot;Tussilago farfara;Leaves and Flowers;Infusion or Salve;Used to soothe skin irritation
+153;Elecampane;Inula helenium;Roots;Infusion or Salve;Used to reduce inflammation and promote healing
+154;Fennel;Foeniculum vulgare;Seeds and Leaves;Infusion or Compress;Used to soothe skin irritation
+155;Fenugreek;Trigonella foenum-graecum;Seeds;Infusion or Compress;Used to reduce inflammation
+156;Hawthorn;Crataegus monogyna;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+157;Hyssop;Hyssopus officinalis;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+158;Juniper;Juniperus communis;Berries and Leaves;Infusion or Salve;Used to soothe skin irritation
+159;Lemon Balm;Melissa officinalis;Leaves;Infusion or Compress;Used to reduce inflammation
+160;Licorice;Glycyrrhiza glabra;Roots;Infusion or Salve;Used to soothe skin irritation
+161;Marjoram;Origanum majorana;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+162;Milk Thistle;Silybum marianum;Seeds and Leaves;Infusion or Salve;Used to soothe skin irritation
+163;Mullein;Verbascum thapsus;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+164;Parsley;Petroselinum crispum;Leaves and Roots;Infusion or Compress;Used to soothe skin irritation
+165;Peppermint;Mentha piperita;Leaves;Infusion or Compress;Used to reduce inflammation
+166;Pine;Pinus sylvestris;Needles and Resin;Infusion or Salve;Used to soothe skin irritation
+167;Raspberry;Rubus idaeus;Leaves and Berries;Infusion or Salve;Used to soothe skin irritation
+168;Red Clover;Trifolium pratense;Flowers;Infusion or Compress;Used to reduce inflammation
+169;Rosemary;Rosmarinus officinalis;Leaves;Infusion or Compress;Used to soothe skin irritation
+170;Sage;Salvia officinalis;Leaves;Infusion or Compress;Used to reduce inflammation
+171;Sarsaparilla;Smilax ornata;Roots;Infusion or Salve;Used to soothe skin irritation
+172;Shepherd's Purse;Capsella bursa-pastoris;Leaves and Stems;Infusion or Salve;Used to reduce inflammation
+173;Skullcap;Scutellaria lateriflora;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+174;Slippery Elm;Ulmus rubra;Bark;Infusion or Salve;Used to soothe skin irritation
+175;Sorrel;Rumex acetosa;Leaves;Infusion or Compress;Used to reduce inflammation
+176;Stinging Nettle;Urtica dioica;Leaves;Infusion or Salve;Used to reduce inflammation
+177;Sweet Woodruff;Galium odoratum;Leaves and Stems;Infusion or Compress;Used to soothe skin irritation
+178;Tansy;Tanacetum vulgare;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+179;Valerian;Valeriana officinalis;Roots;Infusion or Compress;Used to soothe skin irritation
+
+180;Verbena;Verbena officinalis;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+181;Vervain;Verbena hastata;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+182;Wintergreen;Gaultheria procumbens;Leaves;Infusion or Salve;Used to soothe skin irritation
+183;Witch Hazel;Hamamelis virginiana;Leaves and Bark;Infusion or Compress;Used to reduce inflammation
+184;Wormwood;Artemisia absinthium;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+185;Yam;Dioscorea villosa;Roots;Infusion or Salve;Used to soothe skin irritation
+186;Yellow Dock;Rumex crispus;Roots and Leaves;Infusion or Salve;Used to reduce skin irritation
+187;Yew;Taxus baccata;Leaves and Seeds;N/A;Highly poisonous, can cause cardiac arrest
+188;Pennyroyal;Mentha pulegium;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+189;Purple Coneflower;Echinacea purpurea;Roots and Leaves;Infusion or Salve;Used to promote wound healing
+
+190;Quince;Cydonia oblonga;Leaves and Fruit;Infusion or Compress;Used to soothe skin irritation
+191;Quassia;Quassia amara;Wood;Infusion or Salve;Used to reduce inflammation
+192;Red Sage;Salvia miltiorrhiza;Roots;Infusion or Compress;Used to soothe skin irritation
+193;Rue;Ruta graveolens;Leaves and Stems;Infusion or Compress;Used to soothe skin irritation
+194;Safflower;Carthamus tinctorius;Flowers;Infusion or Compress;Used to reduce inflammation
+195;Saffron;Crocus sativus;Stigmas;Infusion or Compress;Used to reduce inflammation
+196;St. Benedict's Thistle;Cnicus benedictus;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+197;Shepherd's Purse;Capsella bursa-pastoris;Leaves and Stems;Infusion or Salve;Used to reduce inflammation
+198;Silk Tree;Albizia julibrissin;Bark and Flowers;Infusion or Compress;Used to soothe skin irritation
+199;Solomon's Seal;Polygonatum biflorum;Roots;Infusion or Compress;Used to promote wound healing
+200;Squill;Scilla siberica;Bulbs;N/A;Highly poisonous, can cause severe gastrointestinal distress
+201;Starflower;Trientalis borealis;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+202;Strawberry;Fragaria vesca;Leaves and Fruits;Infusion or Compress;Used to soothe skin irritation
+203;Sweet Clover;Melilotus officinalis;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+204;Sweet Violet;Viola odorata;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+205;Sweet Woodruff;Galium odoratum;Leaves and Stems;Infusion or Compress;Used to soothe skin irritation
+206;Tamarind;Tamarindus indica;Fruit;Infusion or Compress;Used to soothe skin irritation
+207;Thistle;Cirsium vulgare;Leaves and Stems;Infusion or Compress;Used to reduce inflammation
+208;Thyme;Thymus vulgaris;Leaves;Infusion or Compress;Used to reduce inflammation
+209;Tobacco;Nicotiana tabacum;Leaves;N/A;Highly poisonous, can cause severe respiratory distress
+210;Turkey Rhubarb;Rheum palmatum;Roots;Infusion or Compress;Used to soothe skin irritation
+211;Vervain;Verbena officinalis;Leaves and Flowers;Infusion or Compress;Used to reduce inflammation
+212;Watercress;Nasturtium officinale;Leaves;Infusion or Compress;Used to soothe skin irritation
+213;White Willow;Salix alba;Bark;Infusion or Compress;Used to reduce inflammation
+214;Wild Carrot;Daucus carota;Roots;Infusion or Compress;Used to soothe skin irritation
+215;Wild Yam;Dioscorea villosa;Roots;Infusion or Salve;Used to soothe skin irritation
+216;Wormwood;Artemisia absinthium;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+217;Yellow Dock;Rumex crispus;Roots and Leaves;Infusion or Salve;Used to reduce skin irritation
+218;Yew;Taxus baccata;Leaves and Seeds;N/A;Highly poisonous, can cause cardiac arrest
+219;Borage;Borago officinalis;Leaves and Flowers;Poultice or Infusion;Used to reduce inflammation and promote healing
+220;Speedwell;Veronica officinalis;Leaves and Flowers;Infusion or Compress;Used to soothe skin irritation
+221;Agrimony;Agrimonia eupatoria;Leaves and Flowers;Infusion or Compress;Used to promote wound healing
+222;Lady's Mantle;Alchemilla vulgaris;Leaves and Flowers;Infusion or Compress;Used to soothe and heal skin
+223;Horsetail;Equisetum arvense;Leaves and Stems;Infusion or Salve;

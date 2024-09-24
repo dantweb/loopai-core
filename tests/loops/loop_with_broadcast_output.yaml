@@ -1,0 +1,39 @@
+session:
+  name: test_broadcast_session
+  code_source: '/tests/_data/loops/python/loop_with_boradcast_output.py'
+  environment:
+  loop:
+    step1:
+      description: "Process Input with GPT-3.5"
+      type: gpt_processing
+      input:
+        - text:
+            name: /tests/_data/input/simple_prompt.txt
+      output:
+        - text:
+            name: /tests/_data/generated/test_broadcast_session-step1.txt
+        - broadcast: true
+      action:
+        executor: gpt
+        model: gpt-3.5-turbo-16k
+        prompt: PROMPT_STEP_1_JSON
+        system_content: SYSTEM_CONTENT_STEP_1
+        max_tokens: 500
+
+    step2:
+      description: "Generate image"
+      type: generate_image
+      input:
+        - broadcast:
+            source: step1
+            output_format: text
+            field: response/summary
+      output:
+        - image:
+            name: /tests/_data/generated/img/{{SESSION_ID}}-step2.jpg
+      action:
+        executor: dalle2
+        model: dall-e-3
+        prompt: PROMPT_STEP_2_JSON
+        system_content: SYSTEM_CONTENT_STEP_2
+        max_tokens: 100

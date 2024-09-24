@@ -1,0 +1,37 @@
+session:
+  name: test_red_robot
+  description: "We read here news from the world and generate tasks for an editorial loop"
+  code_source: '/tests/loops/python/loop_red_robot.py'
+  environment:
+  config:
+  loop:
+    step1:
+      description: "Get fresh news"
+      type: newsapi
+      input:
+        - text:
+            name: /tests/_data/project/rr/start_keywords.txt
+      output:
+        - csv:
+            name: /tests/_data/project/rr/out/red_robot_fresh_headlines_generated.csv
+      action:
+        executor: newsapi
+        model: ''
+        prompt: NEWS_API_KEYWORDS
+        system_content: ''
+        max_tokens: 2
+    step2:
+      description: "Read news and generate CSV with rial tasks"
+      type: gpt_executor
+      input:
+        - text:
+            name: /tests/_data/project/rr/out/red_robot_fresh_headlines_generated.csv
+      output:
+        - text:
+            name: /tests/_data/project/rr/out/red_robot_editorial_topics_generated.csv
+      action:
+        executor: gpt
+        model: gpt-4-turbo
+        prompt: PROMPT_GENERATE_HEADLINES_STEP_2_JSON
+        system_content: SYSTEM_CONTENT_GENERATE_HEADLINES_STEP_2
+        max_tokens: 3000

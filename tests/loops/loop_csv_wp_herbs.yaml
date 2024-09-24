@@ -1,0 +1,106 @@
+session:
+  name: test_broadcast_session
+  code_source: '/tests/_data/loops/python/loop_with_foreach.py'
+  environment:
+  loop:
+    step1:
+      description: "Testing foreach"
+      type: foreach
+      input:
+        - csv:
+            name: /tests/_data/input/herbs.csv
+      output:
+        - broadcast: true
+      action:
+        executor: foreach
+        model: ''
+        prompt: ''
+        system_content: ''
+        max_tokens: 0
+        loop:
+          loop_step1:
+            description: "Process Input with GPT-3.5"
+            type: gpt_executor
+            input:
+              - broadcast:
+                  source: step1
+                  output_format: text
+                  field: data/Scientific_Name
+            output:
+              - text:
+                  name: /tests/_data/generated/wp/foreach-{{FOREACH_STEP_UUID}}-{{SESSION_ID}}-loop_step1.txt
+              - broadcast: true
+            action:
+              executor: gpt
+              model: gpt-4-turbo
+              prompt: PROMPT_STEP_1_JSON
+              system_content: SYSTEM_CONTENT_STEP_1
+              max_tokens: 1000
+
+          loop_step2:
+            description: "Generate image"
+            type: generate_image
+            input:
+              - broadcast:
+                  source: loop_step1
+                  output_format: text
+                  field: data/result/response/paragraph1
+            output:
+              - image:
+                  name: /tests/_data/generated/wp/img/foreach-{{FOREACH_STEP_UUID}}-{{SESSION_ID}}-loop_step2.jpg
+              - broadcast:
+                  image_file: /tests/_data/generated/wp/img/foreach-{{FOREACH_STEP_UUID}}-{{SESSION_ID}}-loop_step2.jpg
+            action:
+              executor: dalle2
+              model: dall-e-3
+              prompt: PROMPT_STEP_2_JSON
+              system_content: SYSTEM_CONTENT_STEP_2
+              max_tokens: 25
+
+          loop_step3:
+            description: "Generate image"
+            type: generate_image
+            input:
+              - broadcast:
+                  source: loop_step1
+                  output_format: text
+                  field: data/result/response/paragraph2
+            output:
+              - image:
+                  name: /tests/_data/generated/img/wp/foreach-{{FOREACH_STEP_UUID}}-{{SESSION_ID}}-loop_step3.jpg
+              - broadcast:
+                  image_file: /tests/_data/generated/img/wp/foreach-{{FOREACH_STEP_UUID}}-{{SESSION_ID}}-loop_step3.jpg
+            action:
+              executor: dalle2
+              model: dall-e-3
+              prompt: PROMPT_STEP_2_JSON
+              system_content: SYSTEM_CONTENT_STEP_2
+              max_tokens: 20
+
+          loop_step5:
+            description: "Sending data to Wordspress"
+            type: wordpress
+            input:
+              - broadcast:
+                  source: loop_step1
+                  output_format: dict
+                  field: data/result/response
+              - broadcast:
+                  source: loop_step2
+                  output_format: dict
+                  field: data/result/response
+              - broadcast:
+                  source: loop_step3
+                  output_format: dict
+                  field: data/result/response
+            output:
+              - wordpress:
+                  connector: wp-loopai-plugin
+              - text:
+                  name: /tests/_data/generated/wp/wp_post-{{SESSION_ID}}-loop_step5.txt
+            action:
+              executor: wordpress
+              model: ''
+              prompt: ''
+              system_content: ''
+              max_tokens: 0

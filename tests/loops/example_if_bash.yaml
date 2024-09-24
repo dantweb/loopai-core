@@ -1,0 +1,62 @@
+session:
+
+  loop:
+    code_step2:
+      description: proofing result
+      type: logic
+      input:
+        - text:
+            name: file1.txt
+            field: file_1
+        - text:
+            name: file2.txt
+            field: file_2
+      output:
+      action:
+        executor: if
+        config:
+          condition_function: 'if_function_example(arg1=input[0].field,arg2=input[1].field)'
+          true:
+            output:
+              - wordpress:
+                  connector: wp-loopai-plugin
+              - die: true
+          false:
+            goto: code_step4
+
+    code_step3:
+      description: executing bash
+      type: bash
+      input:
+        - text:
+            name: file1.txt
+            field: file_1
+        - text:
+            name: file2.txt
+            field: file_2
+      output:
+      action:
+        executor: bash
+        config:
+          bash_script_path: /tests/_data/loops/bash/example_bash_executor.sh
+          bash_script_params:
+            - arg1: input[0]
+            - arg2: input[1]
+#other examples not used:
+
+          loop_step4:
+            description: "For example Get YouTube Video"
+            type: generate_image
+            input:
+              - broadcast:
+                  source: loop_step1
+                  output_format: text
+                  field: data/result/response/summary
+            output:
+              - broadcast: true
+            action:
+              executor: youtube
+              model: ''
+              prompt: ''
+              system_content: ''
+              max_tokens: 0
