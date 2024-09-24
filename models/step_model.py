@@ -120,14 +120,14 @@ class StepModel:
         return getattr(module, variable_name)
 
     def load_adapter(self, adapter_type: str):
-        module_name = f"src.adapters.{adapter_type}_adapter"
+        module_name = f"core.adapters.{adapter_type}_adapter"
         class_name = f"{adapter_type.capitalize()}Adapter"
         module = importlib.import_module(module_name)
         adapter_class = getattr(module, class_name)
         return adapter_class
 
     def load_executor(self, executor_type: str):
-        module_name = f"src.looper.executors.{executor_type}_executor"
+        module_name = f"core.looper.executors.{executor_type}_executor"
         class_name = f"{executor_type.capitalize()}Executor"
         module = importlib.import_module(module_name)
         executor_class = getattr(module, class_name)
