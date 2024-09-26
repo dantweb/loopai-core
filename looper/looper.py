@@ -11,7 +11,7 @@ from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.models.step_model import StepModel
 from core.services.logger_service import LoggerService
-
+from web.services.socket_io_service import socket
 
 class Looper:
     def __init__(self, loop_data: str, code_source: str, parent_step: str = None):
@@ -25,8 +25,11 @@ class Looper:
             self.iteratable_steps = self.loop_data['session']['loop'][parent_step]['action']['loop']
 
     def get_steps(self) -> List[StepModel]:
+        socket.emit('log', {'data': 'get_stepsget_stepsget_stepsget_stepsget_stepsget_stepsget_steps'})
+        logger = LoggerService()
+        logger.info('Getting steps!!!§§§$$$%%%&&&///')
+        return
         steps = []
-
         for step_name, step_details in self.iteratable_steps.items():
             input_config = [
                 # InputConfig(

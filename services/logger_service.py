@@ -2,13 +2,15 @@
 from datetime import datetime
 import config
 import threading
-from flask_socketio import SocketIO, emit
+from flask_socketio import emit
+from web.services.socket_io_service import socket
+import logging
 
-socketio = SocketIO()
 
 class LoggerService:
     _instance = None
     _lock = threading.Lock()
+    _num_of_logs_to_return = 10  # Default number of logs to return
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '_instance') or cls._instance is None:
@@ -27,12 +29,14 @@ class LoggerService:
 
     def log(self, message, action='log'):
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
-        web_session_id = config.WEB_SESSION_ID
-        log_message = f"[{timestamp}] [{web_session_id}] {action}: {message}"
-        with self.log_lock:
-            self.logs.append(log_message)
-            print(log_message)  # Optionally print the log to the console as well
-            socketio.emit('log', {'message': log_message})  # Emit log message via SocketIO
+        logging.info(f"Emitting {action} message: {message}")
+        web_user_id = config.GLOBAL_USER_ID
+        log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {message}"
+
+        socket.emit(action, {'data': log_message})
+
+        self.logs.append(log_message)
+        print(log_message)
 
     def info(self, message):
         self.log(message, 'info')
@@ -44,5 +48,13 @@ class LoggerService:
         self.log(message, 'error')
 
     def get_logs(self):
+        """Returns the last `n` logs as defined by `_num_of_logs_to_return`."""
         with self.log_lock:
-            return list(self.logs)
+            return self.logs[-self._num_of_logs_to_return:]
+
+    def set_num_of_logs_to_return(self, num):
+        """Sets the number of logs to return in the `get_logs` method."""
+        with self.log_lock:
+            self._num_of_logs_to_return = num
+
+# You can now adjust how many logs you want to return using the `set_num_of_logs_to_return` method.
