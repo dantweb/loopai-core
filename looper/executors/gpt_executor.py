@@ -6,6 +6,7 @@ import pandas as pd
 from config import is_valid_json
 from core.databus import global_vars
 from core.looper.executors.executor_interface import ExecutorInterface
+from core.services.logger_service import LoggerService
 
 
 class GptExecutor(ExecutorInterface):
@@ -25,6 +26,8 @@ class GptExecutor(ExecutorInterface):
         return prompt_template
 
     def run(self, model, system_content, user_content, max_tokens):
+        logger = LoggerService()
+        logger.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, system_content: {system_content}, user_content: {user_content}, max_tokens: {max_tokens}")
         result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
         if result == 'Suggestion failed.':
             self.logger_service.log(json.dumps(result))

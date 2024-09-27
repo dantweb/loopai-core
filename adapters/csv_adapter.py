@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from typing import Tuple, Iterable, Hashable
+from core.services.logger_service import LoggerService
 
 import pandas as pd
 from pandas import Series
@@ -20,6 +21,8 @@ class CsvAdapter(FileAdapterInterface):
 
     def read(self, step_id, *args) -> Iterable[tuple[Hashable, Series]]:
         path = self.get_full_path(self.file_path)
+        logger = LoggerService()
+        logger.info('[CsvAdapter::read] Reading CSV file' + path)
         df = pd.read_csv(path, sep=self.separator)
         return df
 
@@ -27,7 +30,8 @@ class CsvAdapter(FileAdapterInterface):
         path = self.get_full_path(self.file_path)
         if os.path.exists(path):
             path = self.get_new_filename(path)
-            self.logger_service.info(f"New filename used for writing: {path}")
+            logger = LoggerService()
+            logger.info(f"[CsvAdapter::write] New filename used for writing: {path}")
 
         directory = os.path.dirname(path)
 

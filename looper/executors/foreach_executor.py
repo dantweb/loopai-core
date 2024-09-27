@@ -11,9 +11,9 @@ from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.databus import global_vars
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.looper import Looper
+from core.services.logger_service import LoggerService
 
 load_dotenv()
-
 
 class ForeachExecutor(ExecutorInterface):
     def __init__(self, model: str):
@@ -32,6 +32,9 @@ class ForeachExecutor(ExecutorInterface):
         self.foreach_data = foreach_data
 
     def run(self, model, system_content, user_content, max_tokens):
+        logger = LoggerService()
+        logger.info(f"[ForeachExecutor::run] ..going to call Foreach")
+
         looper = Looper(self.loop_data, self.loop_data['session']['code_source'], self.parent_step)
         steps = looper.get_steps()
 

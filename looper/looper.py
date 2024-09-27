@@ -25,12 +25,11 @@ class Looper:
             self.iteratable_steps = self.loop_data['session']['loop'][parent_step]['action']['loop']
 
     def get_steps(self) -> List[StepModel]:
-        socket.emit('log', {'data': 'get_stepsget_stepsget_stepsget_stepsget_stepsget_stepsget_steps'})
         logger = LoggerService()
-        logger.info('Getting steps!!!§§§$$$%%%&&&///')
-        return
+        logger.info('Reading stepps...')
         steps = []
         for step_name, step_details in self.iteratable_steps.items():
+            logger.info(f"now into step: {step_name}")
             input_config = [
                 # InputConfig(
                 #     text=step_details['input'][0].get('text') if 'text' in step_details['input'][0] else None,
@@ -81,6 +80,7 @@ class Looper:
                 code_source=self.code_source
             )
             steps.append(step)
+            logger.info(f"Step {step_name} added to steps")
         return steps
 
     def set_iterable_steps(self, iterable_steps: List[StepModel]):
