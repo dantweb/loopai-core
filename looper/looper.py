@@ -15,7 +15,6 @@ from web.services.socket_io_service import socket
 
 class Looper:
     def __init__(self, loop_data: str, code_source: str, parent_step: str = None):
-        self.logger_service = LoggerService()
         self.iterable_steps = None
         self.loop_data = loop_data
         self.code_source = code_source
@@ -29,7 +28,7 @@ class Looper:
         logger.info('Reading stepps...')
         steps = []
         for step_name, step_details in self.iteratable_steps.items():
-            logger.info(f"now into step: {step_name}")
+            logger.info(f"now into step configuration: {step_name}")
             input_config = [
                 # InputConfig(
                 #     text=step_details['input'][0].get('text') if 'text' in step_details['input'][0] else None,

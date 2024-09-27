@@ -27,13 +27,15 @@ class GptExecutor(ExecutorInterface):
 
     def run(self, model, system_content, user_content, max_tokens):
         logger = LoggerService()
-        logger.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, system_content: {system_content}, user_content: {user_content}, max_tokens: {max_tokens}")
+        logger.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, "
+                    "max_tokens: {max_tokens}")
         result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
         if result == 'Suggestion failed.':
             self.logger_service.log(json.dumps(result))
             raise Exception("Suggestion failed.")
         while not is_valid_json(result):
             max_tokens = round(max_tokens * 1.14)
+            logger.info(f"Max tokens increased to {max_tokens}")
             if max_tokens > 4096:
                 raise Exception(f"Too many tokens ({max_tokens})")
             result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
@@ -44,6 +46,8 @@ class GptExecutor(ExecutorInterface):
         return json_result
 
     def getResponseFromOpenAI(self, model, system_content, user_content, max_tokens):
+        logger = LoggerService()
+        logger.info(f"[GptExecutor::getResponseFromOpenAI] trying to get response from OpenAI...")
         try:
             result = self.openai.chat.completions.create(
                 model=model,
@@ -59,6 +63,7 @@ class GptExecutor(ExecutorInterface):
                 ],
                 max_tokens=max_tokens
             )
+            self.logger_service.info(f"We have a response from OpenAI...")
             return result.choices[0].message.content
         except Exception as e:
             self.logger_service.error(f"Error during topic suggestion: {str(e)}")

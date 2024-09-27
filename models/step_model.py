@@ -141,9 +141,10 @@ class StepModel:
         # Load executor
         executor_class = self.load_executor(self.action.executor)
         self.executor = executor_class(self.action.model)
-
+        logger = LoggerService()
+        logger.info('Executing step {step_name}...')
         for index, input_adapter in enumerate(self.input_adapters):
-
+            logger.info('Reading adapters...')
             if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
                 first_parameter = self.input[index].broadcast['source']
                 second_parameter = self.name
@@ -168,7 +169,9 @@ class StepModel:
 
         step_id = self.name
         if step_input_data is None:
-            raise RuntimeError(f"step_input_data is None at step  {step_id}")
+            msg = f"step_input_data is None at step  {step_id}"
+            logger.info(msg)
+            raise RuntimeError(msg)
 
         if self.type == 'foreach':
             self.run_foreach(step_input_data)
@@ -232,6 +235,8 @@ class StepModel:
                 raise
 
     def run_foreach(self, input_data):
+        msg = f"running foreach for {self.name}"
+        self.logger_service.info(msg)
         self.executor.set_loop(self.loop_data)
         self.executor.set_parent_step(self.name)
         self.executor.set_foreach_data(input_data)
