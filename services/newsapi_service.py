@@ -18,7 +18,6 @@ class NewsApiService:
 
     def get_fresh_headlines_by_topic(self, first_parameter, second_parameter, connector_id, max_results):
         er = EventRegistry(apiKey=self.key)
-
         # get the USA URI
         local_server = er.getLocationUri("USA")  # = http://en.wikipedia.org/wiki/United_States
 
@@ -31,9 +30,10 @@ class NewsApiService:
             dataType=["news", "blog"])
 
         search_results = q.execQuery(er, sortBy="date", maxItems=max_results)
-        articles_list = [article for article in articles_list]
+        articles_list = [article for article in search_results]
         logger = LoggerService()
-        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(articles_list))
+        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(search_results))
+
         for article in search_results:
             articles_list.append(article)
 

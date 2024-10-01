@@ -142,7 +142,8 @@ class StepModel:
         executor_class = self.load_executor(self.action.executor)
         self.executor = executor_class(self.action.model)
         logger = LoggerService()
-        logger.info('Executing step {step_name}...')
+        logger.info(f"Executing step {step_name}...")
+        logger.info(f"Executor {self.action.executor}...")
         for index, input_adapter in enumerate(self.input_adapters):
             logger.info('Reading adapters...')
             if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
@@ -185,6 +186,8 @@ class StepModel:
             step_input_data,
             prompt_template
         )
+
+        logger.info(f"Prompt: {prompt}")
 
         if isinstance(self.executor, WordpressExecutor):
             result = step_input_data
