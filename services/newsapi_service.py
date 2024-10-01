@@ -32,7 +32,7 @@ class NewsApiService:
         search_results = q.execQuery(er, sortBy="date", maxItems=max_results)
         articles_list = [article for article in search_results]
         logger = LoggerService()
-        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(search_results))
+        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(articles_list))
 
         for article in search_results:
             articles_list.append(article)
