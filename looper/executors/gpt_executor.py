@@ -27,16 +27,18 @@ class GptExecutor(ExecutorInterface):
 
     def run(self, model, system_content, user_content, max_tokens):
         logger = LoggerService()
-        logger.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, "
-                    "max_tokens: {max_tokens}")
+        logger.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, tkns {max_tokens}")
         result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
+        user_defined_max_tokens = max_tokens
         if result == 'Suggestion failed.':
             self.logger_service.log(json.dumps(result))
             raise Exception("Suggestion failed.")
         while not is_valid_json(result):
+            self.logger_service.log(json.dumps(result))
             max_tokens = round(max_tokens * 1.14)
             logger.info(f"Max tokens increased to {max_tokens}")
-            if max_tokens > 4096:
+
+            if max_tokens > user_defined_max_tokens:
                 raise Exception(f"Too many tokens ({max_tokens})")
             result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
 
