@@ -28,9 +28,11 @@ class CsvAdapter(FileAdapterInterface):
 
     def write(self, step_id: str, result: str) -> bool:
         path = self.get_full_path(self.file_path)
+        logger = LoggerService()
+        logger.info('[CsvAdapter::write] Writing to CSV file' + json.dumps(result))
         if os.path.exists(path):
             path = self.get_new_filename(path)
-            logger = LoggerService()
+
             logger.info(f"[CsvAdapter::write] New filename used for writing: {path}")
 
         directory = os.path.dirname(path)

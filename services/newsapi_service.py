@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from eventregistry import *
 
 from core.databus import global_vars
+from core.services.logger_service import LoggerService
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ class NewsApiService:
         er = EventRegistry(apiKey=self.key)
 
         # get the USA URI
-        local_server = er.getLocationUri("Europe")  # = http://en.wikipedia.org/wiki/United_States
+        local_server = er.getLocationUri("USA")  # = http://en.wikipedia.org/wiki/United_States
 
         keywords = first_parameter
 
@@ -30,8 +31,9 @@ class NewsApiService:
             dataType=["news", "blog"])
 
         search_results = q.execQuery(er, sortBy="date", maxItems=max_results)
-        articles_list = [article for article in search_results]
-
+        articles_list = [article for article in articles_list]
+        logger = LoggerService()
+        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(articles_list))
         for article in search_results:
             articles_list.append(article)
 
