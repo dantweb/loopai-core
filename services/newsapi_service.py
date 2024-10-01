@@ -17,22 +17,28 @@ class NewsApiService:
         # Initialize API client
 
     def get_fresh_headlines_by_topic(self, first_parameter, second_parameter, connector_id, max_results):
-        er = EventRegistry(apiKey=self.key)
+        er = EventRegistry(apiKey=self.key, verboseOutput=True, allowUseOfArchive=False)
+
+        logger = LoggerService()
         # get the USA URI
-        local_server = er.getLocationUri("USA")  # = http://en.wikipedia.org/wiki/United_States
+        # local_server = er.getLocationUri("")  # = http://en.wikipedia.org/wiki/United_States
 
         keywords = first_parameter
+        logger.info('[NewsApiService::get_fresh_headlines_by_topic] keywords: ' + keywords)
+        # logger.info(f"local_server: " + str(local_server))
+        keywords_list = keywords.split(';')
 
         q = QueryArticlesIter(
-            keywords=QueryItems.OR([keywords]),
+            keywords=QueryItems.OR(keywords_list),
             minSentiment=0.4,
-            sourceLocationUri=local_server,
-            dataType=["news", "blog"])
+            dataType=["news", "blog"]
+        )
 
         search_results = q.execQuery(er, sortBy="date", maxItems=max_results)
         articles_list = [article for article in search_results]
-        logger = LoggerService()
-        logger.info('[CsvAdapter::read] Reading CSV file' + json.dumps(articles_list))
+
+        logger.info(f"max_Results = {max_results}")
+        logger.info(f"total results = {len(articles_list)}")
 
         for article in search_results:
             articles_list.append(article)
