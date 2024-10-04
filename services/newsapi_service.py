@@ -40,8 +40,14 @@ class NewsApiService:
         logger.info(f"max_Results = {max_results}")
         logger.info(f"total results = {len(articles_list)}")
 
+        article_list_filtered = []
         for article in search_results:
-            articles_list.append(article)
+            article_list_filtered.append({
+                "title": article["title"],
+                "description": article["description"],
+                "source": article["source"]["title"],
+                "date": article["date"]
+            })
 
         return articles_list
 
