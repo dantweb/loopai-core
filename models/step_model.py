@@ -166,6 +166,8 @@ class StepModel:
             else:
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
 
+            logger.info(f"Read data from adapter {input_adapter.__class__}")
+            logger.info(f"Data: {fresh_data_from_input}")
             step_input_data.append(fresh_data_from_input)
 
         step_id = self.name

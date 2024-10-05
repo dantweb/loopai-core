@@ -24,6 +24,7 @@ class CsvAdapter(FileAdapterInterface):
         logger = LoggerService()
         logger.info('[CsvAdapter::read] Reading CSV file' + path)
         df = pd.read_csv(path, sep=self.separator)
+        logger.info('[CsvAdapter::read] Finished reading CSV file')
         return df
 
     def write(self, step_id: str, result: str) -> bool:
@@ -61,9 +62,9 @@ class CsvAdapter(FileAdapterInterface):
                         item_key = field_mapping.get(field)
                         value = item.get(item_key, '')  # Default to empty string if key is not found
 
-                        row_data[field] = value
+                        row_data[field] = self.clean_text(value)
 
-                    logging.debug(f"Constructed row {i}: {row_data}")
+                    logging.debug(f"\n\nConstructed row {i}: {row_data}")
 
                     writer.writerow(row_data)
                     self.logger_service.info(f'Wrote row {i}: {row_data}')
@@ -77,3 +78,11 @@ class CsvAdapter(FileAdapterInterface):
         self.logger_service.info("Finished write operation")
         logging.debug("Finished write operation")
         return True
+
+    def clean_text(self, text: str) -> str:
+        # Remove or replace problematic characters
+        if isinstance(text, str):
+            text = re.sub(r'[";\n\r,]', ' ', text)  # Replace quotes, newlines, and commas with spaces
+            text = re.sub(r'[\x00-\x1F\x7F]', ' ', text)  # Remove control characters
+            text = text.strip()  # Remove leading/trailing whitespace
+        return text

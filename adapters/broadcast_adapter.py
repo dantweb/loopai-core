@@ -9,7 +9,10 @@ from psycopg2.extras import DictCursor
 from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.services.session import session_id
 from core.services.postgres_db_connect import get_db_cursor
+from core.services.logger_service import LoggerService
 
+
+logger_service = LoggerService()
 
 class BroadcastAdapter(FileAdapterInterface):
     def __init__(self, source=None):
@@ -21,6 +24,7 @@ class BroadcastAdapter(FileAdapterInterface):
 
     def read(self, ref_step_id: str, self_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
 
+        logger_service.info('[BroadcastAdapter::read] Reading DB step ' + self_step_id + ' from step ' + ref_step_id)
         if ignore_read_status:
             query = """
                     SELECT * FROM loopai_broadcast
@@ -38,6 +42,7 @@ class BroadcastAdapter(FileAdapterInterface):
                 row = cursor.fetchone()
                 if row:
                     result = self.prepare_result(row)
+                    logger_service.info(f"[BroadcastAdapter::read] row has data: {result}")
                     self.mark_row_as_read(row, self_step_id)
                     return result
                 return None
@@ -49,6 +54,7 @@ class BroadcastAdapter(FileAdapterInterface):
 
     def write(self, step_id: str, data: dict) -> bool:
         data = self.filter_binary_data(data)
+        logger_service.info(f"[BroadcastAdapter::write] Writing to DB step {step_id}: {data}")
         try:
             with get_db_cursor() as cursor:
                 query = """

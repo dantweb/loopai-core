@@ -1,4 +1,4 @@
-#Filepath relative the project root[.]: ./src/services/newsapi_service.py
+#Filepath relative the core root[.]: ./loopai_src/core/services/newsapi_service.py
 import ast
 
 from dotenv import load_dotenv
@@ -49,7 +49,7 @@ class NewsApiService:
                 "date": article["date"]
             })
 
-        return articles_list
+        return article_list_filtered
 
 
 def trim_non_alphanumeric(s):

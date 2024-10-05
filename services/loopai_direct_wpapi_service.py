@@ -7,6 +7,9 @@ from requests.auth import HTTPBasicAuth
 
 from core.databus import global_vars
 from core.services.wordpress_service import WordPressService
+from core.services.logger_service import LoggerService
+
+logger = LoggerService()
 
 load_dotenv()
 
@@ -23,6 +26,8 @@ class LoopAIDirectWPAPIService:
         headers = {'Content-Type': 'application/json'}
         data_to_send = data['result']
         response = requests.post(url, auth=self.auth, headers=headers, data=json.dumps(data_to_send))
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] response: {response}")
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] data to send: {json.dumps(data_to_send)}")
         if response.status_code == 200:
             return response
         else:
