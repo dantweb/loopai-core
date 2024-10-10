@@ -5,6 +5,7 @@ from typing import List, Dict
 
 from PIL.Image import Image
 from dotenv import load_dotenv
+from sqlalchemy import nulls_last
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
@@ -17,10 +18,12 @@ from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
 from core.looper.executors.gpt_executor import GptExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
 from core.models.action_config import ActionConfig
+from core.models.broadcast_data import BroadcastData
 from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
 
+logger = LoggerService()
 
 class StepModel:
     def __init__(self,
@@ -59,8 +62,27 @@ class StepModel:
 
         for output_config in self.output:
             if output_config.csv:
+                if output_config.csv['fields']:
+                    fields = self.get_variable_from_py_template(output_config.csv['fields'])
+                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined Fields: {str(fields)}")
+                else:
+                    fields = []
+
+                if output_config.csv['mapping']:
+                    mapping = self.get_variable_from_py_template(output_config.csv['mapping'])
+                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined mapping: {str(mapping)}")
+                else:
+                    mapping = {}
+
                 output_adapter_class = self.load_adapter('csv')
-                self.output_adapters.append(output_adapter_class(output_config.csv['name']))
+                self.output_adapters.append(
+                    output_adapter_class(
+                        output_config.csv['name'],
+                        fields,
+                        mapping
+                    )
+                )
+
             if output_config.text:
                 output_adapter_class = self.load_adapter('text')
                 self.output_adapters.append(output_adapter_class(output_config.text['name']))
@@ -87,8 +109,27 @@ class StepModel:
 
         for input_config in self.input:
             if input_config.csv:
+                if input_config.csv['fields']:
+                    fields = self.get_variable_from_py_template(input_config.csv['fields'])
+                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined Fields: {str(fields)}")
+                else:
+                    fields = []
+
+                if input_config.csv['mapping']:
+                    mapping = self.get_variable_from_py_template(input_config.csv['mapping'])
+                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined mapping: {str(mapping)}")
+                else:
+                    mapping = {}
+
                 input_adapter_class = self.load_adapter('csv')
-                self.input_adapters.append(input_adapter_class(input_config.csv['name']))
+                self.input_adapters.append(
+                    input_adapter_class(
+                        input_config.csv['name'],
+                        fields,
+                        mapping
+                    )
+                )
+
             if input_config.text:
                 input_adapter_class = self.load_adapter('text')
                 self.input_adapters.append(input_adapter_class(input_config.text['name']))
@@ -141,23 +182,34 @@ class StepModel:
         # Load executor
         executor_class = self.load_executor(self.action.executor)
         self.executor = executor_class(self.action.model)
-        logger = LoggerService()
-        logger.info(f"Executing step {step_name}...")
-        logger.info(f"Executor {self.action.executor}...")
+        logger.info(f"[StepModel::execute] step name '{step_name}'...")
+        logger.info(f"[StepModel::execute] executor of this step is '{self.action.executor}'...")
+        logger.info(f"[StepModel::execute] input adapters (total={len(self.input_adapters)}) {self.input_adapters}...")
+        logger.info(f"[StepModel::execute] input variable has {self.input}...")
+        logger.info(f"\n\n[StepModel::execute] enumerate input adapters  {enumerate(self.input_adapters)}... \n\n")
+        adapters_count = 0
         for index, input_adapter in enumerate(self.input_adapters):
-            logger.info('Reading adapters...')
-            if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
-                first_parameter = self.input[index].broadcast['source']
-                second_parameter = self.name
+            adapters_count += 1
+            logger.info(f"input_adapter counter: {adapters_count} / {len(self.input_adapters)}")
+            logger.info(f"[StepModel::execute] step {step_name}; input length={len(self.input)} index={index} adapter={input_adapter.__class__}")
+
+
+            if index in self.input:
+                if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
+                    first_parameter = self.input[index].broadcast['source']
+                    second_parameter = self.name
+                else:
+                    first_parameter = self.name
+                    second_parameter = None
+
+                if self.input[index].field is not None and self.input[index].output_format is not None:
+                    input_adapter.setAdditionalParams(
+                        self.input[index].output_format,
+                        self.input[index].field,
+                    )
             else:
                 first_parameter = self.name
                 second_parameter = None
-
-            if self.input[index].field is not None and self.input[index].output_format is not None:
-                input_adapter.setAdditionalParams(
-                    self.input[index].output_format,
-                    self.input[index].field,
-                )
 
             if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
@@ -166,9 +218,18 @@ class StepModel:
             else:
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
 
-            logger.info(f"Read data from adapter {input_adapter.__class__}")
-            logger.info(f"Data: {fresh_data_from_input}")
+            logger.info(f"[StepModel::execute] Read data from adapter {input_adapter.__class__}")
+            logger.info(f"[StepModel::execute] Data we have read: {fresh_data_from_input}")
+            logger.info(f"[StepModel::execute] Type of data read: {type(fresh_data_from_input)}")
+            if fresh_data_from_input is None or fresh_data_from_input == 'None':
+                err = f"Data is empty for {input_adapter.__class__} step {self.name} parent {first_parameter}"
+                logger.info(err)
+                raise Exception(err)
+
+            logger.info(f"[StepModel::execute] step_input_data: {step_input_data}")
+
             step_input_data.append(fresh_data_from_input)
+            logger.info(f"[StepModel::execute] This is data for the executor '{self.type}': {step_input_data}")
 
         step_id = self.name
         if step_input_data is None:
@@ -189,7 +250,10 @@ class StepModel:
             prompt_template
         )
 
-        logger.info(f"Prompt: {prompt}")
+        logger.info(f"[StepModel::execute] Prompt: {prompt}")
+        logger.info(f"[StepModel::execute] Prompt type: {type(prompt)}")
+
+        prompt = BroadcastData(prompt)
 
         if isinstance(self.executor, WordpressExecutor):
             result = step_input_data
@@ -229,12 +293,13 @@ class StepModel:
             if isinstance(output_adapter, BroadcastAdapter) and isinstance(self.packed_blob['result'], Image):
                 self.packed_blob['image_file'] = FileAdapterInterface.get_full_path(self, self.broadcast_image_file)
             self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__}")
+            broadcast_data = BroadcastData(self.packed_blob)
             try:
-                a = output_adapter.write(step_id, self.packed_blob)
+                a = output_adapter.write(step_id, broadcast_data)
                 if a is True:
-                    self.logger_service.log(f"Saved {self.name} by adapter {output_adapter.__class__}")
+                    self.logger_service.log(f"Step \"{self.name}\" is saved by the adapter {output_adapter.__class__} ")
                 else:
-                    self.logger_service.error(f"Cannot save blob {self.name} by adapter {output_adapter.__class__}")
+                    self.logger_service.error(f"Cannot save the step data\"{self.name}\" by the adapter {output_adapter.__class__}")
             except Exception as e:
                 self.logger_service.error(e)
                 raise
@@ -253,10 +318,14 @@ class StepModel:
         pass
 
     def get_prompt_templates(self):
-        return getattr(self.code_module, 'PROMPT_TEMPLATES')
+        return self.get_variable_from_py_template('PROMPT_TEMPLATES')
 
     def get_system_content_templates(self):
-        return getattr(self.code_module, 'SYSTEM_CONTENT_TEMPLATES')
+        return self.get_variable_from_py_template('SYSTEM_CONTENT_TEMPLATES')
+
+    def get_variable_from_py_template(self, variable_name: str):
+        return getattr(self.code_module, variable_name)
+
 
     def load_code_module(self, module_path: str):
         module_absolute_path = os.path.join(

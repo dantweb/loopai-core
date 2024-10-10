@@ -6,6 +6,7 @@ from typing import List, Any, AnyStr
 from core.databus import global_vars
 from PIL.Image import Image
 
+from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.session import session_id
 
@@ -59,22 +60,51 @@ class FileAdapterInterface(ABC):
         else:
             return data
 
-    def filter_binary_data(self, data):
-        filtered_data = {}
-        for key, value in data.items():
-            # Check for PIL Image objects
-            if isinstance(value, Image):
-                continue
-            # Check for bytes or bytearray
-            if isinstance(value, (bytes, bytearray)):
-                continue
-            # Add additional checks for image paths or URLs if needed
-            filtered_data[key] = value
-        return filtered_data
+    from PIL.Image import Image  # Make sure to import this at the top of your file
+
+    def filter_binary_data(self, data) -> Any:
+        """
+        Recursively filters out binary data (e.g., images, bytes) from the data.
+        Supports dicts, lists, and BroadcastData instances.
+        """
+        # Handle scalar values
+        if isinstance(data, (str, int, float, bool, type(None))):
+            return data
+
+        # Handle binary data types
+        elif isinstance(data, (bytes, bytearray, Image)):
+            return None  # Filter out binary data
+
+        # Handle dictionaries
+        elif isinstance(data, dict):
+            filtered_dict = {}
+            for key, value in data.items():
+                filtered_value = self.filter_binary_data(value)
+                if filtered_value is not None:
+                    filtered_dict[key] = filtered_value
+            return BroadcastData(filtered_dict)
+
+        # Handle lists
+        elif isinstance(data, list):
+            filtered_list = []
+            for item in data:
+                filtered_item = self.filter_binary_data(item)
+                if filtered_item is not None:
+                    filtered_list.append(filtered_item)
+            return BroadcastData(filtered_list)
+
+        # Handle BroadcastData instances
+        elif isinstance(data, BroadcastData):
+            filtered_data = self.filter_binary_data(data.data)
+            return filtered_data
+
+        # Handle any other types (filter them out)
+        else:
+            return None  # Filter out unrecognized types
 
     def check_file_exists(self, filename: str) -> bool:
         if os.path.exists(filename):
-            self.logger_service.log(f"Image saved successfully: {filename}")
+            self.logger_service.log(f"New file has been successfully saved: {filename}")
             return True
         else:
             msg = f"Failed to save image: {filename}"

@@ -72,7 +72,7 @@ class TechnewsService:
         self.logger = LoggerService()
 
 
-    def fetch_news_for_topic(self, topic, max_items=10):
+    def fetch_news_for_topic(self, topic, max_items=10) -> list:
         logger_service.info(f"Fetching news for topic: {topic}")
         feeds = rss_feeds.get(topic, [])
         news_items = []
@@ -92,7 +92,7 @@ class TechnewsService:
 
 
     # Function to fetch latest news for all topics
-    def fetch_news_for_all_topics(self, topics, max_items_per_topic=10):
+    def fetch_news_for_all_topics(self, topics, max_items_per_topic=10) -> dict:
         all_news = {}
         for topic in topics:
             all_news[topic] = self.fetch_news_for_topic(topic, max_items_per_topic)
@@ -101,7 +101,7 @@ class TechnewsService:
 
     # first_parameter = ['ai', 'e_commerce', 'ai_medicine', 'ai_applications', 'e_payments']
     def get_fresh_headlines(self, first_parameter, second_parameter, connector_id, max_results):
-        first_parameter = ['ai_medicine']
-        first_topic = self.fetch_news_for_all_topics(first_parameter, max_results)[first_parameter[0]]
+        first_parameter = ['ai_applications']
+        first_topic = self.fetch_news_for_all_topics(first_parameter, max_results)
         return first_topic
 

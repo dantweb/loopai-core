@@ -30,15 +30,6 @@ class Looper:
         for step_name, step_details in self.iteratable_steps.items():
             logger.info(f"now into step configuration: {step_name}")
             input_config = [
-                # InputConfig(
-                #     text=step_details['input'][0].get('text') if 'text' in step_details['input'][0] else None,
-                #     image=step_details['input'][0].get('image') if 'image' in step_details['input'][0] else None,
-                #     csv=step_details['input'][0].get('csv') if 'csv' in step_details['input'][0] else None,
-                #     broadcast=step_details['input'][0]['broadcast'] if 'broadcast' in step_details['input'][0] else None,
-                #     source=step_details['input'][0]['broadcast'].get('source') if 'broadcast' in step_details['input'][0] and 'source' in step_details['input'][0]['broadcast'] else None,
-                #     output_format=step_details['input'][0]['broadcast'].get('output_format') if 'broadcast' in step_details['input'][0] and 'output_format' in step_details['input'][0]['broadcast'] else None,
-                #     field=step_details['input'][0]['broadcast'].get('field') if 'broadcast' in step_details['input'][0] and 'field' in step_details['input'][0]['broadcast'] else None
-                # )
                 InputConfig(
                     text=step_input_config.get('text') if 'text' in step_input_config else None,
                     image=step_input_config.get('image') if 'image' in step_input_config else None,

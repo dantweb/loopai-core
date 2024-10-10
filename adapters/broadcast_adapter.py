@@ -1,5 +1,6 @@
 # src/adapters/broadcast_adapter.py
 import json
+import re
 import traceback
 from typing import Any, Dict
 
@@ -10,6 +11,7 @@ from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.services.session import session_id
 from core.services.postgres_db_connect import get_db_cursor
 from core.services.logger_service import LoggerService
+from core.models.broadcast_data import BroadcastData
 
 
 logger_service = LoggerService()
@@ -41,20 +43,36 @@ class BroadcastAdapter(FileAdapterInterface):
                 cursor.execute(query, (session_id, ref_step_id))
                 row = cursor.fetchone()
                 if row:
-                    result = self.prepare_result(row)
-                    logger_service.info(f"[BroadcastAdapter::read] row has data: {result}")
+                    # Ensure the row is being accessed correctly
+                    if isinstance(row, tuple):
+                        # Handle tuple-based row
+                        broadcast_data = self.prepare_result(dict(row))
+                    else:
+                        broadcast_data = self.prepare_result(row)
+                    logger_service.info(f"[BroadcastAdapter::read] row has data: {broadcast_data}")
                     self.mark_row_as_read(row, self_step_id)
-                    return result
+                    return broadcast_data
                 return None
 
         except Exception as e:
             traceback.print_exc()
-            self.logger_service.error(self, f"Error reading from database: {e}")
+            logger_service.error(f"Error reading from database: {e}")
             return None
 
-    def write(self, step_id: str, data: dict) -> bool:
-        data = self.filter_binary_data(data)
-        logger_service.info(f"[BroadcastAdapter::write] Writing to DB step {step_id}: {data}")
+    def write(self, step_id: str, data: BroadcastData) -> bool:
+        logger_service.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
+        logger_service.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
+        if 'result' in data:
+            logger_service.info(f"[BroadcastAdapter::write] result : '{data.get('result')}'")
+            logger_service.info(f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result').get('response'))}\"")
+
+        raise Exception("Error: No data to write.")
+
+        if data.get('result').get('response') is None:
+            return False
+
+        data_to_write = data.get('result').get('response')
+
         try:
             with get_db_cursor() as cursor:
                 query = """
@@ -66,14 +84,15 @@ class BroadcastAdapter(FileAdapterInterface):
                     (
                         session_id,
                         step_id,
-                        json.dumps(data)
+                        json.dumps(data_to_write)
                     )
                 )
                 return True
         except Exception as e:
             traceback.print_exc()
-            self.logger_service.error(f"Error writing to database: {e}")
+            logger_service.error(f"Error writing to database: {e}")
             return False
+
 
     def setAdditionalParams(self, output_format: str, field: str):
         self.output_format = output_format
@@ -85,18 +104,17 @@ class BroadcastAdapter(FileAdapterInterface):
         if self.field is None or '/' not in self.field:
             raise Exception(f"{self.__class__} has no fields defined for splitting")
 
-        splittedFields = self.field.split('/')
+        splitted_fields = self.field.split('/')
 
         # Traverse the nested fields
         requested_field = converted_row
-        for field in splittedFields:
+        for field in splitted_fields:
             if isinstance(requested_field, dict) and field in requested_field:
                 requested_field = requested_field[field]
             else:
                 continue
-                # raise KeyError(f"Field '{field}' not found in the row")
 
-        return requested_field
+        return BroadcastData(requested_field)
 
     def mark_row_as_read(self, row: Dict, step_id: str) -> None:
         # Implement your database deletion logic here
@@ -121,3 +139,22 @@ class BroadcastAdapter(FileAdapterInterface):
                 self.logger_service.info(f"All entries with session_id {session_id} have been deleted.")
         except Exception as e:
             self.logger_service.error(f"An error occurred while deleting entries: {str(e)}")
+
+
+def try_extract_data(broken_json):
+    # Regular expression to extract the result.response or response.result data
+    pattern = r"'result':\s*{\s*'response':\s*(\{[^}]*\}|\[[^\]]*\])"
+
+    # Search for the pattern
+    match = re.search(pattern, broken_json)
+
+    if match:
+        response_data = match.group(1)
+        try:
+            # Attempt to parse the extracted string as JSON
+            structured_data = json.loads(response_data.replace("'", "\""))  # Replace single quotes with double quotes
+            return structured_data
+        except json.JSONDecodeError as e:
+            print("Error parsing JSON:", e)
+    else:
+        print("No match found.")
