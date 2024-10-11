@@ -16,6 +16,15 @@ from core.models.broadcast_data import BroadcastData
 
 logger_service = LoggerService()
 
+
+def try_extract_data(data):
+    data_to_write = try_extract_data_with_fields(data)
+    if data_to_write is None:
+        data_to_write = try_extract_data_with_pattern(data)
+
+    return data_to_write
+
+
 class BroadcastAdapter(FileAdapterInterface):
     def __init__(self, source=None):
         super().__init__()
@@ -24,9 +33,9 @@ class BroadcastAdapter(FileAdapterInterface):
         self.field = None
         self.image_file = None
 
-    def read(self, ref_step_id: str, self_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
+    def read(self, self_step_id: str, ref_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
 
-        logger_service.info('[BroadcastAdapter::read] Reading DB step ' + self_step_id + ' from step ' + ref_step_id)
+        logger_service.info(f"[BroadcastAdapter::read] Reading DB step {self_step_id} from step {ref_step_id}")
         if ignore_read_status:
             query = """
                     SELECT * FROM loopai_broadcast
@@ -62,16 +71,11 @@ class BroadcastAdapter(FileAdapterInterface):
     def write(self, step_id: str, data: BroadcastData) -> bool:
         logger_service.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
         logger_service.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
-        if 'result' in data:
-            logger_service.info(f"[BroadcastAdapter::write] result : '{data.get('result')}'")
-            logger_service.info(f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result').get('response'))}\"")
 
-        raise Exception("Error: No data to write.")
+        data_to_write = try_extract_data(data)
 
-        if data.get('result').get('response') is None:
-            return False
-
-        data_to_write = data.get('result').get('response')
+        if data_to_write is None:
+            raise Exception("Error: No data possible to extract to write.")
 
         try:
             with get_db_cursor() as cursor:
@@ -84,7 +88,7 @@ class BroadcastAdapter(FileAdapterInterface):
                     (
                         session_id,
                         step_id,
-                        json.dumps(data_to_write)
+                        json.dumps(data_to_write.__json__())
                     )
                 )
                 return True
@@ -141,7 +145,33 @@ class BroadcastAdapter(FileAdapterInterface):
             self.logger_service.error(f"An error occurred while deleting entries: {str(e)}")
 
 
-def try_extract_data(broken_json):
+def try_extract_data_with_fields(data: BroadcastData) -> BroadcastData:
+    data_to_write = None
+    if 'result' in data:
+        logger_service.info(f"[BroadcastAdapter::write] result : '{data.get('result')}'")
+        logger_service.info(
+            f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result').get('response'))}\"")
+        data_to_write = data.get('result')
+
+    if data_to_write is not None and 'response' in data_to_write:
+        data_to_write = data.get('result').get('response')
+        return data_to_write
+
+    if data_to_write is None and data.has('response'):
+        data_to_write = data.get('response')
+        if 'result' in data_to_write:
+            data_to_write = data.get('response').get('result')
+            return data_to_write
+
+    if data_to_write is None and data.has('title'):
+        data_to_write = data
+        return BroadcastData(data_to_write)
+
+    return BroadcastData(data)
+
+
+
+def try_extract_data_with_pattern(broken_json):
     # Regular expression to extract the result.response or response.result data
     pattern = r"'result':\s*{\s*'response':\s*(\{[^}]*\}|\[[^\]]*\])"
 

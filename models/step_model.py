@@ -193,23 +193,29 @@ class StepModel:
             logger.info(f"input_adapter counter: {adapters_count} / {len(self.input_adapters)}")
             logger.info(f"[StepModel::execute] step {step_name}; input length={len(self.input)} index={index} adapter={input_adapter.__class__}")
 
-
-            if index in self.input:
-                if self.input[index].broadcast is not None and self.input[index].broadcast['source'] is not None:
-                    first_parameter = self.input[index].broadcast['source']
-                    second_parameter = self.name
+            if index < len(self.input):
+                input_item = self.input[index]
+                if input_item.broadcast and input_item.broadcast.get('source'):
+                    logger.info(f"[StepModel::execute] !!!! input_item.broadcast['source'] = {input_item.broadcast['source']}")
+                    first_parameter = self.name
+                    second_parameter = input_item.broadcast['source']
                 else:
+                    logger.info(f"[StepModel::execute] input_item.broadcast['source'] is not defined")
                     first_parameter = self.name
                     second_parameter = None
 
-                if self.input[index].field is not None and self.input[index].output_format is not None:
+                if input_item.field and input_item.output_format:
                     input_adapter.setAdditionalParams(
-                        self.input[index].output_format,
-                        self.input[index].field,
+                        input_item.output_format,
+                        input_item.field,
                     )
             else:
+                logger.info(f"[StepModel::execute] self.input contains: \n {str(self.input)} \n")
+                # Since index is out of bounds, handle accordingly
                 first_parameter = self.name
-                second_parameter = None
+                second_parameter = 'not_defined'
+
+            logger.info(f"[StepModel::execute] args for adapter a1={first_parameter} a2={second_parameter}")
 
             if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
@@ -228,8 +234,13 @@ class StepModel:
 
             logger.info(f"[StepModel::execute] step_input_data: {step_input_data}")
 
+            if self.type == 'foreach':
+                step_input_data = fresh_data_from_input
+                break
+
             step_input_data.append(fresh_data_from_input)
-            logger.info(f"[StepModel::execute] This is data for the executor '{self.type}': {step_input_data}")
+
+        logger.info(f"[StepModel::execute] This is all data we have collected for the executor '{self.type}' data type of {type(step_input_data)}: {step_input_data}")
 
         step_id = self.name
         if step_input_data is None:
@@ -305,7 +316,7 @@ class StepModel:
                 raise
 
     def run_foreach(self, input_data):
-        msg = f"running foreach for {self.name}"
+        msg = f"[StepModel::run_foreach] for the step '{self.name}'"
         self.logger_service.info(msg)
         self.executor.set_loop(self.loop_data)
         self.executor.set_parent_step(self.name)

@@ -118,17 +118,6 @@ class CsvAdapter(FileAdapterInterface):
         writer.writerow(row_data)
         logger.info(f'Wrote row: {row_data}')
 
-    # Static Methods
-    @staticmethod
-    def get_fieldnames_and_mapping() -> Tuple[List[str], Dict[str, str]]:
-        fieldnames: str = os.getenv('CSV_FIELDNAMES', '')
-        field_mapping_str: str = os.getenv('CSV_FIELD_MAPPING', '{}')
-
-        fieldnames_list: List[str] = fieldnames.split(',') if fieldnames else []
-        field_mapping: Dict[str, str] = json.loads(field_mapping_str)
-        logger.info(f"CsvAdapter::get_fieldnames_and_mapping] Fieldnames CSV_FIELDNAMES: {fieldnames_list}")
-        return fieldnames_list, field_mapping
-
     @staticmethod
     def _write_header_if_needed(csvfile, writer: csv.DictWriter) -> None:
         logger.info("Writing header if needed")

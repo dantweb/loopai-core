@@ -25,9 +25,10 @@ class LoopAIDirectWPAPIService:
         url = f"{self.wp_site}/wp-json/loopai-direct-wpapi-plugin/v1/create-post"
         headers = {'Content-Type': 'application/json'}
         data_to_send = data['result']
-        response = requests.post(url, auth=self.auth, headers=headers, data=json.dumps(data_to_send))
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] data: {str(data_to_send[0])}")
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] data to send type: {type(data_to_send[0])}")
+        response = requests.post(url, auth=self.auth, headers=headers, data=data_to_send[0].to_json())
         logger.info(f"[LoopAIDirectWPAPIService::create_post] response: {response}")
-        logger.info(f"[LoopAIDirectWPAPIService::create_post] data to send: {json.dumps(data_to_send)}")
         if response.status_code == 200:
             return response
         else:

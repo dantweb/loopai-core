@@ -5,18 +5,29 @@ class BroadcastData(UserDict):
     def __init__(self, obj_input=None):
         super().__init__()
         self.properties = []
+
+        # If obj_input is a string, attempt to parse it as JSON
         if isinstance(obj_input, str):
             try:
                 obj_input = json.loads(obj_input)
             except json.JSONDecodeError:
                 obj_input = {}  # Default to an empty dictionary if parsing fails
+
+        # If obj_input is a BroadcastData instance, use its data
+        if isinstance(obj_input, BroadcastData):
+            obj_input = obj_input.data
+
         if isinstance(obj_input, dict):
             self.data = obj_input
             self.properties = [type(v).__name__ for v in self.data.values()]
         elif isinstance(obj_input, list):
             self.data = obj_input
             if obj_input:
-                self.properties = [type(v).__name__ for v in obj_input]
+                if all(isinstance(item, dict) for item in obj_input):
+                    for item in obj_input:
+                        self.properties.extend([type(v).__name__ for v in item.values()])
+                else:
+                    self.properties = [type(v).__name__ for v in obj_input]
         else:
             self.data = {}
 
@@ -38,7 +49,12 @@ class BroadcastData(UserDict):
     def get(self, key, default=None):
         if isinstance(self.data, dict):
             return self.data.get(key, default)
-        return default  # Or handle accordingly if data is a list
+        elif isinstance(self.data, list):
+            # Collect values from all dicts in the list that have the key
+            values = [item[key] for item in self.data if isinstance(item, dict) and key in item]
+            return values if values else default
+        else:
+            return default  # Handle other data types if necessary
 
     def to_json(self) -> str:
         """
@@ -47,15 +63,15 @@ class BroadcastData(UserDict):
             A JSON-formatted string representation of the internal data.
         """
         try:
-            json_string = json.dumps(self.data, ensure_ascii=False)
+            json_string = json.dumps(self.to_serializable(), ensure_ascii=False)
             return json_string
         except (TypeError, OverflowError) as e:
-            # Handle non-serializable data
             raise ValueError(f"Data contains non-serializable values: {e}")
 
     def __json__(self):
         """
         Returns a JSON-serializable representation of the object.
+        Note: The built-in json module does not use this method by default.
         """
         return self.to_serializable()
 
