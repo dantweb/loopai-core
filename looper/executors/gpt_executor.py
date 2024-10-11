@@ -53,10 +53,12 @@ class GptExecutor(ExecutorInterface):
         self.logger_service.info(f"\n\n[GptExecutor::run] result: {result}")
 
         try:
-            # cleaned_result = clean_json_string(result)
+            cleaned_result = clean_json_string(result)
             # json_result = json.loads(cleaned_result)
             broadcast_data = BroadcastData(result)
             self.logger_service.log(f"[GptExecutor::run] Result is a valid JSON !!!")
+            self.logger_service.log(f"[GptExecutor::run] broadcast_data: {str(broadcast_data)}")
+            self.logger_service.log(f"[GptExecutor::run] type of broadcast_data: {type(broadcast_data)}")
 
         except json.JSONDecodeError as e:
             json_result = fix_json(result)
