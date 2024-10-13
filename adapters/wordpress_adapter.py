@@ -1,5 +1,6 @@
 # ./src/adapters/wordpress_adapter.py
 from core.adapters.file_adapter_interface import FileAdapterInterface
+from core.models.broadcast_data import BroadcastData
 from core.services.loopai_direct_wpapi_service import LoopAIDirectWPAPIService
 from core.services.wordpress_service import WordPressService
 
@@ -17,7 +18,7 @@ class WordpressAdapter(FileAdapterInterface):
         # return all_posts
         return []
 
-    def write(self, step_id: str, data: list) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         return_from_wp = self.loopai_direct_wpapi_service.create_post(data)
         self.logger_service.log(return_from_wp.text)
         return True if return_from_wp.status_code == 200 else False

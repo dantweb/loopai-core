@@ -21,7 +21,7 @@ class Dalle2Executor(ExecutorInterface):
         self.openai = openai.OpenAI(api_key=global_vars.USER_GPT_API_KEY)
 
     def prepare_prompt(self, input_data: list, prompt_template):
-        request_content = json.dumps(input_data[0])
+        request_content = input_data[0].to_json()
         # Prepare the prompt based on input_data and the prompt_template
         prompt_template = prompt_template.replace("{{DESCRIPTION}}", request_content)
         return prompt_template

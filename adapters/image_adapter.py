@@ -2,7 +2,9 @@ import os
 from PIL import Image
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
+from core.services.logger_service import LoggerService
 
+logger = LoggerService()
 
 class ImageAdapter(FileAdapterInterface):
 
@@ -16,6 +18,9 @@ class ImageAdapter(FileAdapterInterface):
         return filename
 
     def write(self, step_id: str, data: dict) -> bool:
+        logger.info(f"[ImageAdapter::write] Writing image to file...")
+        logger.info(f"[ImageAdapter::write] data type of {type(data)} and data: {str(data)}")
+        raise Exception("DEBUGGER STOPPS HERE")
         image = data['result']
         # Replace {{SESSION_ID}} with the actual session_id
         filename = self.get_full_path(self.file_path_template)

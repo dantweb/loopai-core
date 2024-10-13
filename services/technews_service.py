@@ -63,7 +63,55 @@ rss_feeds = {
         'https://www.paymentssource.com/feed', # PaymentsSource - Payment technology news
         'https://thepaypers.com/rss', # The Paypers - Global payments and fintech news
         'https://www.mobilepaymentstoday.com/rss/', # Mobile Payments Today
-    ]
+    ],
+    'fin': [
+        "https://www.bloomberg.com/feed/podcast/394.xml",
+        "https://www.marketwatch.com/rss/markets",
+        "https://www.reuters.com/finance/markets/rss",
+        "https://www.barrons.com/rss",
+        "https://asia.nikkei.com/rss",
+        "https://www.caixinglobal.com/feed/",
+        "https://euobserver.com/rss",
+        "https://www.bloomberg.com/feed/podcast/394.xml",
+        "https://www.cnbc.com/id/10000664/device/rss/rss.html",
+        "https://www.wsj.com/xml/rss/3_7031.xml"
+    ],
+    'crypto_copilot': [
+        "https://cointelegraph.com/feed",
+        "https://cryptonews.com/news/feed",
+        "https://decrypt.co/feed",
+        "https://cryptopotato.com/feed",
+        "https://cryptoslate.com/feed",
+        "https://www.coindesk.com/feed",
+        "https://www.ccn.com/feed",
+        "https://news.bitcoin.com/feed",
+        "https://cryptobriefing.com/feed",
+        "https://www.investing.com/rss/news.rss"
+    ],
+    'crypto_gpt': [
+        "https://cointelegraph.com/rss",
+        "https://www.coindesk.com/arc/outboundfeeds/rss/",
+        "https://news.bitcoin.com/feed/",
+        "https://cryptopotato.com/feed/",
+        "https://cryptonews.com/rss",
+        "https://cryptobriefing.com/feed/",
+        "https://www.newsbtc.com/feed/",
+        "https://dailyhodl.com/feed/",
+        "https://bitcoinmagazine.com/.rss/full/",
+        "https://blockonomi.com/feed/"
+    ],
+    'macro_gpt': [
+        "https://fred.stlouisfed.org",
+        "https://www.imf.org/en/Data#rss",
+        "https://ritholtz.com/feed",
+        "https://economics21.org/rss.xml",
+        "https://www.economist.com/the-economist-explains/rss.xml",
+        "https://www.economicsonline.co.uk/rss.xml",
+        "https://www.marketwatch.com/rss/economy",
+        "https://www.wsj.com/xml/rss/3_7014.xml",
+        "https://cepr.org/rss.xml",
+        "https://www.oecd.org/economy/rssfeeds.htm",
+    ],
 }
 
 class TechnewsService:
@@ -101,6 +149,7 @@ class TechnewsService:
 
     # first_parameter = ['ai', 'e_commerce', 'ai_medicine', 'ai_applications', 'e_payments']
     def get_fresh_headlines(self, first_parameter, second_parameter, connector_id, max_results):
+        # first_parameter = ['ai_applications']
         first_parameter = ['ai_applications']
         first_topic = self.fetch_news_for_all_topics(first_parameter, max_results)
         return first_topic
