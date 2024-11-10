@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import re
-from typing import Tuple, Iterable, Hashable, Dict, List, Union, Optional, Any
+from typing import Tuple, Iterable, Hashable, Dict, List, Union, Optional, Any, Set
 
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
@@ -27,45 +27,44 @@ class CsvAdapter(FileAdapterInterface):
     # Public Methods
     def read(self, step_id: str, *args: str) -> list[dict[str, Any]]:
         path: str = self.get_full_path(self.file_path)
-        logger.info('[CsvAdapter::read] Reading CSV file' + path)
+        self.logger.info('[CsvAdapter::read] Reading CSV file' + path)
         df: pd.DataFrame = pd.read_csv(path, sep=self.separator)
-        logger.info('[CsvAdapter::read] Finished reading CSV file')
+        self.logger.info('[CsvAdapter::read] Finished reading CSV file')
         data_list: List[Dict[str, Any]] = df.to_dict(orient='records')
-        logger.info(f'[CsvAdapter::read] Converted DataFrame to list of dicts: {data_list}')
+        self.logger.info(f'[CsvAdapter::read] Converted DataFrame to list of dicts: {data_list}')
         return data_list
 
     def write(self, step_id: str, data: BroadcastData) -> bool:
-        logger.info(f"[CsvAdapter::write] data type of : {type(data)}")
-        data_to_write: Optional[Union[List[Dict[str, str]], Dict[str, str]]] = data.get('result').get('response')
+        self.logger.info(f"[CsvAdapter::write] data type of : {type(data)}")
+        self.logger.info(f"[CsvAdapter::write] data : {str(data)}")
 
-        logger.info(f"[CsvAdapter::write] data type of 'data_to_write': {type(data_to_write)}")
+        # Extract the data dictionary from BroadcastData
+        if hasattr(data, 'to_dict'):
+            data_dict = data.to_dict()
+        else:
+            # Fallback if to_dict is not available
+            data_dict = data.__dict__
+
+        # Pass the data dictionary to extract_data_to_write
+        data_to_write = self.extract_data_to_write(data_dict, self.fields)
+
+        self.logger.info(f"[CsvAdapter::write] data type of 'data_to_write': {type(data_to_write)}")
 
         if not data_to_write:
-            logger.warning("[CsvAdapter::write] No data to write; data is empty.")
-            return False
-
-        if not isinstance(data_to_write, (list, dict)):
-            try:
-                logger.error(f"[CsvAdapter::write] data in not list or dict. Trying to convert")
-                data_to_write = json.loads(data_to_write)
-            except json.JSONDecodeError as e:
-
-                logger.error(f"[CsvAdapter::write] Error parsing JSON data: {e}")
-                ValueError("Result response must be a list or a dict")
-                return False
+            msg = "[CsvAdapter::write] No data to write; data is empty."
+            self.logger.warning(msg)
+            raise ValueError(msg)
 
         path: str = self._prepare_file_path()
 
         try:
             with open(path, mode='w', newline='', encoding='utf-8') as csvfile:
-                writer: csv.DictWriter = csv.DictWriter(csvfile, fieldnames=self.fields, delimiter=self.separator)
+                writer = csv.DictWriter(csvfile, fieldnames=self.fields, delimiter=self.separator)
 
                 if self.fields:
                     self._write_header_if_needed(csvfile, writer)
 
-                logger.info(f"[CsvAdapter::write] Want to write data: \n\n {data_to_write} \n\n -- end of data --")
-                logger.info(f"[CsvAdapter::write] There are fields defined  : {self.fields}")
-                logger.info(f"[CsvAdapter::write] There are mappings defined  : {self.mapping}")
+                self.logger.info(f"[CsvAdapter::write] Writing data: \n\n {data_to_write} \n\n -- end of data --")
                 if isinstance(data_to_write, list):
                     self._write_list_data(writer, data_to_write, self.fields, self.mapping)
                 elif isinstance(data_to_write, dict):
@@ -74,23 +73,22 @@ class CsvAdapter(FileAdapterInterface):
         except Exception as e:
             self._handle_write_exception(e)
 
-        logger.info("Finished write operation")
-        logging.debug("Finished write operation")
+        self.logger.info("Finished write operation")
         return True
 
     # Private Methods
     def _prepare_file_path(self) -> str:
         path: str = self.get_full_path(self.file_path)
-        logger.info('[CsvAdapter::write] Writing to CSV file: ' + path)
+        self.logger.info('[CsvAdapter::write] Writing to CSV file: ' + path)
 
         if os.path.exists(path):
             path = self.get_new_filename(path)
-            logger.info(f"[CsvAdapter::write] New filename will be used for writing the file : {path}")
+            self.logger.info(f"[CsvAdapter::write] New filename will be used for writing the file : {path}")
 
         directory: str = os.path.dirname(path)
         if not os.path.exists(directory):
             os.makedirs(directory)
-            logger.info(f"Created new directory for writing: {directory}")
+            self.logger.info(f"Created new directory for writing: {directory}")
 
         return path
 
@@ -99,13 +97,13 @@ class CsvAdapter(FileAdapterInterface):
                          data_to_write: List[Dict[str, str]],
                          fieldnames: List[str],
                          field_mapping: Dict[str, str])-> None:
-        logger.info(f"[CsvAdapter::_write_list_data] Want to write in total: {len(data_to_write)} rows to CSV")
-        logger.info(f"[CsvAdapter::_write_list_data] Data to write : {data_to_write} \n\n")
+        self.logger.info(f"[CsvAdapter::_write_list_data] Want to write in total: {len(data_to_write)} rows to CSV")
+        self.logger.info(f"[CsvAdapter::_write_list_data] Data to write : {data_to_write} \n\n")
         for i, item in enumerate(data_to_write):
-            logger.info(f'Writing row {i}: {item}')
-            logger.info(f'Writing row {i}: datatype {type(item)}')
+            self.logger.info(f'Writing row {i}: {item}')
+            self.logger.info(f'Writing row {i}: datatype {type(item)}')
             writer.writerow(item)
-            logger.info(f'Wrote row {i}: {item}')
+            self.logger.info(f'Wrote row {i}: {item}')
 
     def _write_dict_data(self, writer: csv.DictWriter, data_to_write: Dict[str, str], fieldnames: List[str]) -> None:
         row_data: Dict[str, str] = {}
@@ -116,7 +114,7 @@ class CsvAdapter(FileAdapterInterface):
         logging.debug(f"\n\nConstructed row: {row_data}")
 
         writer.writerow(row_data)
-        logger.info(f'Wrote row: {row_data}')
+        self.logger.info(f'Wrote row: {row_data}')
 
     @staticmethod
     def _write_header_if_needed(csvfile, writer: csv.DictWriter) -> None:
@@ -139,3 +137,5 @@ class CsvAdapter(FileAdapterInterface):
             text = re.sub(r'[\x00-\x1F\x7F]', ' ', text)  # Remove control characters
             text = text.strip()  # Remove leading/trailing whitespace
         return text
+
+

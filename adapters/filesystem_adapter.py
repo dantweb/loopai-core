@@ -29,7 +29,7 @@ class FilesystemAdapter(FileAdapterInterface):
                     with open(file_path, 'r') as f:
                         file_content = f.read()
                 else:
-                    self.logger_service.log(f"Can't read file {file_path}")
+                    self.logger.log(f"Can't read file {file_path}")
 
                 # Get the relative path from the root of the app or .env file location
                 relative_path = os.path.relpath(file_path, self.absolute_path)
@@ -47,7 +47,7 @@ class FilesystemAdapter(FileAdapterInterface):
             if 'updated_files' in data['result']:
                 updated_files = data['result']['updated_files']
         else:
-            self.logger_service.error(data)
+            self.logger.error(data)
             raise Exception(f"no response in data result")
 
         try:
@@ -62,9 +62,9 @@ class FilesystemAdapter(FileAdapterInterface):
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 with open(file_path, 'w') as f:
                     f.write(file_content)
-                self.logger_service.log(f"File {file_path} was saved successfully")
+                self.logger.log(f"File {file_path} was saved successfully")
 
             return True
         except Exception as e:
-            self.logger_service.error(f"Error writing to file: {e}")
+            self.logger.error(f"Error writing to file: {e}")
             return False

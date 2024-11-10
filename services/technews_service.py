@@ -150,7 +150,7 @@ class TechnewsService:
     # first_parameter = ['ai', 'e_commerce', 'ai_medicine', 'ai_applications', 'e_payments']
     def get_fresh_headlines(self, first_parameter, second_parameter, connector_id, max_results):
         # first_parameter = ['ai_applications']
-        first_parameter = ['ai_applications']
+        first_parameter = ['e_commerce', 'ai', 'ai_applications', 'e_payments']
         first_topic = self.fetch_news_for_all_topics(first_parameter, max_results)
         return first_topic
 

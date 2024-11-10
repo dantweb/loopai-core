@@ -303,8 +303,11 @@ class StepModel:
 
             if isinstance(output_adapter, BroadcastAdapter) and isinstance(self.packed_blob['result'], Image):
                 self.packed_blob['image_file'] = FileAdapterInterface.get_full_path(self, self.broadcast_image_file)
+
+            broadcast_data = BroadcastData(self.packed_blob['result'])
+
             self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__}")
-            broadcast_data = BroadcastData(self.packed_blob)
+
             try:
                 a = output_adapter.write(step_id, broadcast_data)
                 if a is True:

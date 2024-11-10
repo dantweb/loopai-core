@@ -53,7 +53,7 @@ class GptExecutor(ExecutorInterface):
         self.logger_service.info(f"\n\n[GptExecutor::run] result: {result}")
 
         try:
-            # cleaned_result = clean_json_string(result)
+            cleaned_result = clean_json_string(result)
             # json_result = json.loads(cleaned_result)
             broadcast_data = BroadcastData(result)
             self.logger_service.log(f"[GptExecutor::run] Result is a valid JSON !!!")
@@ -70,6 +70,7 @@ class GptExecutor(ExecutorInterface):
 
 
     def getResponseFromOpenAI(self, model, system_content, user_content, max_tokens):
+        logger = LoggerService()
         logger.info(f"[GptExecutor::getResponseFromOpenAI] trying to get response from OpenAI...")
         logger.info(f"[GptExecutor::getResponseFromOpenAI] type of system_content: {type(system_content)}")
         logger.info(f"[GptExecutor::getResponseFromOpenAI] type of user_content: {type(user_content)}")

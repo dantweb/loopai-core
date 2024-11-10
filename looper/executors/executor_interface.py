@@ -9,7 +9,8 @@ class ExecutorInterface(ABC):
     @abstractmethod
     def __init__(self, model: str):
         self.parent_step = None
-        self.logger_service = LoggerService()
+        self.logger = LoggerService()
+        self.logger_service = self.logger
 
     @abstractmethod
     def prepare_prompt(self, input_data, prompt_template: str) -> str:

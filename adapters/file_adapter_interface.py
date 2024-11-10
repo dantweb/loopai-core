@@ -2,7 +2,7 @@ import json
 import os
 import config
 from abc import ABC, abstractmethod
-from typing import List, Any, AnyStr
+from typing import List, Any, AnyStr, Dict, Union, Set
 from core.databus import global_vars
 from PIL.Image import Image
 
@@ -10,13 +10,12 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.session import session_id
 
-
 class FileAdapterInterface(ABC):
     filesystem_path: str = ''
 
     def __init__(self):
         self.file_mode = 'a'
-        self.logger_service = LoggerService()
+        self.logger = LoggerService()
 
     @abstractmethod
     def read(self, file_path: str) -> List[str]:
@@ -32,8 +31,10 @@ class FileAdapterInterface(ABC):
     def set_replace(self):
         self.file_mode = 'w'
 
+
     def get_full_path(self, file_path_template: str) -> str:
         return get_full_path(file_path_template)
+
 
     def get_new_filename(self, filename: str) -> str:
         base, extension = os.path.splitext(filename)
@@ -104,12 +105,61 @@ class FileAdapterInterface(ABC):
 
     def check_file_exists(self, filename: str) -> bool:
         if os.path.exists(filename):
-            self.logger_service.log(f"New file has been successfully saved: {filename}")
+            self.logger.log(f"New file has been successfully saved: {filename}")
             return True
         else:
             msg = f"Failed to save image: {filename}"
-            self.logger_service.error(msg)
+            self.logger.error(msg)
             raise IOError(msg)
+
+    def extract_data_to_write(self, data: Dict[str, Any], fields) -> Union[List[Dict[str, Any]], None]:
+        """
+        Searches through the data for a list of dictionaries that contain the required fields
+        for writing to CSV. Returns the first valid list of dictionaries found.
+        """
+        required_fields = set(fields)  # Required fields for validation
+
+        # Check if 'result' exists and is a list
+        if "result" in data and isinstance(data["result"], list):
+            result_data = data["result"]
+            # Validate that each item is a dict with the required fields
+            if all(isinstance(item, dict) and required_fields.issubset(item.keys()) for item in result_data):
+                self.logger.info("[extract_data_to_write] Found valid 'result' with required fields.")
+                return result_data
+            else:
+                self.logger.warning("[extract_data_to_write] 'result' does not contain valid data.")
+
+        # If 'result' is not valid, perform a recursive search
+        extracted_data = self._recursive_search(data, required_fields)
+        if extracted_data is None:
+            self.logger.error(
+                "No valid list of dictionaries with required fields found. "
+                f"Expected fields: {fields} in data: {data}"
+            )
+            raise ValueError(
+                "No valid list of dictionaries with required fields found in the provided BroadcastData structure."
+            )
+
+        return extracted_data
+
+    def _recursive_search(self, data: Any, required_fields: Set[str]) -> Union[List[Dict[str, Any]], None]:
+        # Check if the data is a dictionary
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if isinstance(value, list) and all(isinstance(item, dict) for item in value):
+                    if all(required_fields.issubset(item.keys()) for item in value):
+                        self.logger.info(f"[extract_data_to_write::_recursive_search] Found valid data under key '{key}'.")
+                        return value
+                elif isinstance(value, (dict, list)):
+                    result = self._recursive_search(value, required_fields)
+                    if result is not None:
+                        return result
+        elif isinstance(data, list):
+            for item in data:
+                result = self._recursive_search(item, required_fields)
+                if result is not None:
+                    return result
+        return None
 
 
 def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
@@ -132,6 +182,7 @@ def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
         'config'
     )
     return path
+
 
 
 def get_full_path(file_path_template: str) -> str:

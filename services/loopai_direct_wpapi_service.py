@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 
 from core.databus import global_vars
+from core.models.broadcast_data import BroadcastData
 from core.services.wordpress_service import WordPressService
 from core.services.logger_service import LoggerService
 
@@ -21,13 +22,13 @@ class LoopAIDirectWPAPIService:
         self.wp_application_password = wp_application_password or global_vars.WORDPRESS_PASSWORD
         self.auth = HTTPBasicAuth(self.wp_username, self.wp_application_password)
 
-    def create_post(self, data):
+    def create_post(self, data: BroadcastData):
         url = f"{self.wp_site}/wp-json/loopai-direct-wpapi-plugin/v1/create-post"
         headers = {'Content-Type': 'application/json'}
-        data_to_send = data['result']
-        logger.info(f"[LoopAIDirectWPAPIService::create_post] data: {str(data_to_send[0])}")
-        logger.info(f"[LoopAIDirectWPAPIService::create_post] data to send type: {type(data_to_send[0])}")
-        response = requests.post(url, auth=self.auth, headers=headers, data=data_to_send[0].to_json())
+        data_to_send = data[0]
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] data: {str(data_to_send)}")
+        logger.info(f"[LoopAIDirectWPAPIService::create_post] data to send type: {type(data_to_send)}")
+        response = requests.post(url, auth=self.auth, headers=headers, data=data_to_send)
         logger.info(f"[LoopAIDirectWPAPIService::create_post] response: {response}")
         if response.status_code == 200:
             return response

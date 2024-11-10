@@ -1,6 +1,6 @@
 from core.adapters.adapter_interface import AdapterInterface  # Assuming this is the interface from your intro
 from core.models.broadcast_data import BroadcastData
-from smm_service import SMMService  # Import the SMMService we created earlier
+from core.services.socialnetworks_service import SMMService  # Import the SMMService we created earlier
 from core.services.logger_service import LoggerService
 
 logger = LoggerService()
@@ -29,12 +29,15 @@ class SMMAdapter(AdapterInterface):
             # Extracting relevant content from BroadcastData
             result = data.get('result', {})
             response = result.get('response', {})
-            title = response.get('title', 'Untitled')
+            title = response.get('title', '')
             text = response.get('text', '')
             url = response.get('url', '')
             tags = response.get('tags', '')
 
             logger.info(f"[SMMAdapter::write] Preparing to publish content for step {step_id}")
+
+            if not all([title, text, url, tags]):
+                raise ValueError("One or more required fields are empty: title, text, url, tags")
 
             # Prepare the content dictionary in the format SMMService expects
             content = {

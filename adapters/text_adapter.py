@@ -29,22 +29,22 @@ class TextAdapter(FileAdapterInterface):
         :return: BroadcastData instance with the read data.
         """
 
-        self.logger_service.info(f"[TextAdapter::read] Reading data from file: {self.path}")
+        self.logger.info(f"[TextAdapter::read] Reading data from file: {self.path}")
         try:
             with open(self.path, 'r', encoding='utf-8') as file:
                 content = file.read()
 
-            self.logger_service.info(f"[TextAdapter::read] Content: {content}")
+            self.logger.info(f"[TextAdapter::read] Content: {content}")
             try:
                 # Attempt to parse the content as JSON
                 data_dict = json.loads(content)
-                self.logger_service.info("Successfully parsed JSON from the file.")
+                self.logger.info("Successfully parsed JSON from the file.")
             except json.JSONDecodeError:
                 # Parsing failed, treat content as plain text
-                self.logger_service.warning("Failed to parse JSON. Treating content as plain text.")
+                self.logger.warning("Failed to parse JSON. Treating content as plain text.")
                 data_dict = {'text': content}
 
-            self.logger_service.info(f"[TextAdapter::read] Data type read: {type(data_dict)}")
+            self.logger.info(f"[TextAdapter::read] Data type read: {type(data_dict)}")
             broadcast_data = BroadcastData(data_dict)
 
             # Add 'source' and 'filename' fields
@@ -54,10 +54,10 @@ class TextAdapter(FileAdapterInterface):
             return broadcast_data
 
         except FileNotFoundError:
-            self.logger_service.error(f"Error: The file at {self.source} was not found.")
+            self.logger.error(f"Error: The file at {self.source} was not found.")
             return BroadcastData()
         except IOError as e:
-            self.logger_service.error(f"Error: An IOError occurred: {e}")
+            self.logger.error(f"Error: An IOError occurred: {e}")
             return BroadcastData()
 
     def write(self, step_id: str, data: BroadcastData) -> bool:
@@ -69,9 +69,9 @@ class TextAdapter(FileAdapterInterface):
         :return: True if the file was written successfully, False otherwise.
         """
 
-        self.logger_service.info(f"[TextAdapter::write] Writing data to file: {self.path}")
-        self.logger_service.info(f"[TextAdapter::write] Data: {str(data)}")
-        self.logger_service.info(f"[TextAdapter::write] Data type: {type(data)}")
+        self.logger.info(f"[TextAdapter::write] Writing data to file: {self.path}")
+        self.logger.info(f"[TextAdapter::write] Data: {str(data)}")
+        self.logger.info(f"[TextAdapter::write] Data type: {type(data)}")
         path: str = self.path
 
         if os.path.exists(path):
@@ -87,24 +87,16 @@ class TextAdapter(FileAdapterInterface):
 
         # Filter binary data if needed
         data_filtered: BroadcastData = self.filter_binary_data(data)
-        self.logger_service.info(f"[TextAdapter::write] Filtered data type: {type(data)}")
-        self.logger_service.info(f"[TextAdapter::write] Filtered data : {str(data)}")
-        self.logger_service.info(f"[TextAdapter::write] Filtered data properties : {data.properties}")
+        self.logger.info(f"[TextAdapter::write] Filtered data type: {type(data)}")
+        self.logger.info(f"[TextAdapter::write] Filtered data : {str(data)}")
+        self.logger.info(f"[TextAdapter::write] Filtered data properties : {data.properties}")
 
-        data_to_write = None
-        if data_filtered.has('result'):
-            result = data_filtered.get('result')
-            self.logger_service.info(f"[TextAdapter::write] data_filtered.get('result') : {result}")
-            self.logger_service.info(f"[TextAdapter::write] typeof(result) : {type(result)}")
-            if 'response' in result:
-                data_to_write = result['response']
-            else:
-                data_to_write = result
+        data_to_write = data_filtered
 
         if data_to_write is None:
             raise Exception("Error: No data to write.")
 
-        self.logger_service.info(f"[TextAdapter::write] going to write extracted data : {data_to_write} to file {path}")
+        self.logger.info(f"[TextAdapter::write] going to write extracted data : {data_to_write} to file {path}")
 
         try:
             with open(path, 'w', encoding='utf-8') as file:
@@ -112,8 +104,8 @@ class TextAdapter(FileAdapterInterface):
                 json_string = json_string.replace('\\n', '\n')
                 file.write(json_string)
 
-            self.logger_service.info(f"[TextAdapter::write] Data has been successfully saved to the file: {path}")
+            self.logger.info(f"[TextAdapter::write] Data has been successfully saved to the file: {path}")
             return self.check_file_exists(path)
         except Exception as e:
-            self.logger_service.error(f"Error: An IOError occurred: {e}")
+            self.logger.error(f"Error: An IOError occurred: {e}")
             return False

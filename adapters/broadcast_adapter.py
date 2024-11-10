@@ -58,21 +58,22 @@ class BroadcastAdapter(FileAdapterInterface):
                         broadcast_data = self.prepare_result(dict(row))
                     else:
                         broadcast_data = self.prepare_result(row)
-                    logger_service.info(f"[BroadcastAdapter::read] row has data: {broadcast_data}")
+                    self.logger.info(f"[BroadcastAdapter::read] row has data: {broadcast_data}")
                     self.mark_row_as_read(row, self_step_id)
                     return broadcast_data
                 return None
 
         except Exception as e:
             traceback.print_exc()
-            logger_service.error(f"Error reading from database: {e}")
+            self.logger.error(f"Error reading from database: {e}")
             return None
 
     def write(self, step_id: str, data: BroadcastData) -> bool:
-        logger_service.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
-        logger_service.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
+        self.logger.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
+        self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 
-        data_to_write = try_extract_data(data)
+        # data_to_write = try_extract_data(data)
+        data_to_write = { 'result': data }
 
         if data_to_write is None:
             raise Exception("Error: No data possible to extract to write.")
@@ -104,7 +105,7 @@ class BroadcastAdapter(FileAdapterInterface):
 
     def prepare_result(self, row):
         converted_row = self.convert_to_json_recursively(row)
-
+        self.logger.info(f"[BroadcastAdapter::prepare_result] convert_to_json_recursively(row) : '{str(converted_row)}'")
         if self.field is None or '/' not in self.field:
             raise Exception(f"{self.__class__} has no fields defined for splitting")
 
@@ -130,9 +131,9 @@ class BroadcastAdapter(FileAdapterInterface):
             with get_db_cursor() as cursor:
                 query = "UPDATE loopai_broadcast SET readby = %s WHERE id = %s"
                 cursor.execute(query, (step_id, row_id,))
-                self.logger_service.info(f"Row with id {row_id} was marked as read by {step_id}.")
+                self.logger.info(f"Row with id {row_id} was marked as read by {step_id}.")
         except Exception as e:
-            self.logger_service.error(f"An error occurred while deleting the row: {str(e)}")
+            self.logger.error(f"An error occurred while deleting the row: {str(e)}")
 
     def delete_entries_by_session_id(self) -> None:
         # Method to delete all entries with the given session_id
@@ -140,28 +141,22 @@ class BroadcastAdapter(FileAdapterInterface):
             with get_db_cursor() as cursor:
                 query = "DELETE FROM loopai_broadcast WHERE sessionid = %s"
                 cursor.execute(query, (session_id,))
-                self.logger_service.info(f"All entries with session_id {session_id} have been deleted.")
+                self.logger.info(f"All entries with session_id {session_id} have been deleted.")
         except Exception as e:
-            self.logger_service.error(f"An error occurred while deleting entries: {str(e)}")
+            self.loggrt.error(f"An error occurred while deleting entries: {str(e)}")
 
 
 def try_extract_data_with_fields(data: BroadcastData) -> BroadcastData:
     data_to_write = None
-    if 'result' in data:
+    if 'result' in data and data.get('result') is not None:
         logger_service.info(f"[BroadcastAdapter::write] result : '{data.get('result')}'")
         logger_service.info(
-            f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result').get('response'))}\"")
+            f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result'))}\"")
         data_to_write = data.get('result')
 
-    if data_to_write is not None and 'response' in data_to_write:
-        data_to_write = data.get('result').get('response')
-        return data_to_write
-
-    if data_to_write is None and data.has('response'):
+    if data_to_write is None and 'response' in data:
         data_to_write = data.get('response')
-        if 'result' in data_to_write:
-            data_to_write = data.get('response').get('result')
-            return data_to_write
+        return data_to_write
 
     if data_to_write is None and data.has('title'):
         data_to_write = data
