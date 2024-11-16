@@ -42,10 +42,8 @@ class CsvAdapter(FileAdapterInterface):
         if hasattr(data, 'to_dict'):
             data_dict = data.to_dict()
         else:
-            # Fallback if to_dict is not available
             data_dict = data.__dict__
 
-        # Pass the data dictionary to extract_data_to_write
         data_to_write = self.extract_data_to_write(data_dict, self.fields)
 
         self.logger.info(f"[CsvAdapter::write] data type of 'data_to_write': {type(data_to_write)}")
@@ -80,10 +78,6 @@ class CsvAdapter(FileAdapterInterface):
     def _prepare_file_path(self) -> str:
         path: str = self.get_full_path(self.file_path)
         self.logger.info('[CsvAdapter::write] Writing to CSV file: ' + path)
-
-        if os.path.exists(path):
-            path = self.get_new_filename(path)
-            self.logger.info(f"[CsvAdapter::write] New filename will be used for writing the file : {path}")
 
         directory: str = os.path.dirname(path)
         if not os.path.exists(directory):

@@ -45,16 +45,27 @@ class LlmExecutor(ExecutorInterface):
             response = self.send_prompt_to_llm(model, system_content, user_content, max_tokens)
             valid_response = is_valid_json(response)
             if valid_response:
-                break
+                count = 99
+                self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM ! ")
             else:
-                count += 1
+                cleaned_response = self.clean_json_string(response)
+                if is_valid_json(cleaned_response):
+                    response = cleaned_response
+                    valid_response = True
+                    count = 99
+                    self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM ! ")
+                else:
+                    self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
+                    system_content['content'] = "Invalid JSON. Please try again."
+                    self.logger.error(f"[LlmExecutor::run] content of system_content: {str(system_content)}")
 
-        if not valid_response and count >= 5:
+                    count += 1
+
+        if not (valid_response and count >= 5):
             self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM")
             raise ValueError("Invalid JSON response from LLM")
 
         try:
-            cleaned_response = self.clean_json_string(response)
             broadcast_data = BroadcastData(response)
 
             self.logger.info(f"[LlmExecutor::run] Broadcast data created successfully: {str(broadcast_data)}")

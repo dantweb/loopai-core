@@ -2,7 +2,7 @@ import json
 import os
 import config
 from abc import ABC, abstractmethod
-from typing import List, Any, AnyStr, Dict, Union, Set
+from typing import List, Any, AnyStr, Dict, Union, Set, Optional
 from core.databus import global_vars
 from PIL.Image import Image
 
@@ -112,37 +112,34 @@ class FileAdapterInterface(ABC):
             self.logger.error(msg)
             raise IOError(msg)
 
-    def extract_data_to_write(self, data: Dict[str, Any], fields) -> Union[List[Dict[str, Any]], None]:
-        """
-        Searches through the data for a list of dictionaries that contain the required fields
-        for writing to CSV. Returns the first valid list of dictionaries found.
-        """
-        required_fields = set(fields)  # Required fields for validation
+    def extract_data_to_write(self, data_dict: dict, fields: list) -> Optional[List[Dict[str, Any]]]:
+        self.logger.info(f"[extract_data_to_write] Searching for valid data with fields: {fields}")
+        valid_data = []
 
-        # Check if 'result' exists and is a list
-        if "result" in data and isinstance(data["result"], list):
-            result_data = data["result"]
-            # Validate that each item is a dict with the required fields
-            if all(isinstance(item, dict) and required_fields.issubset(item.keys()) for item in result_data):
-                self.logger.info("[extract_data_to_write] Found valid 'result' with required fields.")
-                return result_data
-            else:
-                self.logger.warning("[extract_data_to_write] 'result' does not contain valid data.")
+        if isinstance(data_dict, list):
+            for idx, item in enumerate(data_dict):
+                if isinstance(item, dict):
+                    missing_fields = [field for field in fields if field not in item]
+                    if not missing_fields:
+                        valid_data.append(item)
+                    else:
+                        self.logger.warning(
+                            f"[extract_data_to_write] Missing fields {missing_fields} in item at index {idx}: {item}")
+                else:
+                    self.logger.error(
+                        f"[extract_data_to_write] Invalid data type for item at index {idx}: Expected dict, got {type(item)}")
 
-        # If 'result' is not valid, perform a recursive search
-        extracted_data = self._recursive_search(data, required_fields)
-        if extracted_data is None:
-            self.logger.error(
-                "No valid list of dictionaries with required fields found. "
-                f"Expected fields: {fields} in data: {data}"
-            )
-            raise ValueError(
-                "No valid list of dictionaries with required fields found in the provided BroadcastData structure."
-            )
+        if not valid_data:
+            self.logger.error("[extract_data_to_write] No valid data found.")
 
-        return extracted_data
+        return valid_data if valid_data else None
+
 
     def _recursive_search(self, data: Any, required_fields: Set[str]) -> Union[List[Dict[str, Any]], None]:
+
+        self.logger.info("[extract_data_to_write::_recursive_search] Searching for valid data...")
+        self.logger.info("[extract_data_to_write::_recursive_search] Data type: " + str(type(data)))
+
         # Check if the data is a dictionary
         if isinstance(data, dict):
             for key, value in data.items():
@@ -151,10 +148,12 @@ class FileAdapterInterface(ABC):
                         self.logger.info(f"[extract_data_to_write::_recursive_search] Found valid data under key '{key}'.")
                         return value
                 elif isinstance(value, (dict, list)):
+                    self.logger.info(f"[extract_data_to_write::_recursive_search] Recursively searching under key '{key}'.")
                     result = self._recursive_search(value, required_fields)
                     if result is not None:
                         return result
         elif isinstance(data, list):
+            self.logger.info("[extract_data_to_write::_recursive_search] Recursively searching through list...")
             for item in data:
                 result = self._recursive_search(item, required_fields)
                 if result is not None:
