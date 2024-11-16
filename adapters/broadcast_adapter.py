@@ -73,7 +73,7 @@ class BroadcastAdapter(FileAdapterInterface):
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 
         # data_to_write = try_extract_data(data)
-        data_to_write = { 'result': data }
+        data_to_write = BroadcastData({ 'result': data })
 
         if data_to_write is None:
             raise Exception("Error: No data possible to extract to write.")

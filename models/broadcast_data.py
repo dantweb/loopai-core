@@ -68,6 +68,14 @@ class BroadcastData(UserDict):
         except (TypeError, OverflowError) as e:
             raise ValueError(f"Data contains non-serializable values: {e}")
 
+    def to_dict(self) -> dict:
+        """
+        Returns the internal data as a dictionary.
+        Returns:
+            A dictionary representation of the internal data.
+        """
+        return self.to_serializable()
+
     def __json__(self):
         """
         Returns a JSON-serializable representation of the object.
