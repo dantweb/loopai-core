@@ -112,53 +112,52 @@ class FileAdapterInterface(ABC):
             self.logger.error(msg)
             raise IOError(msg)
 
-    def extract_data_to_write(self, data_dict: dict, fields: list) -> Optional[List[Dict[str, Any]]]:
+    def extract_data_to_write(self, data: Any, fields: List[str]) -> Optional[
+        Union[List[Dict[str, Any]], Dict[str, Any]]]:
+        """
+        Extract data that contains the required fields.
+
+        :param data: The input data which can be a dict, list, or any nested combination of both.
+        :param fields: The required fields to find within the data.
+        :return: The list of dictionaries or a dictionary containing the required fields.
+        """
         self.logger.info(f"[extract_data_to_write] Searching for valid data with fields: {fields}")
-        valid_data = []
+        required_fields = set(fields)
+        found_items = []
 
-        if isinstance(data_dict, list):
-            for idx, item in enumerate(data_dict):
-                if isinstance(item, dict):
-                    missing_fields = [field for field in fields if field not in item]
-                    if not missing_fields:
-                        valid_data.append(item)
-                    else:
-                        self.logger.warning(
-                            f"[extract_data_to_write] Missing fields {missing_fields} in item at index {idx}: {item}")
-                else:
-                    self.logger.error(
-                        f"[extract_data_to_write] Invalid data type for item at index {idx}: Expected dict, got {type(item)}")
+        # Use the recursive search to collect all valid items
+        self._recursive_collect(data, required_fields, found_items)
 
-        if not valid_data:
+        if not found_items:
             self.logger.error("[extract_data_to_write] No valid data found.")
+            return None
 
-        return valid_data if valid_data else None
+        # Return the list of found items or a single dictionary if only one item found
+        return found_items if len(found_items) > 1 else found_items[0]
 
+    def _recursive_collect(self, data: Any, required_fields: Set[str], found_items: List[Dict[str, Any]]) -> None:
+        """
+        Recursively search through the data to collect all items containing the required fields.
 
-    def _recursive_search(self, data: Any, required_fields: Set[str]) -> Union[List[Dict[str, Any]], None]:
-
-        self.logger.info("[extract_data_to_write::_recursive_search] Searching for valid data...")
-        self.logger.info("[extract_data_to_write::_recursive_search] Data type: " + str(type(data)))
-
-        # Check if the data is a dictionary
+        :param data: The input data to search through, which can be dict, list, etc.
+        :param required_fields: The required fields that need to be present in a dictionary.
+        :param found_items: A list to collect all found valid dictionaries.
+        """
         if isinstance(data, dict):
-            for key, value in data.items():
-                if isinstance(value, list) and all(isinstance(item, dict) for item in value):
-                    if all(required_fields.issubset(item.keys()) for item in value):
-                        self.logger.info(f"[extract_data_to_write::_recursive_search] Found valid data under key '{key}'.")
-                        return value
-                elif isinstance(value, (dict, list)):
-                    self.logger.info(f"[extract_data_to_write::_recursive_search] Recursively searching under key '{key}'.")
-                    result = self._recursive_search(value, required_fields)
-                    if result is not None:
-                        return result
+            # If the data is a dict, check if it contains the required fields
+            if required_fields.issubset(data.keys()):
+                self.logger.info(f"[extract_data_to_write::_recursive_collect] Found valid item: {data}")
+                found_items.append(data)
+            else:
+                # Recursively search through the dictionary values
+                for key, value in data.items():
+                    if isinstance(value, (dict, list)):
+                        self._recursive_collect(value, required_fields, found_items)
         elif isinstance(data, list):
-            self.logger.info("[extract_data_to_write::_recursive_search] Recursively searching through list...")
+            # If the data is a list, recursively search through each item
             for item in data:
-                result = self._recursive_search(item, required_fields)
-                if result is not None:
-                    return result
-        return None
+                if isinstance(item, (dict, list)):
+                    self._recursive_collect(item, required_fields, found_items)
 
 
 def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
