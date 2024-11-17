@@ -80,6 +80,7 @@ class CsvAdapter(FileAdapterInterface):
         self.logger.info('[CsvAdapter::write] Writing to CSV file: ' + path)
 
         directory: str = os.path.dirname(path)
+
         if not os.path.exists(directory):
             os.makedirs(directory)
             self.logger.info(f"Created new directory for writing: {directory}")
