@@ -227,6 +227,7 @@ class StepModel:
             logger.info(f"[StepModel::execute] Read data from adapter {input_adapter.__class__}")
             logger.info(f"[StepModel::execute] Data we have read: {fresh_data_from_input}")
             logger.info(f"[StepModel::execute] Type of data read: {type(fresh_data_from_input)}")
+
             if fresh_data_from_input is None or fresh_data_from_input == 'None':
                 err = f"Data is empty for {input_adapter.__class__} step {self.name} parent {first_parameter}"
                 logger.info(err)
@@ -253,7 +254,23 @@ class StepModel:
             return 'foreach_end'
 
         prompt_template = self.get_prompt_templates().get(self.action.prompt)
+
+        if prompt_template is None and self.action.prompt:
+            prompt_template = self.get_variable_from_py_template(self.action.prompt)
+
+        logger.info(f"[StepModel::execute] prompt name : {self.action.prompt}")
+        logger.info(f"[StepModel::execute] prompt template : {prompt_template}")
+        logger.info(f"[StepModel::execute] system content template typeOf ({type(prompt_template)}) : {prompt_template}")
+
+        logger.info(f"[StepModel::execute:get_system_content_templates] typeof ({type(self.get_system_content_templates())}): {str(self.get_system_content_templates())}")
         system_content = self.get_system_content_templates().get(self.action.system_content)
+
+        if system_content is None and self.action.system_content:
+            system_content = self.get_variable_from_py_template(self.action.system_content)
+
+        logger.info(f"[StepModel::execute] system content name : {self.action.system_content}")
+        logger.info(f"[StepModel::execute] system content template typeOf ({type(system_content)}) : {system_content}")
+
 
         # Create prompt - reading context only from first input source
         prompt = self.executor.prepare_prompt(
@@ -338,16 +355,22 @@ class StepModel:
         return self.get_variable_from_py_template('SYSTEM_CONTENT_TEMPLATES')
 
     def get_variable_from_py_template(self, variable_name: str):
+        logger.info(f"[StepModel::get_variable_from_py_template] Getting variable: {variable_name}")
         return getattr(self.code_module, variable_name)
-
 
     def load_code_module(self, module_path: str):
         module_absolute_path = os.path.join(
             get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID),
             module_path
         )
+
+        logger.info(f"[StepModel::load_code_module] Loading module from path: {module_absolute_path}")
+
         module_name = os.path.basename(module_path).replace('.py', '')
         spec = importlib.util.spec_from_file_location(module_name, module_absolute_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+
+        logger.info(f"[StepModel::load_code_module] Module loaded: {module}")
+
         return module

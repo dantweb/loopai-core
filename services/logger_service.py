@@ -33,7 +33,8 @@ class LoggerService:
         web_user_id = config.GLOBAL_USER_ID
         log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {message}"
 
-        socket.emit(action, {'data': log_message})
+        if config.WEB_OR_CLI == 'web':
+            socket.emit(action, {'data': log_message})
 
         self.logs.append(log_message)
         print(log_message)

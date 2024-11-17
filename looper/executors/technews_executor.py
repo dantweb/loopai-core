@@ -9,6 +9,7 @@ from core.services.logger_service import LoggerService
 
 logger = LoggerService()
 
+##TODO: Implement the TechnewsExecutor class - use USER_PROMPT and SYSTEM_PROMPT
 
 class TechnewsExecutor(ExecutorInterface):
     def __init__(self, model: str):
@@ -17,12 +18,12 @@ class TechnewsExecutor(ExecutorInterface):
 
     def prepare_prompt(self, input_data: list, prompt_template: str) -> str:
         ## Extract the first element from the list
-        return input_data
+        return prompt_template
 
     def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
         newsapi_response = {
             'response': self.technews_service.get_fresh_headlines(
-                user_content, system_content, '', max_tokens
+                system_content, user_content, '', max_tokens
             )
         }
         result = BroadcastData(newsapi_response)

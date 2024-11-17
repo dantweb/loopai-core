@@ -10,6 +10,7 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.session import session_id
 
+
 class FileAdapterInterface(ABC):
     filesystem_path: str = ''
 
@@ -161,8 +162,14 @@ class FileAdapterInterface(ABC):
 
 
 def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
+
+    if config.WEB_OR_CLI == 'cli':
+        path_root = config.LOOPAI_SINGLE_FILESYSTEM_PATH
+    else:
+        path_root = config.LOOPAI_WEB_USERS_FILESYSTEM_PATH
+
     path = os.path.join(
-        config.LOOPAI_WEB_USERS_FILESYSTEM_PATH,
+        path_root,
         str(user_id),
         'loops',
         str(loop_id),
@@ -172,15 +179,21 @@ def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
 
 
 def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
+
+    if config.WEB_OR_CLI == 'cli':
+        path_root = config.LOOPAI_SINGLE_FILESYSTEM_PATH
+    else:
+        path_root = config.LOOPAI_WEB_USERS_FILESYSTEM_PATH
+
     path = os.path.join(
-        config.LOOPAI_WEB_USERS_FILESYSTEM_PATH,
+        path_root,
         str(user_id),
         'loops',
         str(loop_id),
         'config'
     )
-    return path
 
+    return path
 
 
 def get_full_path(file_path_template: str) -> str:
@@ -195,9 +208,7 @@ def get_full_path(file_path_template: str) -> str:
         '{{FOREACH_STEP_UUID}}', str(global_vars.global_loop_index)
     ).replace('{{PATH}}', path)
 
-    base_path = config.LOOPAI_SINGLE_FILESYSTEM_PATH
-    if config.WEB_OR_CLI == 'web':
-        base_path = get_file_system_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID)
+    base_path = get_file_system_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID)
 
     full_path = base_path + last_part_of_the_path
 
