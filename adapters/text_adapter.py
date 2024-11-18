@@ -73,10 +73,6 @@ class TextAdapter(FileAdapterInterface):
         self.logger.info(f"[TextAdapter::write] Data: {str(data)}")
         self.logger.info(f"[TextAdapter::write] Data type: {type(data)}")
         path: str = self.path
-
-        if os.path.exists(path):
-            path = self.get_new_filename(path)
-
         directory: str = os.path.dirname(path)
 
         if not os.path.exists(directory):

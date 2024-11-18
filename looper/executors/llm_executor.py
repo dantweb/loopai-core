@@ -46,17 +46,17 @@ class LlmExecutor(ExecutorInterface):
             valid_response = is_valid_json(response)
             if valid_response:
                 count = 99
-                self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM ! ")
+                self.logger.info(f"[LlmExecutor::run] Valid __first__ JSON response from LLM ! ")
             else:
                 cleaned_response = self.clean_json_string(response)
                 if is_valid_json(cleaned_response):
                     response = cleaned_response
                     valid_response = True
                     count = 99
-                    self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM ! ")
+                    self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    system_content['content'] = "Invalid JSON. Please try again."
+                    system_content['content'] = "Invalid JSON. Please try again. Using user content."
                     self.logger.error(f"[LlmExecutor::run] content of system_content: {str(system_content)}")
 
                     count += 1
@@ -84,8 +84,11 @@ class LlmExecutor(ExecutorInterface):
 
     @staticmethod
     def clean_json_string(json_string: str) -> str:
-        # Remove any unwanted characters that might break JSON format
-        json_string = re.sub(r'[^a-zA-Z0-9{}[\]":,.\s-]', '', json_string)
+        # Normalize whitespace
+        json_string = re.sub(r'\s+', ' ', json_string).strip()
+
+        # Remove unwanted characters that might break JSON format, excluding HTML tags
+        json_string = re.sub(r'[^-a-zA-Z0-9{}[\]":,.\s<>/]', '', json_string)
 
         # Ensure commas and braces are balanced
         json_string = json_string.replace(',}', '}').replace(',]', ']')

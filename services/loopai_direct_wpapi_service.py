@@ -23,7 +23,7 @@ class LoopAIDirectWPAPIService(ServiceInterface):
         self.auth = HTTPBasicAuth(self.wp_username, self.wp_application_password)
 
     def create_post(self, data: BroadcastData) -> requests.Response:
-        url = f"{self.wp_site}/wp-json/loopai-direct-wpapi-plugin/v1/create-post"
+        url = f"{self.wp_site}/wp-json/loopai-adapter/v1/create-post"
         headers = {'Content-Type': 'application/json'}
 
         self.logger.info(f"[LoopAIDirectWPAPIService::create_post] typeof='{type(data)}' : {str(data)}")

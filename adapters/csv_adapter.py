@@ -19,6 +19,7 @@ logger = LoggerService()
 class CsvAdapter(FileAdapterInterface):
     def __init__(self, file_path: str, fields: list, mapping: dict) -> None:
         super().__init__()
+        logger.info(f"[CsvAdapter::__init__] file_path: {file_path}")
         self.separator: str = ';'
         self.file_path: str = file_path
         self.fields: list = fields
@@ -54,7 +55,7 @@ class CsvAdapter(FileAdapterInterface):
             raise ValueError(msg)
 
         path: str = self._prepare_file_path()
-
+        logger.info(f"[CsvAdapter::write] Writing to CSV file after _prepare_file_path: {path}")
         try:
             with open(path, mode='w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=self.fields, delimiter=self.separator)

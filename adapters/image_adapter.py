@@ -26,10 +26,6 @@ class ImageAdapter(FileAdapterInterface):
 
         if not os.path.exists(directory):
             os.makedirs(directory)
-        # Save the image with the filename
-
-        if os.path.exists(filename):
-           filename = self.get_new_filename(filename)
 
         try:
             image.save(filename)
