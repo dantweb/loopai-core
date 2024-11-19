@@ -2,8 +2,10 @@
 from datetime import datetime
 import config
 import threading
-from flask_socketio import emit
-from web.services.socket_io_service import socket
+# from flask_socketio import emit
+# from web.services.socket_io_service import socket
+from web.services.socket_io_service import send_message_to_user
+
 import logging
 
 
@@ -20,7 +22,9 @@ class LoggerService:
                     cls._instance.__initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, user_id=None):
+        self.user_id = user_id
+
         if self.__initialized:
             return
         self.log_lock = threading.Lock()
@@ -34,7 +38,13 @@ class LoggerService:
         log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {message}"
 
         if config.WEB_OR_CLI == 'web':
-            socket.emit(action, {'data': log_message})
+            # now we remove this broadcasting thingy:
+            # socket.emit(action, {'data': log_message})
+
+            # Send the log message to the user
+            if web_user_id:
+                # Emit the log message to the user
+                send_message_to_user(web_user_id, 'log', {'message': message})
 
         self.logs.append(log_message)
         print(log_message)
