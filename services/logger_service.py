@@ -25,6 +25,9 @@ class LoggerService:
     def __init__(self, user_id=None):
         self.user_id = user_id
 
+        if self.user_id is None:
+            self.user_id = config.GLOBAL_USER_ID
+
         if self.__initialized:
             return
         self.log_lock = threading.Lock()
@@ -42,9 +45,9 @@ class LoggerService:
             # socket.emit(action, {'data': log_message})
 
             # Send the log message to the user
-            if web_user_id:
+            if self.user_id:
                 # Emit the log message to the user
-                send_message_to_user(web_user_id, 'log', {'message': message})
+                send_message_to_user(self.user_id, action, {'message': message})
 
         self.logs.append(log_message)
         print(log_message)
