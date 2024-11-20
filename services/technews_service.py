@@ -28,9 +28,8 @@ class TechnewsService:
             feed = feedparser.parse(feed_url)
             logger_service.info(f"[TechnewsService::fetch_news_for_topic] parsing url: {feed_url}")
             for entry in feed.entries:
-                news_items.append({
-                    'title': entry.title + '--- body --' + entry.summary,
-                })
+                new_entry = {'title': entry.title + '--- body --' + entry.summary if hasattr(entry, 'summary') else ''}
+                news_items.append(new_entry)
                 logger_service.info(f"News item: {entry.title}")
                 if len(news_items) >= max_items:
                     break
