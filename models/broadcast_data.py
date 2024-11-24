@@ -8,14 +8,18 @@ class BroadcastData(UserDict):
         self.properties = []
         self.image = None  # Store image data if present
 
-        # If obj_input is a string, attempt to parse it as JSON
+        # Handle None explicitly
+        if obj_input is None:
+            self.data = None
+            return
+
+        # Existing logic for other input types
         if isinstance(obj_input, str):
             try:
                 obj_input = json.loads(obj_input)
             except json.JSONDecodeError:
-                obj_input = {}  # Default to an empty dictionary if parsing fails
+                obj_input = {}
 
-        # If obj_input is a BroadcastData instance, use its data
         if isinstance(obj_input, BroadcastData):
             obj_input = obj_input.data
 

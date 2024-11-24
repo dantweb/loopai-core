@@ -24,10 +24,11 @@ class LlmExecutor(ExecutorInterface):
         if not input_data:
             raise ValueError("Input data is empty.")
 
-        if isinstance(input_data[0], pd.DataFrame):
-            request_content = input_data[0].to_dict(orient='records')
-        else:
-            request_content = input_data[0]
+        # if isinstance(input_data[0], pd.DataFrame):
+        #     request_content = input_data[0].to_dict(orient='records')
+        # else:
+        #     request_content = input_data[0]
+        request_content = input_data
 
         prompt_template['requestContent'] = request_content
         self.logger.info(f"[LlmExecutor::prepare_prompt] Generated prompt_template: {prompt_template}")
@@ -56,7 +57,7 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    user_content['content'] = "Invalid JSON. Please try again."
+                    user_content['error'] = "Invalid JSON. Please try again."
                     self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
 
                     count += 1

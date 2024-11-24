@@ -34,7 +34,6 @@ class BroadcastAdapter(FileAdapterInterface):
         self.image_file = None
 
     def read(self, self_step_id: str, ref_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
-
         logger_service.info(f"[BroadcastAdapter::read] Reading DB step {self_step_id} from step {ref_step_id}")
         if ignore_read_status:
             query = """
@@ -51,16 +50,29 @@ class BroadcastAdapter(FileAdapterInterface):
             with get_db_cursor() as cursor:
                 cursor.execute(query, (session_id, ref_step_id))
                 row = cursor.fetchone()
+                self.logger.info(f"[BroadcastAdapter::read] row: {str(row)}")
                 if row:
-                    # Ensure the row is being accessed correctly
-                    if isinstance(row, tuple):
-                        # Handle tuple-based row
-                        broadcast_data = self.prepare_result(dict(row))
-                    else:
-                        broadcast_data = self.prepare_result(row)
+                    # Deserialize the `data` field if it's a JSON string
+                    # Deserialize the `data` field if it's a JSON string
+                    if 'data' in row and isinstance(row['data'], str):
+                        try:
+                            row['data'] = json.loads(row['data'])
+                        except json.JSONDecodeError as e:
+                            self.logger.error(f"Error deserializing data field: {e}")
+                            return None
+
+                    # Validate structure
+                    if self.field.split('/')[0] not in row['data']:
+                        self.logger.error(
+                            f"Expected top-level key '{self.field.split('/')[0]}' not found in data: {row['data']}")
+                        return None
+
+                    # Prepare the broadcast data
+                    broadcast_data = self.prepare_result(row['data'])
                     self.logger.info(f"[BroadcastAdapter::read] row has data: {broadcast_data}")
                     self.mark_row_as_read(row, self_step_id)
                     return broadcast_data
+
                 return None
 
         except Exception as e:
@@ -73,7 +85,7 @@ class BroadcastAdapter(FileAdapterInterface):
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 
         # data_to_write = try_extract_data(data)
-        data_to_write = BroadcastData({ 'result': data })
+        data_to_write = BroadcastData({ 'saved': data })
 
         if data_to_write is None:
             raise Exception("Error: No data possible to extract to write.")
@@ -103,23 +115,48 @@ class BroadcastAdapter(FileAdapterInterface):
         self.output_format = output_format
         self.field = field
 
-    def prepare_result(self, row):
-        converted_row = self.convert_to_json_recursively(row)
-        self.logger.info(f"[BroadcastAdapter::prepare_result] convert_to_json_recursively(row) : '{str(converted_row)}'")
-        if self.field is None or '/' not in self.field:
-            raise Exception(f"{self.__class__} has no fields defined for splitting")
+    def get_nested_data(self, data, field):
+        """
+        Traverse a nested dictionary using a '/'-delimited field path.
 
-        splitted_fields = self.field.split('/')
+        Args:
+            data (dict): The dictionary to search.
+            field (str): A '/'-delimited string of keys.
 
-        # Traverse the nested fields
-        requested_field = converted_row
-        for field in splitted_fields:
-            if isinstance(requested_field, dict) and field in requested_field:
-                requested_field = requested_field[field]
+        Returns:
+            Any: The value found at the given field path or None if not found.
+        """
+        keys = field.split('/')
+        for key in keys:
+            if isinstance(data, dict) and key in data:
+                data = data[key]
             else:
-                continue
+                if self.logger:
+                    self.logger.error(f"Key '{key}' not found in current data: {data}")
+                return None
+        return data
 
-        return BroadcastData(requested_field)
+    def prepare_result(self, input_data):
+        """
+        Prepare the result by extracting data based on the field path.
+
+        Args:
+            input_data (dict): The input data.
+
+        Returns:
+            BroadcastData: An instance of BroadcastData containing the extracted data or None.
+        """
+        if not self.field:
+            if self.logger:
+                self.logger.error("Field path is not set.")
+            return None
+
+        # Get the nested data
+        data = self.get_nested_data(input_data, self.field)
+
+        # Return BroadcastData with the value
+        return BroadcastData(data) if data else None
+
 
     def mark_row_as_read(self, row: Dict, step_id: str) -> None:
         # Implement your database deletion logic here

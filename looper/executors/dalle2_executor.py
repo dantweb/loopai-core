@@ -13,6 +13,7 @@ from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.databus import global_vars
 from config import is_valid_json
 from core.looper.executors.executor_interface import ExecutorInterface
+from core.models.broadcast_data import BroadcastData
 
 load_dotenv()
 
@@ -25,7 +26,7 @@ class Dalle2Executor(ExecutorInterface):
         self.model = model
         self.openai = openai.OpenAI(api_key=global_vars.USER_GPT_API_KEY)
 
-    def prepare_prompt(self, input_data: list, prompt_template: str):
+    def prepare_prompt(self, input_data: BroadcastData, prompt_template):
         logger.info(f"[DalleExecutor::prepare_prompt] preparing prompt for GPT...")
         logger.info(f"[DalleExecutor::prepare_prompt] input_data: {input_data}")
         logger.info(f"[DalleExecutor::prepare_prompt] input_data type: {type(input_data)}")
@@ -33,18 +34,15 @@ class Dalle2Executor(ExecutorInterface):
         if input_data is None or input_data == '':
             raise Exception("Input data is empty.")
 
-        request_content = input_data
 
-        logger.info(f"[DalleExecutor::prepare_prompt] request_content: {request_content}")
-        logger.info(f"[DalleExecutor::prepare_prompt] request_content type: {type(request_content)}")
-        request_content_json = json.dumps(request_content.__json__())
+        if isinstance(input_data, BroadcastData):
+            request_content_json = json.dumps(input_data.__json__())
+        elif isinstance(input_data, str):
+            request_content_json = input_data[:500]
+        else:
+            request_content_json = json.dumps(input_data)
 
-        if request_content_json is None:
-            request_content_json = request_content
-            if request_content_json is None:
-                raise Exception("Request content is empty.")
-
-        prompt_template['requestContent'] = request_content
+        prompt_template['requestContent'] = request_content_json
         logger.info(f"[DalleExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
