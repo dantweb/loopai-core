@@ -143,7 +143,7 @@ class BroadcastAdapter(FileAdapterInterface):
                 cursor.execute(query, (session_id,))
                 self.logger.info(f"All entries with session_id {session_id} have been deleted.")
         except Exception as e:
-            self.loggrt.error(f"An error occurred while deleting entries: {str(e)}")
+            self.logger.error(f"An error occurred while deleting entries: {str(e)}")
 
 
 def try_extract_data_with_fields(data: BroadcastData) -> BroadcastData:

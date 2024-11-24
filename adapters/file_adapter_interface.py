@@ -203,7 +203,7 @@ def get_full_path(file_path_template: str) -> str:
     path = f"loop.{global_vars.global_step_name}.{global_vars.global_loop_index}"
 
     last_part_of_the_path: str = file_path_template.replace(
-        '{{SESSION_ID}}', session_id[:5]
+        '{{SESSION_ID}}', session_id[:8]
     ).replace(
         '{{FOREACH_STEP_UUID}}', str(global_vars.global_loop_index)
     ).replace('{{PATH}}', path)

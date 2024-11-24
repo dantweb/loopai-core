@@ -36,7 +36,6 @@ class LoggerService:
 
     def log(self, message, action='log'):
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
-        logging.info(f"Emitting {action} message: {message}")
         web_user_id = config.GLOBAL_USER_ID
         log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {message}"
 

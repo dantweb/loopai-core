@@ -56,8 +56,8 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    system_content['content'] = "Invalid JSON. Please try again. Using user content."
-                    self.logger.error(f"[LlmExecutor::run] content of system_content: {str(system_content)}")
+                    user_content['content'] = "Invalid JSON. Please try again."
+                    self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
 
                     count += 1
 

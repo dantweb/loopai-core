@@ -2,17 +2,22 @@
 import json
 import os
 import requests
+import pandas as pd
 from io import BytesIO
 
 import openai
 from PIL import Image
 from dotenv import load_dotenv
+
+from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.databus import global_vars
 from config import is_valid_json
 from core.looper.executors.executor_interface import ExecutorInterface
 
 load_dotenv()
 
+from core.services.logger_service import LoggerService
+logger = LoggerService()
 
 class Dalle2Executor(ExecutorInterface):
     def __init__(self, model: str):
@@ -20,10 +25,27 @@ class Dalle2Executor(ExecutorInterface):
         self.model = model
         self.openai = openai.OpenAI(api_key=global_vars.USER_GPT_API_KEY)
 
-    def prepare_prompt(self, input_data: list, prompt_template):
-        request_content = input_data[0].to_json()
-        # Prepare the prompt based on input_data and the prompt_template
-        prompt_template = prompt_template.replace("{{DESCRIPTION}}", request_content)
+    def prepare_prompt(self, input_data: list, prompt_template: str):
+        logger.info(f"[DalleExecutor::prepare_prompt] preparing prompt for GPT...")
+        logger.info(f"[DalleExecutor::prepare_prompt] input_data: {input_data}")
+        logger.info(f"[DalleExecutor::prepare_prompt] input_data type: {type(input_data)}")
+
+        if input_data is None or input_data == '':
+            raise Exception("Input data is empty.")
+
+        request_content = input_data
+
+        logger.info(f"[DalleExecutor::prepare_prompt] request_content: {request_content}")
+        logger.info(f"[DalleExecutor::prepare_prompt] request_content type: {type(request_content)}")
+        request_content_json = json.dumps(request_content.__json__())
+
+        if request_content_json is None:
+            request_content_json = request_content
+            if request_content_json is None:
+                raise Exception("Request content is empty.")
+
+        prompt_template['requestContent'] = request_content
+        logger.info(f"[DalleExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
     def run(self, model, system_content, user_content, max_tokens):
@@ -32,18 +54,23 @@ class Dalle2Executor(ExecutorInterface):
         if result == 'Suggestion failed.':
             raise Exception("Suggestion failed.")
 
+        self.logger_service.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
+        self.logger_service.info(f"[DalleExecutor::run] DalleExecutor response content: {str(result)}")
         return result
 
-    def generate_image_from_dalle(self, model, formulated_prompt, width: int = 1024, height: int = 1024):
+    def generate_image_from_dalle(self, model, user_content, width: int = 1024, height: int = 1024):
+
         try:
             # Use the closest supported size
             supported_sizes = [(256, 256), (512, 512), (1024, 1024)]
             selected_size = min(supported_sizes, key=lambda s: abs(s[0] - width) + abs(s[1] - height))
             size_param = f"{selected_size[0]}x{selected_size[1]}"
-            self.logger_service.log(f"Creating image for {formulated_prompt} with ")
+            self.logger_service.log(f"Creating image for prompt {str(user_content)} with ")
+            self.logger_service.log(f"size {size_param}")
+            prompt = json.dumps(user_content.__json__())
             response = openai.images.generate(
                 model=model,
-                prompt=formulated_prompt,
+                prompt=prompt[:500],
                 size=size_param,
                 quality="standard",
                 n=1,
@@ -54,5 +81,5 @@ class Dalle2Executor(ExecutorInterface):
             img = Image.open(BytesIO(response.content))
             return img
         except Exception as e:
-            self.logger_service.error(f"Error during image generation: {str(e)} \n\n promptf {formulated_prompt}")
+            self.logger_service.error(f"Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
             return None

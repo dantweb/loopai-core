@@ -2,6 +2,9 @@ import os
 from PIL import Image
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
+from core.models.broadcast_data import BroadcastData
+
+
 
 class ImageAdapter(FileAdapterInterface):
 
@@ -14,11 +17,12 @@ class ImageAdapter(FileAdapterInterface):
         # Not implemented because it's not required for images as per the provided context.
         return filename
 
-    def write(self, step_id: str, data: dict) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[ImageAdapter::write] Writing image to file...")
-        self.logger.info(f"[ImageAdapter::write] data type of {type(data)} and data: {str(data)}")
-        raise Exception("DEBUGGER STOPPS HERE")
-        image = data['result']
+        self.logger.info(f"[ImageAdapter::write] data type of {type(data)}")
+        self.logger.info(f"[ImageAdapter::write] data: {str(data)}")
+
+        image = data.get('result') # Get the image data from the BroadcastData instance
         # Replace {{SESSION_ID}} with the actual session_id
         filename = self.get_full_path(self.file_path_template)
         # Ensure the directory exists
@@ -31,7 +35,7 @@ class ImageAdapter(FileAdapterInterface):
             image.save(filename)
             # Verify if the image is saved correctly
             if os.path.exists(filename):
-                self.logger_service.log(f"Image saved successfully: {filename}")
+                self.logger.log(f"Image saved successfully: {filename}")
                 return True
             else:
                 raise IOError(f"Failed to save image: {filename}")

@@ -235,7 +235,7 @@ class StepModel:
 
             logger.info(f"[StepModel::execute] step_input_data: {step_input_data}")
 
-            if self.type == 'foreach':
+            if self.type == 'foreach' or self.type == 'generate_image':
                 step_input_data = fresh_data_from_input
                 break
 
@@ -307,7 +307,6 @@ class StepModel:
 
         self.packed_blob['model_id'] = self.action.model
         self.packed_blob['step_id'] = step_id
-        self.packed_blob['prompt'] = prompt
         self.packed_blob['result'] = result
 
         self.write(step_id)
@@ -316,14 +315,17 @@ class StepModel:
         return self.packed_blob
 
     def write(self, step_id: str):
+
+        self.logger_service.log(f"Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
+
         for output_adapter in self.output_adapters:
 
             if isinstance(output_adapter, BroadcastAdapter) and isinstance(self.packed_blob['result'], Image):
                 self.packed_blob['image_file'] = FileAdapterInterface.get_full_path(self, self.broadcast_image_file)
 
-            broadcast_data = BroadcastData(self.packed_blob['result'])
+            broadcast_data = BroadcastData(self.packed_blob)
 
-            self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__}")
+            self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__} BroadcastData {str(broadcast_data)}")
 
             try:
                 a = output_adapter.write(step_id, broadcast_data)

@@ -1,10 +1,12 @@
 import json
 from collections import UserDict
+from PIL import Image
 
 class BroadcastData(UserDict):
     def __init__(self, obj_input=None):
         super().__init__()
         self.properties = []
+        self.image = None  # Store image data if present
 
         # If obj_input is a string, attempt to parse it as JSON
         if isinstance(obj_input, str):
@@ -25,9 +27,13 @@ class BroadcastData(UserDict):
             if obj_input:
                 if all(isinstance(item, dict) for item in obj_input):
                     for item in obj_input:
+                        if isinstance(item, Image.Image):
+                            self.image = item
                         self.properties.extend([type(v).__name__ for v in item.values()])
                 else:
                     self.properties = [type(v).__name__ for v in obj_input]
+        elif isinstance(obj_input, Image.Image):
+            self.image = obj_input
         else:
             self.data = {}
 
@@ -96,7 +102,43 @@ class BroadcastData(UserDict):
                 return {key: make_serializable(value) for key, value in obj.items()}
             elif isinstance(obj, list):
                 return [make_serializable(item) for item in obj]
+            elif isinstance(obj, Image.Image):
+                return "<Image Object>"  # Placeholder for image objects to prevent JSON serialization issues
             else:
                 return obj  # Assume other types are JSON-serializable
 
-        return make_serializable(self.data)
+        return make_serializable(self.data) if self.image is None else self.image
+
+    def flatten_data(self):
+        """
+        Flattens nested dictionaries or lists into a single-level dictionary.
+        If duplicate field names are encountered, adds a suffix to create unique keys.
+        """
+        flat_dict = {}
+
+        def recursive_flatten(obj, parent_key=""):
+            if isinstance(obj, dict):
+                for key, value in obj.items():
+                    new_key = f"{parent_key}_{key}" if parent_key else key
+                    if new_key in flat_dict:
+                        new_key = self.get_unique_key(new_key, flat_dict)
+                    recursive_flatten(value, new_key)
+            elif isinstance(obj, list):
+                for index, item in enumerate(obj):
+                    new_key = f"{parent_key}_{index}" if parent_key else str(index)
+                    if new_key in flat_dict:
+                        new_key = self.get_unique_key(new_key, flat_dict)
+                    recursive_flatten(item, new_key)
+            else:
+                flat_dict[parent_key] = obj
+
+        recursive_flatten(self.data)
+        return flat_dict
+
+    def get_unique_key(self, base_key, existing_keys):
+        index = 1
+        new_key = f"{base_key}_{index}"
+        while new_key in existing_keys:
+            index += 1
+            new_key = f"{base_key}_{index}"
+        return new_key

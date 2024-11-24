@@ -53,7 +53,7 @@ class GptExecutor(ExecutorInterface):
         self.logger_service.info(f"\n\n[GptExecutor::run] result: {result}")
 
         try:
-            cleaned_result = clean_json_string(result)
+            # cleaned_result = clean_json_string(result)
             # json_result = json.loads(cleaned_result)
             broadcast_data = BroadcastData(result)
             self.logger_service.log(f"[GptExecutor::run] Result is a valid JSON !!!")
