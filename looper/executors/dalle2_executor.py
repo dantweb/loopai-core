@@ -73,7 +73,7 @@ class Dalle2Executor(ExecutorInterface):
                 quality="standard",
                 n=1,
             )
-
+            self.logger_service.info(f"[dalle2_executor] Generated image response: {response}")
             image_url = response.data[0].url
             response = requests.get(image_url)
             img = Image.open(BytesIO(response.content))

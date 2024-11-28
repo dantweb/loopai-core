@@ -30,6 +30,8 @@ class LoopAIDirectWPAPIService(ServiceInterface):
 
         # flatten_data = BroadcastData(data.flatten_data()) #we do this to have then proper jsonification of the data
 
+        self.save_post_to_text_file(data)
+
         # Send the data_to_send as JSON
         response = requests.post(url, auth=self.auth, headers=headers, json=data.__json__())
         if response.ok:
@@ -48,3 +50,9 @@ class LoopAIDirectWPAPIService(ServiceInterface):
         else:
             self.logger.error(f"Failed to retrieve posts: {response.status_code} - {response.text}")
             return []
+
+    def save_post_to_text_file(self, data):
+        path = "/app/var/filesystem/loopai_direct_wpapi_service_output.txt"
+        json_string = json.dumps(data.__json__(), ensure_ascii=True)
+        with open(path, 'w', encoding='utf-8') as file:
+            file.write(json_string)
