@@ -42,7 +42,7 @@ class LlmExecutor(ExecutorInterface):
         count = 0
         response = None
 
-        while (not valid_response) and count < 5:
+        while (not valid_response) and count < 10:
             response = self.send_prompt_to_llm(model, system_content, user_content, max_tokens)
             valid_response = is_valid_json(response)
             if valid_response:
@@ -57,7 +57,7 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    user_content['error'] = "Invalid JSON. Please try again."
+                    user_content['error'] = "IMPORTANT NOTICE FROM USER: Your response is not a valid JSON. Please try again."
                     self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
 
                     count += 1
