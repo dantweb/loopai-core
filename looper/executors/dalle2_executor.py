@@ -53,7 +53,7 @@ class Dalle2Executor(ExecutorInterface):
             raise Exception("Suggestion failed.")
 
         self.logger_service.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
-        self.logger_service.info(f"[DalleExecutor::run] DalleExecutor response content: {str(result)}")
+
         return result
 
     def generate_image_from_dalle(self, model, user_content, width: int = 1024, height: int = 1024):

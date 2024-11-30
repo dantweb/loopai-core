@@ -30,7 +30,8 @@ class LoopAIDirectWPAPIService(ServiceInterface):
 
         # flatten_data = BroadcastData(data.flatten_data()) #we do this to have then proper jsonification of the data
 
-        self.save_post_to_text_file(data)
+        ## for debug only ---
+        # self.save_post_to_text_file(data)
 
         # Send the data_to_send as JSON
         response = requests.post(url, auth=self.auth, headers=headers, json=data.__json__())
