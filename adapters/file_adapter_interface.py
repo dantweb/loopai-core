@@ -180,7 +180,7 @@ def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
 
 def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
 
-    if config.WEB_OR_CLI == 'cli' and config.RUNNING_CRON == False:
+    if config.WEB_OR_CLI == 'cli':
         path_root = config.LOOPAI_SINGLE_FILESYSTEM_PATH
     else:
         path_root = config.LOOPAI_WEB_USERS_FILESYSTEM_PATH

@@ -11,6 +11,8 @@ from core.services.service_interface import ServiceInterface
 
 load_dotenv()
 
+DEBUG_LEVEL = os.getenv("DEBUG_LEVEL", "INFO")
+
 
 class LoopAIDirectWPAPIService(ServiceInterface):
 
@@ -26,7 +28,10 @@ class LoopAIDirectWPAPIService(ServiceInterface):
         url = f"{self.wp_site}/wp-json/loopai-adapter/v1/create-post"
         headers = {'Content-Type': 'application/json'}
 
-        self.logger.info(f"[LoopAIDirectWPAPIService::create_post] typeof='{type(data)}' : {str(data)}")
+
+        if DEBUG_LEVEL == "DEBUG":
+            self.logger.info(f"[LoopAIDirectWPAPIService::create_post] typeof='{type(data)}' : {str(data)}")
+
 
         # flatten_data = BroadcastData(data.flatten_data()) #we do this to have then proper jsonification of the data
 
