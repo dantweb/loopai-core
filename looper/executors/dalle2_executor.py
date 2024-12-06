@@ -42,6 +42,9 @@ class Dalle2Executor(ExecutorInterface):
         else:
             request_content_json = json.dumps(input_data)
 
+        if request_content_json == '' or request_content_json is None or request_content_json == '{}':
+            raise Exception("[dalle2_executor] Request content is empty.")
+
         prompt_template['requestContent'] = request_content_json
         logger.info(f"[DalleExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template

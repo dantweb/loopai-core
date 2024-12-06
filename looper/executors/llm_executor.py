@@ -69,9 +69,9 @@ class LlmExecutor(ExecutorInterface):
             raise ValueError("Invalid JSON response from LLM")
 
         try:
-            broadcast_data = BroadcastData(response)
+            broadcast_data = BroadcastData(self.fix_json(response))
+            self.logger.info(f"[LlmExecutor::run] Broadcast data created successfully 1 : {str(broadcast_data)}")
 
-            self.logger.info(f"[LlmExecutor::run] Broadcast data created successfully: {str(broadcast_data)}")
         except json.JSONDecodeError as e:
             fixed_response = self.fix_json(response)
             if not is_valid_json(fixed_response):
