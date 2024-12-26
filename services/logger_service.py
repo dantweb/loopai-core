@@ -57,6 +57,9 @@ class LoggerService:
     def warning(self, message):
         self.log(message, 'warning')
 
+    def debug(self, message):
+        self.log(message, 'debug')
+
     def error(self, message):
         self.log(message, 'error')
 

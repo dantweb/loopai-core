@@ -1,9 +1,7 @@
-# src/looper/executors/technews_executor.py
-import json
+# ./loopai_src/looper/executors/technews_executor.py
 
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
-from core.services.newsapi_service import NewsApiService, extract_string_from_list
 from core.services.technews_service import TechnewsService
 from core.services.logger_service import LoggerService
 

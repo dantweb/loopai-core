@@ -18,25 +18,47 @@ class TechnewsService:
         self.key = global_vars.NEWSAPI_API_KEY
         self.logger = LoggerService()
 
-
     def fetch_news_for_topic(self, first_parameter, topic, max_items=10) -> list:
-        logger_service.info(f"[TechnewsService::fetch_news_for_topic]Fetching news for topic: {topic}")
+        logger_service.info(f"[TechnewsService::fetch_news_for_topic] Fetching news for topic: {topic}")
         feeds = first_parameter.get(topic, [])
         logger_service.info(f"[TechnewsService::fetch_news_for_topic] Feeds: {str(feeds)}")
         news_items = []
+
         for feed_url in feeds:
+            logger_service.info(f"[TechnewsService::fetch_news_for_topic] Parsing URL: {feed_url}")
             feed = feedparser.parse(feed_url)
-            logger_service.info(f"[TechnewsService::fetch_news_for_topic] parsing url: {feed_url}")
+
             for entry in feed.entries:
-                new_entry = {'title': entry.title + '--- body --' + entry.summary if hasattr(entry, 'summary') else ''}
+                logger_service.info(f"[TechnewsService::fetch_news_for_topic] Processing entry: {entry}")
+
+                # Extract fields with a priority: content:encoded > description > summary
+                content_encoded = entry.get('content', [{}])[0].get('value') if 'content' in entry else None
+                description = entry.description if hasattr(entry, 'description') else None
+                summary = entry.summary if hasattr(entry, 'summary') else None
+
+                # Use content:encoded if available, fall back to description or summary
+                content_body = content_encoded or description or summary or ''
+                content = f"{entry.title}<content_body>{content_body}</content_body>"
+
+                # Debug entry values and their lengths
+                logger_service.debug(f"Entry Title: {entry.title} (Length: {len(entry.title)})")
+                logger_service.debug(f"Entry Content: {content_body[:100]}... (Length: {len(content_body)})")
+
+                # Add to news items
+                new_entry = {'title': entry.title, 'content': content}
                 news_items.append(new_entry)
-                logger_service.info(f"News item: {entry.title}")
+                logger_service.info(f"[TechnewsService::fetch_news_for_topic] Added news item: {entry.title}")
+
+                # Break if max items are reached
                 if len(news_items) >= max_items:
+                    logger_service.info("[TechnewsService::fetch_news_for_topic] Reached max items limit.")
                     break
+
             if len(news_items) >= max_items:
                 break
-        return news_items
 
+        logger_service.info(f"[TechnewsService::fetch_news_for_topic] Total news items fetched: {len(news_items)}")
+        return news_items
 
     # Function to fetch latest news for all topics
     def fetch_news_for_all_topics(self, first_parameter, topics, max_items_per_topic=10) -> dict:
