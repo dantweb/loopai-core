@@ -29,7 +29,6 @@ class TechnewsService:
             feed = feedparser.parse(feed_url)
 
             for entry in feed.entries:
-                logger_service.info(f"[TechnewsService::fetch_news_for_topic] Processing entry: {entry}")
 
                 # Extract fields with a priority: content:encoded > description > summary
                 content_encoded = entry.get('content', [{}])[0].get('value') if 'content' in entry else None
@@ -42,15 +41,9 @@ class TechnewsService:
                 content_body =  description or summary or ''
                 content = f"{entry.title}<content_body>{content_body}</content_body>"
 
-                # Debug entry values and their lengths
-                logger_service.debug(f"Entry Title: {entry.title} (Length: {len(entry.title)})")
-                logger_service.debug(f"Entry Content: {content_body[:100]}... (Length: {len(content_body)})")
-
                 # Add to news items
                 new_entry = {'title': entry.title, 'content': content}
                 news_items.append(new_entry)
-                logger_service.info(f"[TechnewsService::fetch_news_for_topic] Added news item: {entry.title}")
-
                 # Break if max items are reached
                 if len(news_items) >= max_items:
                     logger_service.info("[TechnewsService::fetch_news_for_topic] Reached max items limit.")
@@ -64,8 +57,6 @@ class TechnewsService:
 
     # Function to fetch latest news for all topics
     def fetch_news_for_all_topics(self, first_parameter, topics, max_items_per_topic=10) -> dict:
-        self.logger.info(f"[TechnewsService::fetch_news_for_all_topics] first_parameter {str(first_parameter)}")
-        self.logger.info(f"[TechnewsService::fetch_news_for_all_topics] Fetching news for all topics {str(topics)}")
         all_news = {}
         for topic in topics:
             all_news[topic] = self.fetch_news_for_topic(first_parameter, topic, max_items_per_topic)
@@ -74,8 +65,6 @@ class TechnewsService:
 
     # first_parameter = ['ai', 'e_commerce', 'ai_medicine', 'ai_applications', 'e_payments']
     def get_fresh_headlines(self, first_parameter, second_parameter, connector_id, max_results):
-        self.logger.info(f"[TechnewsService::get_fresh_headlines] first_parameter type {type(first_parameter)}: {first_parameter}")
-        self.logger.info(f"[TechnewsService::get_fresh_headlines] second_parameter type{type(second_parameter)}: {second_parameter}")
         first_topic = self.fetch_news_for_all_topics(first_parameter, second_parameter, max_results)
         return first_topic
 
