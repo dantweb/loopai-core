@@ -37,7 +37,9 @@ class TechnewsService:
                 summary = entry.summary if hasattr(entry, 'summary') else None
 
                 # Use content:encoded if available, fall back to description or summary
-                content_body = content_encoded or description or summary or ''
+                # disabled for now becouse to much content for llm in dec.2024
+                # content_body = content_encoded or description or summary or ''
+                content_body =  description or summary or ''
                 content = f"{entry.title}<content_body>{content_body}</content_body>"
 
                 # Debug entry values and their lengths
