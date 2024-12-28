@@ -42,7 +42,7 @@ class TechnewsService:
                 content = f"{content_body}"
 
                 # Add to news items
-                new_entry = {'title': entry.title, 'content': content[:2500]}
+                new_entry = {'title': entry.title, 'content': content[:2000]}
                 news_items.append(new_entry)
                 # Break if max items are reached
                 if len(news_items) >= max_items:
