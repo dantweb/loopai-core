@@ -20,7 +20,8 @@ class FeatherlessService(ServiceInterface):
         super().__init__(model)
         self.client = OpenAI(
             base_url=FEATHERLESS_API_URL,
-            api_key=FEATHERLESS_API_KEY
+            api_key=FEATHERLESS_API_KEY,
+            timeout=120
         )
 
     def get_response(self, model, system_content, user_content: BroadcastData, max_tokens):
