@@ -160,6 +160,26 @@ class FileAdapterInterface(ABC):
                 if isinstance(item, (dict, list)):
                     self._recursive_collect(item, required_fields, found_items)
 
+    def remove_duplicates(self, input_list: Optional[List[Dict[Any, Any]]]) -> List[Dict[Any, Any]]:
+        """
+        Remove duplicate dictionaries from the input list while preserving the original order.
+
+        :param input_list: The list of dictionaries from which to remove duplicates.
+        :return: A new list with duplicates removed, maintaining the original order.
+        """
+        if input_list is None:
+            self.logger.warning("Input list is None; returning an empty list.")
+            return []
+
+        seen = set()
+        output_list = []
+        for item in input_list:
+            # Convert the dictionary to a tuple of sorted items to make it hashable
+            item_tuple = tuple(sorted(item.items()))
+            if item_tuple not in seen:
+                output_list.append(item)
+                seen.add(item_tuple)
+        return output_list
 
 def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
 

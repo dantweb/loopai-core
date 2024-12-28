@@ -37,12 +37,12 @@ class TechnewsService:
 
                 # Use content:encoded if available, fall back to description or summary
                 # disabled for now becouse to much content for llm in dec.2024
-                # content_body = content_encoded or description or summary or ''
-                content_body =  description or summary or ''
-                content = f"{entry.title}<content_body>{content_body}</content_body>"
+                content_body = content_encoded or description or summary or ''
+                # content_body =  description or summary or ''
+                content = f"{content_body}"
 
                 # Add to news items
-                new_entry = {'title': entry.title, 'content': content}
+                new_entry = {'title': entry.title, 'content': content[:2500]}
                 news_items.append(new_entry)
                 # Break if max items are reached
                 if len(news_items) >= max_items:

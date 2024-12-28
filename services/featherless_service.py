@@ -41,7 +41,7 @@ class FeatherlessService(ServiceInterface):
 
             result_content = response.model_dump()['choices'][0]['message']['content']
 
-            self.logger.info(f"[FeatherlessService::get_response] Response received successfully: \n{result_content}\n\n")
+            self.logger.info(f"[FeatherlessService::get_response] Response received successfully: \n{str(result_content)}\n\n")
 
             return result_content
 

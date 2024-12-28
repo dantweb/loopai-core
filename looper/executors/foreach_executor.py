@@ -66,10 +66,18 @@ class ForeachExecutor(ExecutorInterface):
             else:
                 raise ValueError("Foreach data must be either a list of pandas DataFrames or a list of other elements.")
 
+            self.send_foreach_data_to_output_adapters(self.parent_step, BroadcastData(self.result))
+
+
+
     def set_output_adapters(self, adapters: List[AdapterInterface]):
         self.output_adapters: list[AdapterInterface] = adapters
 
-    def send_data_to_output_adapters(self, step_id: str, data):
+    def send_step_data_to_output_adapters(self, step_id: str, data):
+        for adapter in self.output_adapters:
+            adapter.write(step_id, data)
+
+    def send_foreach_data_to_output_adapters(self, step_id: str, data):
         for adapter in self.output_adapters:
             adapter.write(step_id, data)
 
@@ -86,9 +94,12 @@ class ForeachExecutor(ExecutorInterface):
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Datatype is: {type(row)}")
 
         broadcast_data = BroadcastData(row)
-        self.send_data_to_output_adapters(self.parent_step, broadcast_data)
+        self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
         global_vars.global_loop_index = str(uuid.uuid4())
         for step in steps:
             global_vars.global_step_name = str(uuid.uuid4())
-            step.execute(step.name, self.parent_step)
+            step_result = step.execute(step.name, self.parent_step)
+            logger.info(f"[ForeachExecutor::process_row_and_execute_steps] execute result: {str(step_result['result'])}")
+            self.result.append(step_result['result'])
+
         self.cleanup_broadcast()

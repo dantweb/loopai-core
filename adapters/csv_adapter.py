@@ -45,14 +45,15 @@ class CsvAdapter(FileAdapterInterface):
         else:
             data_dict = data.__dict__
 
-        data_to_write = self.extract_data_to_write(data_dict, self.fields)
+        extracted_data = self.extract_data_to_write(data_dict, self.fields)
+        data_to_write = self.remove_duplicates(extracted_data)
 
         self.logger.info(f"[CsvAdapter::write] data type of 'data_to_write': {type(data_to_write)}")
 
         if not data_to_write:
-            msg = "[CsvAdapter::write] No data to write; data is empty."
+            msg = "[CsvAdapter::write] No data was found with defined fields. Skipping CSV-adapter"
             self.logger.warning(msg)
-            raise ValueError(msg)
+            return False
 
         path: str = self._prepare_file_path()
         logger.info(f"[CsvAdapter::write] Writing to CSV file after _prepare_file_path: {path}")
@@ -98,7 +99,8 @@ class CsvAdapter(FileAdapterInterface):
         for i, item in enumerate(data_to_write):
             self.logger.info(f'Writing row {i}: {item}')
             self.logger.info(f'Writing row {i}: datatype {type(item)}')
-            writer.writerow(item)
+            filtered_item = {key: value for key, value in item.items() if key in fieldnames}
+            writer.writerow(filtered_item)
             self.logger.info(f'Wrote row {i}: {item}')
 
     def _write_dict_data(self, writer: csv.DictWriter, data_to_write: Dict[str, str], fieldnames: List[str]) -> None:
