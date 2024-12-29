@@ -37,7 +37,8 @@ class FeatherlessService(ServiceInterface):
                     {"role": "system", "content": json.dumps(system_content)},
                     {"role": "user", "content": json.dumps(user_content.__json__())}
                 ],
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                timeout=120
             )
 
             result_content = response.model_dump()['choices'][0]['message']['content']
