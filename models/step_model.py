@@ -91,7 +91,18 @@ class StepModel:
                 self.output_adapters.append(output_adapter_class(output_config.image['name']))
             if output_config.wordpress:
                 output_adapter_class = self.load_adapter('wordpress')
-                self.output_adapters.append(output_adapter_class(output_config.wordpress['connector']))
+                wp_site = os.getenv(output_config.wordpress['wp_site'])
+                wp_username = os.getenv(output_config.wordpress['wp_username'])
+                wp_password = os.getenv(output_config.wordpress['wp_password'])
+                self.output_adapters.append(
+                    output_adapter_class(
+                        connector_id = output_config.wordpress['connector'],
+                        wp_site = wp_site or None,
+                        wp_username = wp_username or None,
+                        wp_application_password = wp_password or None,
+                    )
+                )
+
             if output_config.filesystem:
                 output_adapter_class = self.load_adapter('filesystem')
                 self.output_adapters.append(
