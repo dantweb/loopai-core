@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 
 from openai import OpenAI
 from core.models.broadcast_data import BroadcastData
@@ -42,7 +43,7 @@ class FeatherlessService(ServiceInterface):
             )
 
             result_content = response.model_dump()['choices'][0]['message']['content']
-
+            result_content = re.sub(r'^```json\s*|\s*```$', '', result_content, flags=re.MULTILINE)
             self.logger.info(f"[FeatherlessService::get_response] Response received successfully: \n{str(result_content)}\n\n")
 
             return result_content
