@@ -5,9 +5,15 @@ from core.services.loopai_direct_wpapi_service import LoopAIDirectWPAPIService
 
 class WordpressAdapter(FileAdapterInterface):
 
-    def __init__(self, connector_id: str):
+    def __init__(self,
+                 connector_id: str,
+                 wp_site: str = None,
+                 wp_username: str = None,
+                 wp_application_password: str = None
+             ):
+
         self.connector_id = connector_id
-        self.loopai_direct_wpapi_service = LoopAIDirectWPAPIService()
+        self.loopai_direct_wpapi_service = LoopAIDirectWPAPIService(wp_site, wp_username, wp_application_password)
         super().__init__()
 
     def read(self, step_id) -> list:

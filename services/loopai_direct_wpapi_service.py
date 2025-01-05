@@ -15,13 +15,15 @@ DEBUG_LEVEL = os.getenv("DEBUG_LEVEL", "INFO")
 
 
 class LoopAIDirectWPAPIService(ServiceInterface):
-
-
-    def __init__(self, model: str = 'LoopAIDirectWPAPIService', wp_site=None, wp_username=None, wp_application_password=None):
-        super().__init__(model)
+    def __init__(self,
+                 wp_site=None,
+                 wp_username=None,
+                 wp_password=None
+         ):
+        super().__init__('LoopAIDirectWPAPIService')
         self.wp_site = wp_site or global_vars.WORDPRESS_URL
         self.wp_username = wp_username or global_vars.WORDPRESS_USERNAME
-        self.wp_application_password = wp_application_password or global_vars.WORDPRESS_PASSWORD
+        self.wp_application_password = wp_password or global_vars.WORDPRESS_PASSWORD
         self.auth = HTTPBasicAuth(self.wp_username, self.wp_application_password)
 
     def create_post(self, data: BroadcastData) -> requests.Response:
