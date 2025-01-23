@@ -28,7 +28,7 @@ class WPCreatePostTest:
         print("Connection successful")
 
     def test_create_post(self, post_data):
-        url = f"{self.wp_site}/wp-json/loopai-direct-wpapi-plugin/v1/create-post"
+        url = f"{self.wp_site}/wp-json/loopai-adapter/v1/create-post"
         headers = {'Content-Type': 'application/json'}
         response = requests.post(url, auth=self.auth, headers=headers, data=json.dumps(post_data))
         assert response.status_code == 200, f"Create post failed: {response.status_code}, {response.text}"
