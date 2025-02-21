@@ -42,8 +42,11 @@ class FeatherlessService(ServiceInterface):
                 timeout=120
             )
 
-            result_content = response.model_dump()['choices'][0]['message']['content']
-            result_content = re.sub(r'^```json\s*|\s*```$', '', result_content, flags=re.MULTILINE)
+            self.logger.info(f"[FeatherlessService::get_response] Response received successfully: \n\n" + str(response) + "\n\n")
+
+            unfiltered = response.dict()['choices'][0]['message']['content']
+            result_content = re.sub(r'^```json\s*|\s*```$', '', unfiltered, flags=re.MULTILINE)
+
             self.logger.info(f"[FeatherlessService::get_response] Response received successfully: \n{str(result_content)}\n\n")
 
             return result_content

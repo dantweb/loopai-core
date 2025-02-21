@@ -97,9 +97,9 @@ class StepModel:
                 self.output_adapters.append(
                     output_adapter_class(
                         connector_id = output_config.wordpress['connector'],
-                        wp_site = wp_site or None,
-                        wp_username = wp_username or None,
-                        wp_application_password = wp_password or None,
+                        wp_site = wp_site,
+                        wp_username = wp_username,
+                        wp_application_password = wp_password,
                     )
                 )
 
@@ -160,16 +160,15 @@ class StepModel:
                     )
                 )
 
+
     def get_system_content(self, variable_name: str) -> str:
-        # Load the module from the specified file path
         spec = importlib.util.spec_from_file_location(
             "module.name", os.getcwd() + '/../..' + self.loop_python_src
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-
-        # Return the value of the specified variable
         return getattr(module, variable_name)
+
 
     def load_adapter(self, adapter_type: str):
         module_name = f"core.adapters.{adapter_type}_adapter"
@@ -178,13 +177,14 @@ class StepModel:
         adapter_class = getattr(module, class_name)
         return adapter_class
 
+
     def load_executor(self, executor_type: str):
         module_name = f"core.looper.executors.{executor_type}_executor"
         class_name = f"{executor_type.capitalize()}Executor"
         module = importlib.import_module(module_name)
         executor_class = getattr(module, class_name)
-
         return executor_class
+
 
     def execute(self, step_name: str, loop_index: str):
         global_vars.global_step_name = step_name

@@ -3,9 +3,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-WORDPRESS_URL = os.getenv('WORDPRESS_URL', 'dummyurl')
-WORDPRESS_USERNAME = os.getenv('WORDPRESS_USERNAME', 'dummyusername')
-WORDPRESS_PASSWORD = os.getenv('WORDPRESS_PASSWORD', 'dummypassword')
+WORDPRESS_URL = os.getenv('WORDPRESS_URL', 'default')
+WORDPRESS_USERNAME = os.getenv('WORDPRESS_USERNAME', 'default')
+WORDPRESS_PASSWORD = os.getenv('WORDPRESS_PASSWORD', 'default')
 TUMBLR_API_KEY = os.getenv('TUMBLR_API_KEY', 'abcdefg_allahu_akbar')
 TWITTER_API_KEY = os.getenv('TUMBLR_API_KEY', 'abcdefg_allahu_akbar')
 BLOGSPOT_API_KEY = os.getenv('TUMBLR_API_KEY', 'abcdefg_allahu_akbar')
