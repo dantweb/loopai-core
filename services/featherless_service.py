@@ -7,6 +7,8 @@ import re
 from openai import OpenAI
 from core.models.broadcast_data import BroadcastData
 from dotenv import load_dotenv
+
+from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
 
 load_dotenv()
@@ -20,6 +22,7 @@ class FeatherlessService(ServiceInterface):
 
     def __init__(self, model: str):
         super().__init__(model)
+        self.logger = LoggerService()
         self.client = OpenAI(
             base_url=FEATHERLESS_API_URL,
             api_key=FEATHERLESS_API_KEY,
@@ -31,6 +34,8 @@ class FeatherlessService(ServiceInterface):
         self.logger.info(f"[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] typeof user_content: {type(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] user_content: {str(user_content)}")
+        self.logger.info(f"[FeatherlessService::get_response] model: {str(model)}")
+        self.logger.info(f"[FeatherlessService::get_response] url: {str(os.getenv('FEATHERLESS_API_URL'))}")
 
         try:
             response = self.client.chat.completions.create(

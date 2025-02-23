@@ -418,5 +418,6 @@ class StepModel:
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
+        os.environ.clear()
         os.environ.update(merged_env)
 
