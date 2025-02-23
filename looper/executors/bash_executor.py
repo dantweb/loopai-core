@@ -3,7 +3,7 @@ import os
 import subprocess
 from dotenv import load_dotenv
 
-from config import is_valid_json
+from app_global_config import is_valid_json
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_full_path
 from core.looper.executors.executor_interface import ExecutorInterface
 

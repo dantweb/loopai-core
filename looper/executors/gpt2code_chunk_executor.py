@@ -6,7 +6,7 @@ import requests
 import openai
 from dotenv import load_dotenv
 
-from config import is_valid_json
+from app_global_config import is_valid_json
 from core.databus import global_vars
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from core.services.service_interface import ServiceInterface
 
 load_dotenv()
+
 FEATHERLESS_API_URL = os.getenv('FEATHERLESS_API_URL', 'featherless_url')
 FEATHERLESS_API_KEY = os.getenv('FEATHERLESS_API_KEY', 'dummy_key')
 

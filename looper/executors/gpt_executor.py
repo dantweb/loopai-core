@@ -4,7 +4,7 @@ import re
 import os
 import openai
 import pandas as pd
-from config import is_valid_json
+from app_global_config import is_valid_json
 from core.databus import global_vars
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData

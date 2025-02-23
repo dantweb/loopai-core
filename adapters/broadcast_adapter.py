@@ -1,4 +1,6 @@
 # src/adapters/broadcast_adapter.py
+from __future__ import annotations
+
 import json
 import re
 import traceback

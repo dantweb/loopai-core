@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from core.adapters.file_adapter_interface import get_loop_config_base_path_by_user_and_loop
 from core.controllers.loop_controller import LoopController
-import config
+import app_global_config as config
 from core.databus import global_vars
 from core.services.logger_service import LoggerService
 

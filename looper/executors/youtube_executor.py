@@ -8,7 +8,7 @@ import openai
 from PIL import Image
 from dotenv import load_dotenv
 
-from config import is_valid_json, YOUTUBE_API_KEY
+from app_global_config import is_valid_json, YOUTUBE_API_KEY
 from core.looper.executors.executor_interface import ExecutorInterface
 
 load_dotenv()

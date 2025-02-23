@@ -1,7 +1,7 @@
 # tests/integration/test_broadcast_adapter.py
 import os
 import unittest
-from app import config
+import app_global_config as config
 from app.core.controllers.loop_controller import LoopController
 from app.core.services.postgres_db_connect import get_db_connection, DatabaseConnection
 

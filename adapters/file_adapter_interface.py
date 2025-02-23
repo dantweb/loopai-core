@@ -1,6 +1,6 @@
 import json
 import os
-import config
+import app_global_config as config
 from abc import ABC, abstractmethod
 from typing import List, Any, AnyStr, Dict, Union, Set, Optional
 from core.databus import global_vars
@@ -233,3 +233,17 @@ def get_full_path(file_path_template: str) -> str:
     full_path = base_path + last_part_of_the_path
 
     return full_path
+
+def clean_env_content(env_content: str) -> str:
+    # Define the regex pattern to match comments (lines starting with `#` or those following a value)
+    # Remove only `#` and everything after it on the same line.
+    pattern = r"#.*"
+
+    # Substitute all comments with an empty string
+    import re
+    cleaned_content = re.sub(pattern, "", env_content)
+
+    # Remove empty lines or lines with only whitespaces
+    cleaned_content = "\n".join(line.strip() for line in cleaned_content.splitlines() if line.strip())
+
+    return cleaned_content

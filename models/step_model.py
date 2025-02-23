@@ -1,18 +1,20 @@
 # src/models/step_model.py
 import importlib.util
+import io
 import os
+import re
 from typing import List, Dict
 
 from PIL.Image import Image
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 from sqlalchemy import nulls_last
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
-    get_file_system_by_user_and_loop
+    get_file_system_by_user_and_loop, clean_env_content
 from core.adapters.filesystem_adapter import FilesystemAdapter
 from core.databus import global_vars
-import config
+import app_global_config as config
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
 from core.looper.executors.gpt_executor import GptExecutor
@@ -22,6 +24,7 @@ from core.models.broadcast_data import BroadcastData
 from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
+from web.admin_models import db
 
 logger = LoggerService()
 
@@ -187,6 +190,7 @@ class StepModel:
 
 
     def execute(self, step_name: str, loop_index: str):
+        self.compile_environment_for_step(step_name)
         global_vars.global_step_name = step_name
         global_vars.global_loop_index = loop_index
         step_input_data = []
@@ -387,3 +391,32 @@ class StepModel:
         logger.info(f"[StepModel::load_code_module] Module loaded: {module}")
 
         return module
+
+    def project_env(self, project_id: str) -> Dict[str, str]:
+        from web.admin_models import Project
+        db.session.query(Project)
+        project = db.session.query(Project).filter_by(id=project_id).first()
+        return dotenv_values(stream=io.StringIO(project.project_env))
+
+    def get_loop_env(self, loop_id: str) -> Dict[str, str]:
+        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, loop_id), ".env")
+        if os.path.exists(loop_env_path):
+            return dotenv_values(loop_env_path)
+        return {}
+
+    def get_step_env(self, step_name: str) -> Dict[str, str]:
+        step_env_path = os.path.join(
+            get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID),
+            f"{step_name}.env")
+        if os.path.exists(step_env_path):
+            return dotenv_values(step_env_path)
+        return {}
+
+    def compile_environment_for_step(self, step_name: str):
+        project_env = self.project_env(config.GLOBAL_PROJECT_ID)
+        loop_env = self.get_loop_env(config.GLOBAL_LOOP_ID)
+        step_env = self.get_step_env(step_name)
+
+        merged_env = {**project_env, **loop_env, **step_env}
+        os.environ.update(merged_env)
+

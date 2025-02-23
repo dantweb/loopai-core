@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.databus import global_vars
-from config import is_valid_json
+from app_global_config import is_valid_json
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
 

@@ -1,6 +1,6 @@
 # src/adapters/filesystem_adapter.py
 import os
-import config
+import app_global_config as config
 
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
 

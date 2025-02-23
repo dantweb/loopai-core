@@ -5,7 +5,7 @@ import os
 import openai
 from dotenv import load_dotenv
 
-from config import is_valid_json
+from app_global_config import is_valid_json
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.executors.gpt_executor import GptExecutor
 

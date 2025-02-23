@@ -1,6 +1,6 @@
 # .src/services/logger_service.py
 from datetime import datetime
-import config
+import app_global_config as config
 import threading
 # from flask_socketio import emit
 # from web.services.socket_io_service import socket

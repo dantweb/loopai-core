@@ -1,7 +1,7 @@
 # src/looper/looper.py
 import os
 from typing import List
-import config
+import app_global_config as config
 from dotenv import load_dotenv
 
 from core.adapters.file_adapter_interface import get_loop_config_base_path_by_user_and_loop

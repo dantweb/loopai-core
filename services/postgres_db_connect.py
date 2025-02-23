@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from config import POSTGRESQL_DB_HOST, POSTGRESQL_DB_USER, POSTGRESQL_DB_PASSWORD, POSTGRESQL_DB_NAME, \
+from app_global_config import POSTGRESQL_DB_HOST, POSTGRESQL_DB_USER, POSTGRESQL_DB_PASSWORD, POSTGRESQL_DB_NAME, \
     POSTGRESQL_DB_PORT
 from core.services.logger_service import LoggerService
 from contextlib import contextmanager
