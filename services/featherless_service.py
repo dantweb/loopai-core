@@ -63,6 +63,7 @@ class FeatherlessService(ServiceInterface):
 
                 # Extract and clean the response content.
                 unfiltered = self.response.model_dump()['choices'][0]['message']['content']
+
                 result_content = re.sub(
                     r'^```json\s*|\s*```$', '',
                     unfiltered, flags=re.MULTILINE
