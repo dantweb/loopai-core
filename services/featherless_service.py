@@ -54,7 +54,7 @@ class FeatherlessService(ServiceInterface):
                     user_content,
                     max_tokens,
                     5,
-                    10
+                    2
                 )
 
                 self.logger.info(
