@@ -35,14 +35,16 @@ class TextAdapter(FileAdapterInterface):
                 content = file.read()
 
             self.logger.info(f"[TextAdapter::read] Content: {content}")
-            try:
-                # Attempt to parse the content as JSON
-                data_dict = json.loads(content)
-                self.logger.info("Successfully parsed JSON from the file.")
-            except json.JSONDecodeError:
-                # Parsing failed, treat content as plain text
-                self.logger.warning("Failed to parse JSON. Treating content as plain text.")
-                data_dict = {'text': content}
+            # try:
+            #     # Attempt to parse the content as JSON
+            #     data_dict = json.loads(content)
+            #     self.logger.info("Successfully parsed JSON from the file.")
+            # except json.JSONDecodeError:
+            #     # Parsing failed, treat content as plain text
+            #     self.logger.warning("Failed to parse JSON. Treating content as plain text.")
+            #     data_dict = {'text': content}
+
+            data_dict = {'text': content}
 
             self.logger.info(f"[TextAdapter::read] Data type read: {type(data_dict)}")
             broadcast_data = BroadcastData(data_dict)
