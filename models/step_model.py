@@ -3,6 +3,7 @@ import importlib.util
 import io
 import os
 import re
+import uuid
 from typing import List, Dict
 
 from PIL.Image import Image
@@ -39,6 +40,7 @@ class StepModel:
                  loop_data: str,
                  code_source: str
                 ):
+
         self.logger_service = LoggerService()
         self.loop_python_src = None
         self.packed_blob = {}
@@ -50,7 +52,6 @@ class StepModel:
         self.output = output
         self.action = action
         self.max_tokens = action.max_tokens
-
         self.executor = None
         self.output_adapters = []
         self.input_adapters = []

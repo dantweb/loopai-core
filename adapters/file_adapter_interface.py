@@ -8,7 +8,7 @@ from PIL.Image import Image
 
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session import session_id
+from core.services.session import session_manager
 
 
 class FileAdapterInterface(ABC):
@@ -223,7 +223,7 @@ def get_full_path(file_path_template: str) -> str:
     path = f"loop.{global_vars.global_step_name}.{global_vars.global_loop_index}"
 
     last_part_of_the_path: str = file_path_template.replace(
-        '{{SESSION_ID}}', session_id[:8]
+        '{{SESSION_ID}}', session_manager.get_session_id()[:8]
     ).replace(
         '{{FOREACH_STEP_UUID}}', str(global_vars.global_loop_index)
     ).replace('{{PATH}}', path)

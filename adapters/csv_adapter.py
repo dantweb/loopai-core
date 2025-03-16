@@ -12,7 +12,7 @@ import pandas as pd
 from pandas import Series
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.services.session import session_id
+from core.services.session import session_manager
 
 logger = LoggerService()
 

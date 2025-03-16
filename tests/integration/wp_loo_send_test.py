@@ -4,16 +4,21 @@ from requests.auth import HTTPBasicAuth
 import os
 from dotenv import load_dotenv
 import json
-from tests.integration.wp_connection_test_parts.image_encoded64_examples import base64_images
 
 # Load environment variables
 load_dotenv()
 
-WP_URL = os.getenv("WORDPRESS_URL")
-WP_USERNAME = os.getenv("WORDPRESS_USERNAME")
-WP_APPLICATION_PASSWORD = os.getenv("WORDPRESS_PASSWORD")
+WP_URL = os.getenv("WORDPRESS_URL", "https://arx.biomed.peroxid.org/")
+WP_USERNAME = os.getenv("WORDPRESS_USERNAME", '__loopai_dantweb_')
+WP_APPLICATION_PASSWORD = os.getenv("WORDPRESS_PASSWORD", '333ddd4449993kkksss')
 
 auth = HTTPBasicAuth(WP_USERNAME, WP_APPLICATION_PASSWORD)
+
+base64_images = {}
+base64_images["image_11"] = ""
+base64_images["image_12"] = ""
+base64_images["image_13"] = ""
+base64_images["image_14"] = ""
 
 
 class WPCreatePostTest:

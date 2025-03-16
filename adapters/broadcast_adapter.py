@@ -10,7 +10,7 @@ from PIL.Image import Image
 from psycopg2.extras import DictCursor
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.services.session import session_id
+from core.services.session import session_manager
 from core.services.postgres_db_connect import get_db_cursor
 from core.services.logger_service import LoggerService
 from core.models.broadcast_data import BroadcastData
@@ -50,7 +50,7 @@ class BroadcastAdapter(FileAdapterInterface):
 
         try:
             with get_db_cursor() as cursor:
-                cursor.execute(query, (session_id, ref_step_id))
+                cursor.execute(query, (session_manager.get_session_id(), ref_step_id))
                 row = cursor.fetchone()
                 self.logger.info(f"[BroadcastAdapter::read] row: {str(row)}")
                 if row:
@@ -107,7 +107,7 @@ class BroadcastAdapter(FileAdapterInterface):
                 cursor.execute(
                     query,
                     (
-                        session_id,
+                        session_manager.get_session_id(),
                         step_id,
                         json.dumps(data_to_write.__json__())
                     )
@@ -220,8 +220,8 @@ class BroadcastAdapter(FileAdapterInterface):
         try:
             with get_db_cursor() as cursor:
                 query = "DELETE FROM loopai_broadcast WHERE sessionid = %s"
-                cursor.execute(query, (session_id,))
-                self.logger.info(f"All entries with session_id {session_id} have been deleted.")
+                cursor.execute(query, (session_manager.get_session_id(),))
+                self.logger.info(f"All entries with session_id {session_manager.get_session_id()} have been deleted.")
         except Exception as e:
             self.logger.error(f"An error occurred while deleting entries: {str(e)}")
 
@@ -299,3 +299,15 @@ def describe_structure(data, indent=0):
             # For numeric or boolean types, no size, just type
             size_info = ""
         print(f"{prefix}* {type(data).__name__} {size_info}: {data}")
+
+
+def cleanup_session():
+    session_id = session_manager.get_session_id()
+    try:
+        with get_db_cursor() as cursor:
+            # Delete all entries with the specified session_id
+            query = "DELETE FROM loopai_broadcast WHERE sessionid = %s"
+            cursor.execute(query, (session_id,))
+            logger_service.info(f"All entries with session_id {session_id} have been removed from the database.")
+    except Exception as e:
+        logger_service.error(f"Error while cleaning up session {session_id}: {str(e)}")

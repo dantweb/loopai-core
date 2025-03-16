@@ -1,6 +1,9 @@
 # src/controllers/loop_controller.py
 import uuid, yaml, os
+
+from core.adapters.broadcast_adapter import cleanup_session
 from core.looper.looper import Looper
+from core.services.session import session_manager
 
 
 class LoopController:
@@ -15,9 +18,13 @@ class LoopController:
             loop_data = yaml.safe_load(file)
 
         code_source = loop_data['session']['code_source']
+
+        session_manager.regenerate_session_id()
         looper = Looper(loop_data, code_source)
         steps = looper.get_steps()
 
         for index, step in enumerate(steps):
             index_uuid = str(uuid.uuid4())
             step.execute(step.name, index_uuid)
+
+        cleanup_session()

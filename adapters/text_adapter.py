@@ -5,7 +5,7 @@ from core.adapters.file_adapter_interface import FileAdapterInterface
 from typing import List
 from core.models.broadcast_data import BroadcastData
 
-from core.services.session import session_id
+from core.services.session import session_manager
 
 
 class TextAdapter(FileAdapterInterface):
@@ -81,7 +81,7 @@ class TextAdapter(FileAdapterInterface):
             os.makedirs(directory)
 
         # Add session_id to the data
-        data.set('session_id', session_id)
+        data.set('session_id', session_manager.get_session_id())
 
         # Filter binary data if needed
         data_filtered: BroadcastData = self.filter_binary_data(data)
