@@ -10,7 +10,11 @@ class LoopController:
 
     # var loop_file_path should be only absolute path. Use
     # get_file_system_by_user_and_loop(user_id, loop_id) to get the absolute path
-    def __init__(self, loop_file_path):
+    def __init__(self, loop_file_path, user_id, project_id, loop_id):
+        session_manager.regenerate_session_id()
+        session_manager.set_user_id(user_id)
+        session_manager.set_project_id(project_id)
+        session_manager.set_loop_id(loop_id)
         self.loop_file_path = loop_file_path
 
     def run(self):
@@ -19,7 +23,6 @@ class LoopController:
 
         code_source = loop_data['session']['code_source']
 
-        session_manager.regenerate_session_id()
         looper = Looper(loop_data, code_source)
         steps = looper.get_steps()
 

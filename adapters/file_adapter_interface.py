@@ -3,7 +3,6 @@ import os
 import app_global_config as config
 from abc import ABC, abstractmethod
 from typing import List, Any, AnyStr, Dict, Union, Set, Optional
-from core.databus import global_vars
 from PIL.Image import Image
 
 from core.models.broadcast_data import BroadcastData
@@ -217,18 +216,20 @@ def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
 
 
 def get_full_path(file_path_template: str) -> str:
-    if not isinstance(global_vars.global_step_name, str) or not isinstance(global_vars.global_loop_index, str):
-        raise ValueError("global step name must be a string and global loop index must be an str")
+    loop_index = session_manager.get_loop_index()
+    step = session_manager.get_global_step_name()
+    path = f"loop.{step}.{loop_index}"
+    user_id = session_manager.get_user_id()
+    loop_id = session_manager.get_loop_id()
 
-    path = f"loop.{global_vars.global_step_name}.{global_vars.global_loop_index}"
 
     last_part_of_the_path: str = file_path_template.replace(
         '{{SESSION_ID}}', session_manager.get_session_id()[:8]
     ).replace(
-        '{{FOREACH_STEP_UUID}}', str(global_vars.global_loop_index)
+        '{{FOREACH_STEP_UUID}}', str(loop_index)
     ).replace('{{PATH}}', path)
 
-    base_path = get_file_system_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID)
+    base_path = get_file_system_by_user_and_loop(user_id, loop_id)
 
     full_path = base_path + last_part_of_the_path
 

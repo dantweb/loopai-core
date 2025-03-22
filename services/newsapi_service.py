@@ -4,8 +4,8 @@ import ast
 from dotenv import load_dotenv
 from eventregistry import *
 
-from core.databus import global_vars
 from core.services.logger_service import LoggerService
+from core.services.session import session_manager
 
 load_dotenv()
 
@@ -13,18 +13,18 @@ load_dotenv()
 class NewsApiService:
 
     def __init__(self):
-        self.key = global_vars.NEWSAPI_API_KEY
+        self.key = session_manager.get_env('NEWSAPI_API_KEY')
         # Initialize API client
 
     def get_fresh_headlines_by_topic(self, first_parameter, second_parameter, connector_id, max_results):
         er = EventRegistry(apiKey=self.key, verboseOutput=True, allowUseOfArchive=False)
 
-        logger = LoggerService()
+        logger_service = LoggerService()
         # get the USA URI
         # local_server = er.getLocationUri("")  # = http://en.wikipedia.org/wiki/United_States
 
         keywords = first_parameter
-        logger.info('[NewsApiService::get_fresh_headlines_by_topic] keywords: ' + keywords)
+        logger_service.info('[NewsApiService::get_fresh_headlines_by_topic] keywords: ' + keywords)
         # logger.info(f"local_server: " + str(local_server))
         keywords_list = keywords.split(';')
 
@@ -37,8 +37,8 @@ class NewsApiService:
         search_results = q.execQuery(er, sortBy="date", maxItems=max_results)
         articles_list = [article for article in search_results]
 
-        logger.info(f"max_Results = {max_results}")
-        logger.info(f"total results = {len(articles_list)}")
+        logger_service.info(f"max_Results = {max_results}")
+        logger_service.info(f"total results = {len(articles_list)}")
 
         article_list_filtered = []
         for article in search_results:

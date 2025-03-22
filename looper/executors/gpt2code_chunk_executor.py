@@ -1,16 +1,8 @@
 import base64
 import json
-import os
 import requests
-
-import openai
-from dotenv import load_dotenv
-
-from app_global_config import is_valid_json
-from core.databus import global_vars
-from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
-from core.looper.executors.gpt_executor import GptExecutor
+from core.services.session import session_manager
 
 
 class Gpt2code_chunkExecutor(Gpt2codeExecutor):
@@ -37,7 +29,7 @@ class Gpt2code_chunkExecutor(Gpt2codeExecutor):
         # Compress and encode user content
         # Define the API endpoint and key
         api_endpoint = "https://api.openai.com/v1/chat/completions"
-        api_key = global_vars.USER_GPT_API_KEY
+        api_key = session_manager.get_env('USER_GPT_API_KEY')
 
         headers = {
             'Content-Type': 'application/json',

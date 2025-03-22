@@ -1,17 +1,10 @@
 # src/looper/looper.py
-import os
 from typing import List
-import app_global_config as config
-from dotenv import load_dotenv
-
-from core.adapters.file_adapter_interface import get_loop_config_base_path_by_user_and_loop
-from core.databus import global_vars
 from core.models.action_config import ActionConfig
 from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.models.step_model import StepModel
 from core.services.logger_service import LoggerService
-from web.services.socket_io_service import socket
 
 class Looper:
     def __init__(self, loop_data: str, code_source: str, parent_step: str = None):

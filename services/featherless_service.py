@@ -9,11 +9,12 @@ from dotenv import load_dotenv
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
+from core.services.session import session_manager
 
 load_dotenv()
 
-FEATHERLESS_API_URL = os.getenv('FEATHERLESS_API_URL', 'featherless_url')
-FEATHERLESS_API_KEY = os.getenv('FEATHERLESS_API_KEY', 'dummy_key')
+FEATHERLESS_API_URL = session_manager.get_env('FEATHERLESS_API_URL') or 'none'
+FEATHERLESS_API_KEY = session_manager.get_env('FEATHERLESS_API_KEY') or 'fucking_api_key_is_wrong'
 
 class FeatherlessService(ServiceInterface):
     RETRY_ATTEMPTS = 5
@@ -40,7 +41,7 @@ class FeatherlessService(ServiceInterface):
         self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] user_content: {user_content}")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
-        self.logger.info(f"[FeatherlessService::get_response] url: {os.getenv('FEATHERLESS_API_URL')}")
+        self.logger.info(f"[FeatherlessService::get_response] url: {session_manager.get_env('FEATHERLESS_API_URL')}")
 
         last_exception = None
         for attempt in range(1, self.RETRY_ATTEMPTS + 1):
@@ -61,17 +62,20 @@ class FeatherlessService(ServiceInterface):
                     f"[FeatherlessService::get_response] Get response successfully on attempt {attempt}: {self.response}"
                 )
 
-                # Extract and clean the response content.
-                unfiltered = self.response.model_dump()['choices'][0]['message']['content']
+                if hasattr(self.response, 'model_dump'):
+                    unfiltered = self.response.model_dump()['choices'][0]['message']['content']
 
-                result_content = re.sub(
-                    r'^```json\s*|\s*```$', '',
-                    unfiltered, flags=re.MULTILINE
-                )
+                    result_content = re.sub(
+                        r'^```json\s*|\s*```$', '',
+                        unfiltered, flags=re.MULTILINE
+                    )
 
-                self.logger.info(
-                    f"[FeatherlessService::get_response] Cleaned response content: {result_content}"
-                )
+                    self.logger.info(
+                        f"[FeatherlessService::get_response] Cleaned response content: {result_content}"
+                    )
+                else:
+                    result_content = self.response.choices[0].message.content
+
                 return result_content
 
             except Exception as e:

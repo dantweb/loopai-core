@@ -4,9 +4,8 @@ import ast
 from dotenv import load_dotenv
 from eventregistry import *
 import feedparser
-
-from core.databus import global_vars
 from core.services.logger_service import LoggerService
+from core.services.session import session_manager
 
 from web.routes.filesystem import logger_service
 
@@ -15,7 +14,7 @@ load_dotenv()
 class TechnewsService:
 
     def __init__(self):
-        self.key = global_vars.NEWSAPI_API_KEY
+        self.key = session_manager.get_env('NEWSAPI_API_KEY')
         self.logger = LoggerService()
 
     def fetch_news_for_topic(self, first_parameter, topic, max_items=10) -> list:

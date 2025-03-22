@@ -8,13 +8,13 @@ from typing import List, Dict
 
 from PIL.Image import Image
 from dotenv import load_dotenv, dotenv_values
+from flask import session
 from sqlalchemy import nulls_last
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
     get_file_system_by_user_and_loop, clean_env_content
 from core.adapters.filesystem_adapter import FilesystemAdapter
-from core.databus import global_vars
 import app_global_config as config
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
@@ -25,6 +25,7 @@ from core.models.broadcast_data import BroadcastData
 from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
+from core.services.session import session_manager
 from web.admin_models import db
 
 logger = LoggerService()
@@ -56,8 +57,8 @@ class StepModel:
         self.output_adapters = []
         self.input_adapters = []
 
-        global_vars.global_step_name = name
-        global_vars.global_loop_index = 'start'
+        session_manager.set_step_name(name)
+        session_manager.set_global_loop_index('start')
 
         # Parse the loop YAML file to get the code source path
         self.loop_data = loop_data
@@ -95,9 +96,9 @@ class StepModel:
                 self.output_adapters.append(output_adapter_class(output_config.image['name']))
             if output_config.wordpress:
                 output_adapter_class = self.load_adapter('wordpress')
-                wp_site = os.getenv(output_config.wordpress['wp_site'])
-                wp_username = os.getenv(output_config.wordpress['wp_username'])
-                wp_password = os.getenv(output_config.wordpress['wp_password'])
+                wp_site = session_manager.get_env(output_config.wordpress['wp_site'])
+                wp_username = session_manager.get_env(output_config.wordpress['wp_username'])
+                wp_password = session_manager.get_env(output_config.wordpress['wp_password'])
                 self.output_adapters.append(
                     output_adapter_class(
                         connector_id = output_config.wordpress['connector'],
@@ -112,8 +113,8 @@ class StepModel:
                 self.output_adapters.append(
                     output_adapter_class(
                         output_config.filesystem['code_dir'],
-                        config.GLOBAL_USER_ID,
-                        config.GLOBAL_LOOP_ID
+                        session_manager.get_user_id(),
+                        session_manager.get_loop_id()
                     )
                 )
             if output_config.broadcast:
@@ -159,8 +160,8 @@ class StepModel:
                 self.input_adapters.append(
                     input_adapter_class(
                         input_config.filesystem['code_dir'],
-                        config.GLOBAL_USER_ID,
-                        config.GLOBAL_LOOP_ID
+                        session_manager.get_user_id(),
+                        session_manager.get_loop_id()
                     )
                 )
 
@@ -192,8 +193,8 @@ class StepModel:
 
     def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
-        global_vars.global_step_name = step_name
-        global_vars.global_loop_index = loop_index
+        session_manager.set_step_name(step_name)
+        session_manager.set_global_loop_index(loop_index)
         step_input_data = []
         # Load executor
         executor_class = self.load_executor(self.action.executor)
@@ -287,7 +288,6 @@ class StepModel:
         logger.info(f"[StepModel::execute] system content name : {self.action.system_content}")
         logger.info(f"[StepModel::execute] system content template typeOf ({type(system_content)}) : {system_content}")
 
-
         # Create prompt - reading context only from first input source
         prompt = self.executor.prepare_prompt(
             step_input_data,
@@ -378,7 +378,10 @@ class StepModel:
 
     def load_code_module(self, module_path: str):
         module_absolute_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID),
+            get_loop_config_base_path_by_user_and_loop(
+                session_manager.get_user_id(),
+                session_manager.get_loop_id()
+            ),
             module_path
         )
 
@@ -400,25 +403,24 @@ class StepModel:
         return dotenv_values(stream=io.StringIO(project.project_env))
 
     def get_loop_env(self, loop_id: str) -> Dict[str, str]:
-        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, loop_id), ".env")
+        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(session_manager.get_user_id(), loop_id), ".env")
         if os.path.exists(loop_env_path):
             return dotenv_values(loop_env_path)
         return {}
 
     def get_step_env(self, step_name: str) -> Dict[str, str]:
         step_env_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(config.GLOBAL_USER_ID, config.GLOBAL_LOOP_ID),
+            get_loop_config_base_path_by_user_and_loop(session_manager.get_user_id(), session_manager.get_loop_id()),
             f"{step_name}.env")
         if os.path.exists(step_env_path):
             return dotenv_values(step_env_path)
         return {}
 
     def compile_environment_for_step(self, step_name: str):
-        project_env = self.project_env(config.GLOBAL_PROJECT_ID)
-        loop_env = self.get_loop_env(config.GLOBAL_LOOP_ID)
+        project_env = self.project_env(session_manager.get_project_id())
+        loop_env = self.get_loop_env(session_manager.get_loop_id())
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
-        os.environ.clear()
-        os.environ.update(merged_env)
+        session_manager.set_environment(merged_env)
 

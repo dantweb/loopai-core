@@ -1,18 +1,13 @@
 # src/looper/executors/gpt_executor.py
-import json
-import os
 import requests
-from io import BytesIO
-
-import openai
-from PIL import Image
 from dotenv import load_dotenv
 
-from app_global_config import is_valid_json, YOUTUBE_API_KEY
 from core.looper.executors.executor_interface import ExecutorInterface
+from core.services.session import session_manager
 
 load_dotenv()
 
+YOUTUBE_API_KEY = session_manager.get_env('YOUTUBE_API_KEY') or 'no-youtoube-api-key'
 
 class YoutubeExecutor(ExecutorInterface):
     def __init__(self, model: str):

@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 
 from core.adapters.adapter_interface import AdapterInterface
 from core.adapters.broadcast_adapter import BroadcastAdapter
-from core.databus import global_vars
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.looper import Looper
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
+from core.services.session import session_manager
 
 load_dotenv()
 
@@ -95,9 +95,10 @@ class ForeachExecutor(ExecutorInterface):
 
         broadcast_data = BroadcastData(row)
         self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
-        global_vars.global_loop_index = str(uuid.uuid4())
+        session_manager.set_global_loop_index(str(uuid.uuid4()))
+
         for step in steps:
-            global_vars.global_step_name = str(uuid.uuid4())
+            session_manager.set_global_step_name(str(uuid.uuid4()))
             step_result = step.execute(step.name, self.parent_step)
             logger.info(f"[ForeachExecutor::process_row_and_execute_steps] execute result: {str(step_result['result'])}")
             self.result.append(step_result['result'])

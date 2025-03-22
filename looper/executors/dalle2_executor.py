@@ -1,19 +1,16 @@
 # src/looper/executors/gpt_executor.py
 import json
-import os
 import requests
-import pandas as pd
 from io import BytesIO
 
 import openai
 from PIL import Image
 from dotenv import load_dotenv
+from openai import api_key
 
-from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.databus import global_vars
-from app_global_config import is_valid_json
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
+from core.services.session import session_manager
 
 load_dotenv()
 
@@ -24,7 +21,14 @@ class Dalle2Executor(ExecutorInterface):
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
-        self.openai = openai.OpenAI(api_key=global_vars.USER_GPT_API_KEY)
+
+        open_ai_sdk_api_key = (
+                session_manager.get_env("USER_GPT_API_KEY")
+                or session_manager.get_env("OPENAI_API_KEY")
+                or session_manager.get_env("OPEN_AI_SDK_API_KEY")
+        )
+
+        self.openai = openai.OpenAI(api_key=open_ai_sdk_api_key)
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
         logger.info(f"[DalleExecutor::prepare_prompt] preparing prompt for GPT...")

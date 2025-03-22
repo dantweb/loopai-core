@@ -4,8 +4,6 @@ import requests
 import json
 from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
-
-from core.databus import global_vars
 from core.models.broadcast_data import BroadcastData
 from core.services.service_interface import ServiceInterface
 
@@ -21,9 +19,9 @@ class LoopAIDirectWPAPIService(ServiceInterface):
                  wp_password=None
          ):
         super().__init__('LoopAIDirectWPAPIService')
-        self.wp_site = wp_site or global_vars.WORDPRESS_URL
-        self.wp_username = wp_username or global_vars.WORDPRESS_USERNAME
-        self.wp_application_password = wp_password or global_vars.WORDPRESS_PASSWORD
+        self.wp_site = wp_site
+        self.wp_username = wp_username
+        self.wp_application_password = wp_password
         self.auth = HTTPBasicAuth(self.wp_username, self.wp_application_password)
 
 

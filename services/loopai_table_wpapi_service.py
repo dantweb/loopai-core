@@ -11,7 +11,7 @@ load_dotenv()
 
 class LoopAITableWPAPIService:
     def __init__(self, wp_site=None, wp_username=None, wp_application_password=None):
-        self.wordpress_service = WordPressService()
+        self.wordpress_service = WordPressService(wp_site, wp_username, wp_application_password)
         self.wp_site = wp_site or os.getenv("WP_URL_BASIC")
         self.wp_username = wp_username or os.getenv("WP_USER_2")
         self.wp_application_password = wp_application_password or os.getenv("WP_PASSWORD_2")

@@ -8,9 +8,9 @@ import json
 # Load environment variables
 load_dotenv()
 
-WP_URL = os.getenv("WORDPRESS_URL", "https://arx.biomed.peroxid.org/")
-WP_USERNAME = os.getenv("WORDPRESS_USERNAME", '__loopai_dantweb_')
-WP_APPLICATION_PASSWORD = os.getenv("WORDPRESS_PASSWORD", '333ddd4449993kkksss')
+WP_URL = os.getenv("WORDPRESS_URL", "https://en.futb.ocva.eu")
+WP_USERNAME = os.getenv("WORDPRESS_USERNAME", '__loopai_project')
+WP_APPLICATION_PASSWORD = os.getenv("WORDPRESS_PASSWORD", '__Highly_secure_PHRAZE28929')
 
 auth = HTTPBasicAuth(WP_USERNAME, WP_APPLICATION_PASSWORD)
 

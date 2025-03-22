@@ -1,31 +1,24 @@
 import json
-import os
 from io import BytesIO
 import replicate
 import requests
 from PIL import Image
-from dotenv import load_dotenv
-
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
-
-load_dotenv()
+from core.services.session import session_manager
 
 from core.services.logger_service import LoggerService
-
-logger = LoggerService()
-
 
 class ReplicateExecutor(ExecutorInterface):
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
-        self.logger_service = logger
+        self.logger_service = LoggerService()
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
-        logger.info(f"[ReplicateExecutor::prepare_prompt] preparing prompt for Replicate...")
-        logger.info(f"[ReplicateExecutor::prepare_prompt] input_data: {input_data}")
-        logger.info(f"[ReplicateExecutor::prepare_prompt] input_data type: {type(input_data)}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] preparing prompt for Replicate...")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data: {input_data}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data type: {type(input_data)}")
 
         if input_data is None or input_data == '':
             raise Exception("Input data is empty.")
@@ -41,7 +34,7 @@ class ReplicateExecutor(ExecutorInterface):
             raise Exception("[ReplicateExecutor] Request content is empty.")
 
         prompt_template['requestContent'] = request_content_json
-        logger.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template: {prompt_template}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template: {prompt_template}")
         return prompt_template
 
     def run(self, model, system_content, user_content, max_tokens):
@@ -55,6 +48,10 @@ class ReplicateExecutor(ExecutorInterface):
         return result
 
     def generate_image_from_replicate(self, model, user_content, width: int = 1024, height: int = 1024):
+        REPLICATE_API_TOKEN = session_manager.get_env('REPLICATE_API_TOKEN')
+
+        client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+
         try:
             # Log the input parameters
             self.logger_service.info(f"[ReplicateExecutor] Generating image with model: {model}")
@@ -62,7 +59,7 @@ class ReplicateExecutor(ExecutorInterface):
             self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
 
             # Call the Replicate API
-            output = replicate.run(
+            output = client.run(
                 model,
                 input={
                     "prompt": str(user_content),  # Ensure the prompt is a string and truncate if necessary

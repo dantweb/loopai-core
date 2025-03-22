@@ -1,6 +1,6 @@
 import os
 import wordpress
-from core.databus import global_vars
+
 from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost, EditPost, GetPosts, GetPost
 from wordpress_xmlrpc.methods.media import UploadFile
@@ -15,11 +15,7 @@ load_dotenv()
 
 class WordPressService:
 
-    def __init__(self):
-        # Initialize API client
-        wp_url = global_vars.WORDPRESS_URL
-        wp_username = global_vars.WORDPRESS_USERNAME
-        wp_password = global_vars.WORDPRESS_PASSWORD
+    def __init__(self, wp_url=None, wp_username=None, wp_password=''):
         self.client = Client(wp_url, wp_username, wp_password)
         self.wp_posts = self.get_all_posts()
 
