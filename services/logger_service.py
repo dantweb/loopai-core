@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 import app_global_config as config
 import threading
+
+from core.services.session import session_manager
 from web.services.socket_io_service import send_message_to_user
 
 class LoggerService:
@@ -19,7 +21,7 @@ class LoggerService:
         return cls._instance
 
     def __init__(self, user_id=None):
-        self.user_id = user_id or config.GLOBAL_USER_ID
+        self.user_id = user_id or session_manager.get_user_id()
         if self.__initialized:
             return
         self.log_lock = threading.Lock()
@@ -49,7 +51,7 @@ class LoggerService:
         # Apply filtering to the log message.
         filtered_message = self._filter_message(message)
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
-        web_user_id = config.GLOBAL_USER_ID
+        web_user_id = session_manager.get_user_id()
         log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {filtered_message}"
 
         if config.WEB_OR_CLI == 'web':
@@ -58,7 +60,6 @@ class LoggerService:
                 send_message_to_user(self.user_id, action, {'message': filtered_message})
 
         self.logs.append(log_message)
-        print(log_message)
 
     def info(self, message: str):
         self.log(message, 'info')
