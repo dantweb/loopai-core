@@ -14,7 +14,7 @@ load_dotenv()
 class TechnewsService:
 
     def __init__(self):
-        self.key = session_manager.get_env('NEWSAPI_API_KEY')
+        self.key = session_manager.get_env('NEWSAPI_API_KEY') or 'dummy-newsapi-key'
         self.logger = LoggerService()
 
     def fetch_news_for_topic(self, first_parameter, topic, max_items=10) -> list:

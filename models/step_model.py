@@ -2,23 +2,16 @@
 import importlib.util
 import io
 import os
-import re
-import uuid
 from typing import List, Dict
 
 from PIL.Image import Image
-from dotenv import load_dotenv, dotenv_values
-from flask import session
-from sqlalchemy import nulls_last
+from dotenv import dotenv_values
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
-from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
-    get_file_system_by_user_and_loop, clean_env_content
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop
 from core.adapters.filesystem_adapter import FilesystemAdapter
-import app_global_config as config
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
-from core.looper.executors.gpt_executor import GptExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
 from core.models.action_config import ActionConfig
 from core.models.broadcast_data import BroadcastData
@@ -56,14 +49,15 @@ class StepModel:
         self.executor = None
         self.output_adapters = []
         self.input_adapters = []
-
-        session_manager.set_step_name(name)
+        session_manager.set_step_name(self.name)
         session_manager.set_global_loop_index('start')
 
         # Parse the loop YAML file to get the code source path
         self.loop_data = loop_data
         self.code_source = code_source
         self.code_module = self.load_code_module(self.code_source)
+        self.compile_environment_for_step(self.name)
+        self.logger_service.info(f"[StepModel::__init__] environment '{str(session_manager.get_environment())}'")
 
         for output_config in self.output:
             if output_config.csv:
@@ -417,10 +411,12 @@ class StepModel:
         return {}
 
     def compile_environment_for_step(self, step_name: str):
+        self.logger_service.info(f"[StepModel::compile_environment_for_step] Compiling environment for step {step_name}")
         project_env = self.project_env(session_manager.get_project_id())
         loop_env = self.get_loop_env(session_manager.get_loop_id())
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
         session_manager.set_environment(merged_env)
+        self.logger_service.info(f"[StepModel::compile_environment_for_step] Environment {str(merged_env)}")
 

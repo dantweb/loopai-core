@@ -13,6 +13,7 @@ class SessionManager:
         self._session_id: str = str(uuid.uuid4())
         self._project_id: Optional[int] = None
 
+
     def get_session_id(self):
         return self._session_id
 
@@ -31,6 +32,11 @@ class SessionManager:
         self._environment = environment
 
     def get_env(self, value_name: str):
+        if not self._environment:
+            return None
+        if value_name not in self._environment:
+            return None
+
         return self._environment[value_name]
 
     def set_loop_id(self, loop_id: int):
