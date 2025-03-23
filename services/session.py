@@ -31,7 +31,7 @@ class SessionManager:
         self._environment = environment
 
     def get_env(self, value_name: str):
-        return self._environment.get(value_name)
+        return self._environment[value_name]
 
     def set_loop_id(self, loop_id: int):
         self._loop_id = loop_id
