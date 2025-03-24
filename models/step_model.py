@@ -408,6 +408,9 @@ class StepModel:
         step_env_path = os.path.join(
             get_loop_config_base_path_by_user_and_loop(session_manager.get_user_id(), session_manager.get_loop_id()),
             f"{step_name}.env")
+        # step .env are in filesystem root of the current loop
+        step_env_path = step_env_path.replace('/config/', '/filesystem/')
+
         if os.path.exists(step_env_path):
             return dotenv_values(step_env_path)
         return {}
