@@ -139,7 +139,9 @@ class StepModel:
                         mapping
                     )
                 )
-
+            if input_config.http:
+                input_adapter_class = self.load_adapter('http')
+                self.input_adapters.append(input_adapter_class(input_config.http['url']))
             if input_config.text:
                 input_adapter_class = self.load_adapter('text')
                 self.input_adapters.append(input_adapter_class(input_config.text['name']))

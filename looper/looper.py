@@ -26,6 +26,7 @@ class Looper:
                 InputConfig(
                     text=step_input_config.get('text') if 'text' in step_input_config else None,
                     image=step_input_config.get('image') if 'image' in step_input_config else None,
+                    http=step_input_config.get('http') if 'http' in step_input_config else None,
                     csv=step_input_config.get('csv') if 'csv' in step_input_config else None,
                     broadcast=step_input_config.get('broadcast') if 'broadcast' in step_input_config else None,
                     source=step_input_config.get('broadcast').get('source') if 'broadcast' in step_input_config and 'source' in step_input_config['broadcast'] else None,

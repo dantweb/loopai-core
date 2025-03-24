@@ -12,3 +12,4 @@ class InputConfig:
     output_format: Optional[str] = None
     field: Optional[str] = None
     filesystem: Dict[str, str] = None
+    http: Dict[str, str] = None

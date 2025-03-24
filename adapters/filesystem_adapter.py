@@ -3,6 +3,7 @@ import os
 import app_global_config as config
 
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
+from core.models.broadcast_data import BroadcastData
 
 
 class FilesystemAdapter(FileAdapterInterface):
@@ -17,7 +18,7 @@ class FilesystemAdapter(FileAdapterInterface):
         self.absolute_path = self.base_path + self.source
         self.root_path = config.LOOPAI_ROOT
 
-    def read(self, step_id) -> list:
+    def read(self, step_id) -> BroadcastData:
         file_paths = []
         for root, _, files in os.walk(self.absolute_path):
             for file in files:
@@ -35,9 +36,10 @@ class FilesystemAdapter(FileAdapterInterface):
                 relative_path = os.path.relpath(file_path, self.absolute_path)
 
                 file_paths.append({'path': relative_path, 'file_content': file_content})
-        return file_paths
 
-    def write(self, step_id: str, data: list) -> bool:
+        return BroadcastData({'result': file_paths})
+
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         if 'result' in data:
             if 'response' in data['result']:
                 if 'updated_files' in data['result']['response']:
