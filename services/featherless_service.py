@@ -124,14 +124,14 @@ class FeatherlessService(ServiceInterface):
                     return response  # Return the response if valid
 
                 # If empty, print a message and retry
-                print(f"Attempt {attempt + 1}/{max_retries}: Empty response, retrying in {pause_time} seconds...")
+                self.logger.info(f"Attempt {attempt + 1}/{max_retries}: Empty response, retrying in {pause_time} seconds...")
                 time.sleep(pause_time)
 
             except Exception as e:
                 # Handle exceptions (e.g., network issues) and retry
-                print(f"Attempt {attempt + 1}/{max_retries}: Error occurred: {e}. Retrying in {pause_time} seconds...")
+                self.logger.error(f"Attempt {attempt + 1}/{max_retries}: Error occurred: {e}. Retrying in {pause_time} seconds...")
                 time.sleep(pause_time)
 
         # If all retries fail, return None
-        print(f"All {max_retries} attempts failed. No valid response received.")
+        self.logger.info(f"All {max_retries} attempts failed. No valid response received.")
         return None
