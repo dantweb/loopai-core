@@ -16,10 +16,10 @@ class FreshrssExecutor(ExecutorInterface):
         ## Extract the first element from the list
         return prompt_template
 
-    def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
+    def run(self, model, system_content, user_content, fine_tuning) -> BroadcastData:
         newsapi_response = {
             'response': self.freshrss_service.get_fresh_headlines(
-                system_content, user_content, '', max_tokens
+                system_content, user_content, '', fine_tuning
             )
         }
         result = BroadcastData(newsapi_response)

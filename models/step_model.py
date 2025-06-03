@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import os
+import uuid
 from typing import List, Dict
 
 from PIL.Image import Image
@@ -45,12 +46,14 @@ class StepModel:
         self.input = step_input
         self.output = output
         self.action = action
-        self.max_tokens = action.max_tokens
+        self.fine_tuning = action.fine_tuning
         self.executor = None
         self.output_adapters = []
         self.input_adapters = []
         session_manager.set_step_name(self.name)
         session_manager.set_global_loop_index('start')
+        session_manager.set_loop_index(str(uuid.uuid4()))
+
 
         # Parse the loop YAML file to get the code source path
         self.loop_data = loop_data
@@ -191,6 +194,7 @@ class StepModel:
         self.compile_environment_for_step(step_name)
         session_manager.set_step_name(step_name)
         session_manager.set_global_loop_index(loop_index)
+        session_manager.set_global_step_name(step_name)
         step_input_data = []
         # Load executor
         executor_class = self.load_executor(self.action.executor)
@@ -299,19 +303,13 @@ class StepModel:
             result = step_input_data
         elif isinstance(self.executor, BashExecutor):
             config = self.action.config if hasattr(self.action, 'config') else {}
-            result = self.executor.run(
-                self.action.model,
-                system_content,
-                prompt,
-                self.action.max_tokens,
-                config
-            )
+            result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
             result = self.executor.run(
                 self.action.model,
                 system_content,
                 prompt,
-                self.action.max_tokens
+                self.action.fine_tuning
             )
 
         # Write output
@@ -356,7 +354,7 @@ class StepModel:
         self.executor.set_parent_step(self.name)
         self.executor.set_foreach_data(input_data)
         self.executor.set_output_adapters(self.output_adapters)
-        self.executor.run(self.action.model, '', '', '')
+        self.executor.run(self.action.model, '', '', '', )
 
     def cleanup(self, step_id):
 

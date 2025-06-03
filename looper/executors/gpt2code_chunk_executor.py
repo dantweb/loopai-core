@@ -25,7 +25,7 @@ class Gpt2code_chunkExecutor(Gpt2codeExecutor):
         encoded_data = base64.b64encode(compressed_data).decode('utf-8')
         return encoded_data
 
-    def run(self, model, system_content, user_content, max_tokens):
+    def run(self, model, system_content, user_content, fine_tuning):
         # Compress and encode user content
         # Define the API endpoint and key
         api_endpoint = "https://api.openai.com/v1/chat/completions"
@@ -42,7 +42,7 @@ class Gpt2code_chunkExecutor(Gpt2codeExecutor):
                 {"role": "system", "content": json.dumps(system_content)},
                 {"role": "user", "content": json.dumps(user_content)}
             ],
-            "max_tokens": max_tokens
+            "max_tokens": fine_tuning
         }
 
         response = requests.post(api_endpoint, headers=headers, data=json.dumps(payload))

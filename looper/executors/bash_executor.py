@@ -12,18 +12,23 @@ load_dotenv()
 
 class BashExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__(model)
         self.model = model
 
     def prepare_prompt(self, input_data: list, prompt_template: str):
         # Prepare the command to be executed based on the input data and config
         return input_data
 
-    def run(self, model, system_content, user_content, max_tokens, config):
+    def run(self, model, system_content, user_content, fine_tuning, config):
         bash_script_path = config.get('bash_script_path')
+
+        self.logger_service.log(f"Bash script path: {bash_script_path}")
+
         if not bash_script_path:
             raise ValueError("Bash script path not provided in the config.")
 
         command = get_full_path(bash_script_path)
+        self.logger_service.log(f"Full command: {command}")
 
         if not os.path.exists(command):
             raise ValueError("Bash script path does not exist.")

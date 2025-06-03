@@ -38,7 +38,7 @@ class ForeachExecutor(ExecutorInterface):
     def set_foreach_data(self, foreach_data) -> str:
         self.foreach_data = foreach_data
 
-    def run(self, model, system_content, user_content, max_tokens):
+    def run(self, model, system_content, user_content, fine_tuning):
         logger.info(f"[ForeachExecutor::run] ..going to run foreach-executor")
 
         looper = Looper(self.loop_data, self.loop_data['session']['code_source'], self.parent_step)
@@ -95,7 +95,6 @@ class ForeachExecutor(ExecutorInterface):
 
         broadcast_data = BroadcastData(row)
         self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
-        session_manager.set_global_loop_index(str(uuid.uuid4()))
 
         for step in steps:
             session_manager.set_global_step_name(str(uuid.uuid4()))

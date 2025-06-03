@@ -33,7 +33,7 @@ class LlmExecutor(ExecutorInterface):
 
         return prompt_template
 
-    def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
+    def run(self, model, system_content, user_content, temperature) -> BroadcastData:
         logger.info(f"[LlmExecutor::run] Calling LLM with model: {model}")
 
         valid_response = False
@@ -41,7 +41,7 @@ class LlmExecutor(ExecutorInterface):
         response = None
 
         while (not valid_response) and count < 10:
-            response = self.send_prompt_to_llm(model, system_content, user_content, max_tokens)
+            response = self.send_prompt_to_llm(model, system_content, user_content, temperature)
             valid_response = is_valid_json(response)
             if valid_response:
                 count = 99
@@ -55,9 +55,7 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-
                     user_content['error'] = "Your response cannot be converted to a valid JSON. Please try again. Avoid using special characters like new line CR and escaping symbols."
-
                     self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
 
                     count += 1
@@ -78,9 +76,9 @@ class LlmExecutor(ExecutorInterface):
 
         return broadcast_data
 
-    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, max_tokens):
+    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature):
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
-        return self.featherless.get_response(model, system_content, user_content, max_tokens)
+        return self.featherless.get_response(model, system_content, user_content, temperature)
 
 
     @staticmethod

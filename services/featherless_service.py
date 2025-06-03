@@ -35,7 +35,7 @@ class FeatherlessService(ServiceInterface):
         model: str,
         system_content: dict,
         user_content: BroadcastData,
-        max_tokens: int
+        temperature: float
     ) -> str:
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
@@ -53,7 +53,7 @@ class FeatherlessService(ServiceInterface):
                     model,
                     system_content,
                     user_content,
-                    max_tokens,
+                    temperature,
                     5,
                     2
                 )
@@ -91,7 +91,7 @@ class FeatherlessService(ServiceInterface):
                 else:
                     raise last_exception
 
-    def fetch_response_with_retries(self, client, model, system_content, user_content, max_tokens, max_retries, pause_time):
+    def fetch_response_with_retries(self, client, model, system_content, user_content, temperature, max_retries, pause_time):
         """
         Repeats the API call X times with a pause if the response is empty.
 
@@ -100,7 +100,7 @@ class FeatherlessService(ServiceInterface):
             model: Chat model name.
             system_content: System message content.
             user_content: User message content.
-            max_tokens: Max tokens allowed in response.
+            temperature: Max tokens allowed in response.
             max_retries: Number of maximum retries.
             pause_time: Pause time (in seconds) between retries.
 
@@ -116,7 +116,10 @@ class FeatherlessService(ServiceInterface):
                         {"role": "system", "content": json.dumps(system_content)},
                         {"role": "user", "content": json.dumps(user_content.__json__())}
                     ],
-                    timeout=300
+                    timeout=300,
+                    temperature=temperature,
+                    presence_penalty=0.5,  # Encourage new topics
+                    frequency_penalty=0.5, # Reduce repetition
                 )
 
                 # Check if response is not empty
