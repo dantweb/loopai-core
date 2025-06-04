@@ -104,20 +104,6 @@ class FeatherlessService(ServiceInterface):
         Returns:
             The response if successful, or None if none of the retries succeed.
         """
-        if temperature is None:
-            temperature = 0.7
-
-        # Ensure temperature is a float and within valid range
-        try:
-            temperature = float(temperature)
-        except (TypeError, ValueError):
-            temperature = 0.7
-
-        # Clamp temperature between 0.0 and 1.0
-        temperature = max(0.0, min(1.0, temperature))
-
-        if temperature < 0.0 or temperature > 1.0:
-            temperature = 0.7
 
         for attempt in range(max_retries):
             try:

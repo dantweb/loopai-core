@@ -76,7 +76,19 @@ class LlmExecutor(ExecutorInterface):
 
         return broadcast_data
 
-    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature):
+    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.7):
+
+        if temperature is None:
+            temperature = 0.7
+
+        # Ensure temperature is a float and within valid range
+        try:
+            temperature = float(temperature)
+        except (TypeError, ValueError):
+            temperature = 0.7
+
+        # Clamp temperature between 0.0 and 1.0
+        temperature = max(0.0, min(1.0, temperature))
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
         return self.featherless.get_response(model, system_content, user_content, temperature)
 
