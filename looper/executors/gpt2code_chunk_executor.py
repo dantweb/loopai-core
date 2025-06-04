@@ -25,7 +25,7 @@ class Gpt2code_chunkExecutor(Gpt2codeExecutor):
         encoded_data = base64.b64encode(compressed_data).decode('utf-8')
         return encoded_data
 
-    def run(self, model, system_content, user_content, fine_tuning):
+    def run(self, model, system_content, user_content, temperature=0.7, **kwargs):
         # Compress and encode user content
         # Define the API endpoint and key
         api_endpoint = "https://api.openai.com/v1/chat/completions"

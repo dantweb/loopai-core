@@ -303,12 +303,7 @@ class StepModel:
             config = self.action.config if hasattr(self.action, 'config') else {}
             result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
-            result = self.executor.run(
-                self.action.model,
-                system_content,
-                prompt,
-                self.action.fine_tuning
-            )
+            result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning)
 
         # Write output
         step_id = self.name  # or another appropriate identifier
@@ -352,7 +347,7 @@ class StepModel:
         self.executor.set_parent_step(self.name)
         self.executor.set_foreach_data(input_data)
         self.executor.set_output_adapters(self.output_adapters)
-        self.executor.run(self.action.model, '', '', '', )
+        self.executor.run(self.action.model, '', '', '')
 
     def cleanup(self, step_id):
 

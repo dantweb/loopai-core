@@ -49,7 +49,7 @@ class Looper:
                 model=step_details['action']['model'] if 'model' in step_details['action'] else None,
                 prompt=step_details['action']['prompt'] if 'prompt' in step_details['action'] else None,
                 system_content=step_details['action']['system_content'] if 'system_content' in step_details['action'] else None,
-                fine_tuning=step_details['action']['max_tokens'] if 'max_tokens' in step_details['action'] else None,
+                fine_tuning=step_details['action']['temperature'] if 'temperature' in step_details['action'] else 0.7,
                 config=step_details['action']['config'] if 'config' in step_details['action'] else None,
                 executor=step_details['action'].get('executor')  # Optional argument
             )

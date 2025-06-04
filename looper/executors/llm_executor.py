@@ -33,7 +33,7 @@ class LlmExecutor(ExecutorInterface):
 
         return prompt_template
 
-    def run(self, model, system_content, user_content, temperature=0.7) -> BroadcastData:
+    def run(self, model, system_content, user_content, temperature=0.7, **kwargs) -> BroadcastData:
         logger.info(f"[LlmExecutor::run] Calling LLM with model: {model}")
 
         valid_response = False
@@ -89,7 +89,9 @@ class LlmExecutor(ExecutorInterface):
 
         # Clamp temperature between 0.0 and 1.0
         temperature = max(0.0, min(1.0, temperature))
+
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
+
         return self.featherless.get_response(model, system_content, user_content, temperature)
 
 
