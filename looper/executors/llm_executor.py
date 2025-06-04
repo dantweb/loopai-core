@@ -33,7 +33,7 @@ class LlmExecutor(ExecutorInterface):
 
         return prompt_template
 
-    def run(self, model, system_content, user_content, temperature) -> BroadcastData:
+    def run(self, model, system_content, user_content, temperature=0.7) -> BroadcastData:
         logger.info(f"[LlmExecutor::run] Calling LLM with model: {model}")
 
         valid_response = False

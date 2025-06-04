@@ -236,8 +236,6 @@ class StepModel:
 
             if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
-            elif isinstance(self.executor, Gpt2codeExecutor) and isinstance(input_adapter, FilesystemAdapter):
-                fresh_data_from_input = input_adapter.read(first_parameter)
             else:
                 fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
 

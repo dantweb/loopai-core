@@ -13,9 +13,6 @@ from core.services.session import session_manager
 
 load_dotenv()
 
-FEATHERLESS_API_URL = session_manager.get_env('FEATHERLESS_API_URL') or 'none'
-FEATHERLESS_API_KEY = session_manager.get_env('FEATHERLESS_API_KEY') or 'fucking_api_key_is_wrong'
-
 class FeatherlessService(ServiceInterface):
     RETRY_ATTEMPTS = 5
     RETRY_DELAY = 5  # seconds
@@ -25,8 +22,8 @@ class FeatherlessService(ServiceInterface):
         self.response = None
         self.logger = LoggerService()
         self.client = OpenAI(
-            base_url=FEATHERLESS_API_URL,
-            api_key=FEATHERLESS_API_KEY,
+            base_url=session_manager.get_env('FEATHERLESS_API_URL') or 'none',
+            api_key=session_manager.get_env('FEATHERLESS_API_KEY') or 'fucking_api_key_is_wrong',
             timeout=120
         )
 
@@ -107,6 +104,21 @@ class FeatherlessService(ServiceInterface):
         Returns:
             The response if successful, or None if none of the retries succeed.
         """
+        if temperature is None:
+            temperature = 0.7
+
+        # Ensure temperature is a float and within valid range
+        try:
+            temperature = float(temperature)
+        except (TypeError, ValueError):
+            temperature = 0.7
+
+        # Clamp temperature between 0.0 and 1.0
+        temperature = max(0.0, min(1.0, temperature))
+
+        if temperature < 0.0 or temperature > 1.0:
+            temperature = 0.7
+
         for attempt in range(max_retries):
             try:
                 # Make the request

@@ -1,7 +1,6 @@
 # src/adapters/filesystem_adapter.py
 import os
 import app_global_config as config
-
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
 from core.models.broadcast_data import BroadcastData
 
@@ -15,10 +14,10 @@ class FilesystemAdapter(FileAdapterInterface):
         if config.WEB_OR_CLI == 'web':
             self.base_path = get_file_system_by_user_and_loop(global_user_id, global_loop_id)
 
-        self.absolute_path = self.base_path + self.source
+        self.absolute_path: str = self.base_path + self.source
         self.root_path = config.LOOPAI_ROOT
 
-    def read(self, step_id) -> BroadcastData:
+    def read(self, step_id, second_parameter=None) -> BroadcastData:
         file_paths = []
         for root, _, files in os.walk(self.absolute_path):
             for file in files:
