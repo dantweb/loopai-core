@@ -57,7 +57,7 @@ class BashExecutor(ExecutorInterface):
                 f'''
                 set -e
                 apk add --no-cache bash git
-                cd /var/www/filesystem
+                cd /var/www/filesystem/
                 ls -la
                 bash "{script_name}"
                 '''
