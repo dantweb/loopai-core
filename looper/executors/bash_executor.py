@@ -2,98 +2,105 @@ import os
 import uuid
 import subprocess
 from dotenv import load_dotenv
+import shutil
 
-from app_global_config import is_valid_json
-from core.adapters.file_adapter_interface import FileAdapterInterface, get_full_path
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
+from core.services.session import session_manager
 
 load_dotenv()
 
 
 class BashExecutor(ExecutorInterface):
+
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
         # Default Docker image if not specified in config
         self.default_image = "python:3.10-slim"
 
+
     def prepare_prompt(self, input_data: list, prompt_template: str):
         return input_data
 
-    def run_bash_in_container(self, image_name, script_host_path, script_container_path="/tmp/script.sh",
-                              additional_args=""):
-        # Generate unique container name
-        container_name = f"temp_executor_{uuid.uuid4().hex[:8]}"
+    def run_bash_in_container(self, script_name, user_id: str, loop_id: str):
+        # 1. Get the filesystem path for the specific user and loop
+        filesystem_path = get_file_system_by_user_and_loop(user_id, loop_id)
+        container_name = f'loop_{loop_id}'
 
         try:
-            # Mount the host's Docker socket and install Docker CLI
-            docker_run_cmd = [
-                "docker", "run", "-dit",
-                "-v", "/var/run/docker.sock:/var/run/docker.sock",  # Mount Docker socket
-                "-v", "$(which docker):/usr/bin/docker",  # Mount Docker CLI
-                "--privileged",  # Give container privileged access
-                "--name", container_name,
-                image_name,
-                "/bin/bash"
+            # 1. Create and start the container
+            create_container_cmd = [
+                'docker', 'run', '-d',  # Detached mode to keep container running
+                '--name', container_name,
+                '-v', f'{filesystem_path}/.:/var/www/filesystem',
+                '-v', f'{filesystem_path}/.ssh:/root/.ssh',
+                'alpine:latest',
+                '/bin/sh', '-c', 'sleep infinity'  # Keep container running
             ]
 
-            # 1. Create and start a container with Docker socket access
-            subprocess.run(docker_run_cmd, check=True)
+            subprocess.run(create_container_cmd, check=True)
 
-            # 2. Ensure Docker is installed in the container
-            install_docker_cmd = """
-            # Install Docker CLI if not present
-            if ! command -v docker &> /dev/null; then
-                apt-get update && apt-get install -y docker.io
-            fi
-            """
+            # 2. Copy filesystem contents
+            copy_filesystem_cmd = [
+                'docker', 'cp',
+                f'{filesystem_path}/.',
+                f'{container_name}:/var/www/filesystem'
+            ]
+            subprocess.run(copy_filesystem_cmd, check=True)
 
-            # 3. Copy the script into the container
-            subprocess.run(
-                ["docker", "cp", script_host_path, f"{container_name}:{script_container_path}"],
-                check=True
-            )
+            # 3. Run bash script inside the container
+            run_script_cmd = [
+                'docker', 'exec',
+                container_name,
+                '/bin/sh', '-c',
+                f'''
+                set -e
+                apk add --no-cache bash git
+                cd /var/www/filesystem
+                ls -la
+                bash "{script_name}"
+                '''
+            ]
 
-            # 4. Make the script executable and run it with Docker access
-            exec_cmd = f"""
-            {install_docker_cmd}
-            chmod +x {script_container_path}
-            {script_container_path} {additional_args}
-            """
-
+            # Execute the script and capture output
             result = subprocess.run(
-                ["docker", "exec", container_name, "bash", "-c", exec_cmd],
+                run_script_cmd,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
+                timeout=300  # 5-minute timeout
             )
 
-            # 5. Process and return output
-            output = result.stdout.strip()
             return {
-                "result": output,
-                "stderr": result.stderr,
-                "success": True
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'return_code': result.returncode
             }
 
         except subprocess.CalledProcessError as e:
-            self.logger_service.log(f"Docker execution error: {e.stderr}")
+            # Detailed error handling
+            print("Execution failed:")
+            print(f"Return Code: {e.returncode}")
+            print(f"STDOUT: {e.stdout}")
+            print(f"STDERR: {e.stderr}")
+
             return {
-                "result": str(e),
-                "stderr": e.stderr,
-                "success": False
+                'stdout': e.stdout,
+                'stderr': e.stderr,
+                'return_code': e.returncode,
+                'error': str(e)
             }
-
+        except subprocess.TimeoutExpired:
+            return {
+                'error': 'Container execution timed out',
+                'return_code': -1
+            }
         finally:
-            # 6. Clean up: Stop and remove the container
-            subprocess.run(
-                ["docker", "rm", "-f", container_name],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
+            # Ensure container is removed
+            subprocess.run(['docker', 'rm', '-f', container_name], capture_output=True)
 
-
-    def run(self, model, system_content, user_content, fine_tuning, config):
+    def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         # Get bash script path
         bash_script_path = config.get('bash_script_path')
         self.logger_service.log(f"Bash script path: {bash_script_path}")
@@ -108,18 +115,15 @@ class BashExecutor(ExecutorInterface):
         if not os.path.exists(command):
             raise ValueError("Bash script path does not exist.")
 
-        # Get Docker image from config, fallback to default
-        docker_image = config.get('docker_image', self.default_image)
-
-        # Additional arguments from config
-        additional_args = config.get('additional_args', '')
+        user_id = session_manager.get_user_id()
+        loop_id = session_manager.get_loop_id()
 
         try:
             # Execute bash script in Docker container
             return self.run_bash_in_container(
-                image_name=docker_image,
-                script_host_path=command,
-                additional_args=additional_args
+                bash_script_path,
+                user_id,
+                loop_id
             )
 
         except Exception as e:

@@ -231,7 +231,7 @@ def get_full_path(file_path_template: str) -> str:
 
     base_path = get_file_system_by_user_and_loop(user_id, loop_id)
 
-    full_path = base_path + last_part_of_the_path
+    full_path = f'{base_path}/{last_part_of_the_path}'
 
     return full_path
 
