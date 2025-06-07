@@ -72,6 +72,13 @@ class BashExecutor(ExecutorInterface):
                 timeout=300  # 5-minute timeout
             )
 
+            copy_to_host_cmd = [
+                'docker', 'cp',
+                f'{container_name}:/var/www/filesystem/.',
+                f'{filesystem_path}/.'
+            ]
+            subprocess.run(copy_to_host_cmd, check=True)
+
             return {
                 'stdout': result.stdout,
                 'stderr': result.stderr,
