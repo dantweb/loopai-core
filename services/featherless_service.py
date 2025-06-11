@@ -114,7 +114,7 @@ class FeatherlessService(ServiceInterface):
                         {"role": "system", "content": json.dumps(system_content)},
                         {"role": "user", "content": json.dumps(user_content.__json__())}
                     ],
-                    timeout=300,
+                    timeout=600,
                     temperature=temperature,
                     presence_penalty=0.5,  # Encourage new topics
                     frequency_penalty=0.5, # Reduce repetition

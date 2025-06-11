@@ -54,11 +54,15 @@ class FilesystemAdapter(FileAdapterInterface):
         try:
             for file_info in updated_files:
                 relative_file_path = file_info['path']
+                file_operation = file_info['file_operation']
                 file_content = file_info['file_content']
                 file_path = os.path.join(self.absolute_path, relative_file_path)
 
                 if not file_path.startswith(self.absolute_path):
                     raise Exception(f"Attempted to write outside of code_dir: {self.absolute_path}")
+
+                if file_operation == 'delete':
+                    os.remove(file_path)
 
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 with open(file_path, 'w') as f:
