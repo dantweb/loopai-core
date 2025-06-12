@@ -54,7 +54,7 @@ class FilesystemAdapter(FileAdapterInterface):
         try:
             for file_info in updated_files:
                 relative_file_path = file_info['path']
-                file_operation = file_info['file_operation']
+                file_operation = file_info.get('file_operation', 'update')
                 file_content = file_info['file_content']
                 file_path = os.path.join(self.absolute_path, relative_file_path)
 
