@@ -107,18 +107,28 @@ class FeatherlessService(ServiceInterface):
 
         for attempt in range(max_retries):
             try:
-                # Make the request
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": json.dumps(system_content)},
-                        {"role": "user", "content": json.dumps(user_content.__json__())}
-                    ],
-                    timeout=600,
-                    temperature=temperature,
-                    presence_penalty=0.5,  # Encourage new topics
-                    frequency_penalty=0.5, # Reduce repetition
-                )
+                if "o3-mini" in model:
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": json.dumps(system_content)},
+                            {"role": "user", "content": json.dumps(user_content.__json__())}
+                        ],
+                        timeout=300
+                    )
+                else:
+                    # Make the request
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": json.dumps(system_content)},
+                            {"role": "user", "content": json.dumps(user_content.__json__())}
+                        ],
+                        timeout=600,
+                        temperature=temperature,
+                        presence_penalty=0.5,  # Encourage new topics
+                        frequency_penalty=0.5, # Reduce repetition
+                    )
 
                 # Check if response is not empty
                 if response:
