@@ -1,60 +1,49 @@
-import base64
-import json
-import requests
-from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
-from core.services.session import session_manager
+from typing import List
+
+from core.looper.executors.llm_executor import LlmExecutor
+from core.models.broadcast_data import BroadcastData
+
+MAX_TOKEN_LENGTH = 8192  # Approx GPT-4 token limit (adjust if model-specific)
 
 
-class Gpt2code_chunkExecutor(Gpt2codeExecutor):
-    def prepare_prompt(self, input_data: list, prompt_template: str):
-        # Compress and encode the input data
-        # request_content = self.compress_and_encode(input_data)
-        # Prepare the prompt based on input_data and the prompt_template
-        prompt_template['requestContent'] = input_data
-        return prompt_template
+class Gpt2code_chunkExecutor(LlmExecutor):
+    def __init__(self, model: str):
+        super().__init__(model)
 
-    def compress_and_encode(self, data: list) -> str:
-        import gzip
-        import io
+    def chunk_input(self, input_text: str, max_token_length: int = MAX_TOKEN_LENGTH) -> List[str]:
+        """Chunk input text into smaller segments that fit within the token limits."""
+        input_length = len(input_text)
+        if input_length <= max_token_length:
+            return [input_text]
 
-        compressed_buffer = io.BytesIO()
-        with gzip.GzipFile(fileobj=compressed_buffer, mode='wb') as f:
-            f.write(json.dumps(data).encode('utf-8'))
+        # Divide input into segments that fit within the limit
+        chunks = []
+        for i in range(0, input_length, max_token_length - 500):  # Leave space for response/system tokens
+            chunks.append(input_text[i:i + (max_token_length - 500)])
+        return chunks
 
-        compressed_data = compressed_buffer.getvalue()
-        encoded_data = base64.b64encode(compressed_data).decode('utf-8')
-        return encoded_data
+    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.2):
+        if temperature is None:
+            temperature = 0.2
 
-    def run(self, model, system_content, user_content, temperature=0.7, **kwargs):
-        # Compress and encode user content
-        # Define the API endpoint and key
-        api_endpoint = "https://api.openai.com/v1/chat/completions"
-        api_key = session_manager.get_env('USER_GPT_API_KEY')
+        # Ensure temperature is a float and within valid range
+        try:
+            temperature = float(temperature)
+        except (TypeError, ValueError):
+            temperature = 0.2
 
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
-        }
+        # Clamp temperature between 0.0 and 1.0
+        temperature = max(0.0, min(1.0, temperature))
 
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": json.dumps(system_content)},
-                {"role": "user", "content": json.dumps(user_content)}
-            ],
-            "max_tokens": fine_tuning
-        }
+        # Handle chunking for large inputs (requestContent could be very large)
+        input_chunks = self.chunk_input(user_content)  # Assuming `request` contains raw input text
+        responses = []
 
-        response = requests.post(api_endpoint, headers=headers, data=json.dumps(payload))
-        if response.status_code != 200:
-            raise Exception(f"API call failed with status code {response.status_code}: {response.text}")
+        # Process each chunk iteratively
+        for chunk in input_chunks:
+            user_content_chunk = BroadcastData(chunk)  # Create individual BroadcastData for each chunk
+            response = self.featherless.get_response(model, system_content, user_content_chunk, temperature)
+            responses.append(response)
 
-        result = response.json()
-        return json.loads(result['choices'][0]['message']['content'])
-
-    def process_responses(self, responses: list) -> dict:
-        combined_result = {}
-        for response in responses:
-            # Combine responses as needed
-            combined_result.update(response)
-        return combined_result
+        # Combine all responses (adjust logic based on format/requirements)
+        return "\n".join(responses)
