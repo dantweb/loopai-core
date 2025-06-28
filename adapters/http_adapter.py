@@ -40,7 +40,7 @@ class HttpAdapter(FileAdapterInterface):
         if DEBUG_LEVEL == "DEBUG":
             self.logger.info(f"[LoopAIDirectWPAPIService::create_post] typeof='{type(data)}' : {str(data)}")
 
-        response = requests.post(self.url,  headers=headers, json=data.__json__())
+        response = requests.post(self.url,  headers=headers, json=data.to_json())
         if not response.ok:
             self.logger.error(f"Failed to create post: {response.status_code} - {response.text}")
             return False
