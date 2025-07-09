@@ -10,3 +10,5 @@ class OutputConfig:
     broadcast: Dict[str, str] = None
     wordpress: Dict[str, str] = None
     filesystem: Dict[str, str] = None
+    httprequest: Dict[str, str] = None
+    http: Dict[str, str] = None

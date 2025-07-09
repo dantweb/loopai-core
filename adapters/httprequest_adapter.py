@@ -1,9 +1,10 @@
 import json
 from typing import Dict, Any
-from flask import request, Flask
+from flask import request, Flask, Response
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.adapters.file_adapter_interface import FileAdapterInterface
+from core.services.session import session_manager
 
 logger = LoggerService()
 
@@ -23,6 +24,7 @@ class HttpRequestAdapter(FileAdapterInterface):
         """
         self.app = app
         super().__init__()
+
 
     def read(self, step_id: str, *args: str) -> BroadcastData:
         """
@@ -103,19 +105,37 @@ class HttpRequestAdapter(FileAdapterInterface):
 
         return BroadcastData(result)
 
+
     def write(self, step_id: str, data: BroadcastData) -> bool:
         """
-        Write method that does nothing, as per requirements.
+        Write method to send data as an HTTP response back to the client.
 
         Args:
-            step_id (str): Identifier for the processing step
-            data (BroadcastData): Data to be written (ignored)
+            step_id (str): Identifier for the processing step.
+            data (BroadcastData): Data to be written into the response.
 
         Returns:
-            bool: Always returns True
+            Response: Flask Response object containing the serialized data.
         """
-        # Method does nothing as per requirements
-        return True
+        try:
+            # Serialize the BroadcastData object to JSON
+            response_body = data.to_json()  # Assuming BroadcastData has a `to_json` method
+            bc = BroadcastData(response_body)
+            session_manager.collect_broadcast(bc)
+            logger.info(f"HttpRequest::write: Data for written to session_manager for step_id: {step_id}")
+            return True
+        except Exception as e:
+            # Handle any exceptions and generate an error response
+            logger.error(f"Error writing response for step_id: {step_id}, error: {e}")
+
+            error_response = Response(
+                response=json.dumps({"error": str(e)}),
+                status=500,
+                mimetype="application/json"
+            )
+
+            return False
+
 
     def _extract_content_type(self, headers: Dict[str, str]) -> str:
         """

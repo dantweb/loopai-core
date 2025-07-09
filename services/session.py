@@ -1,6 +1,9 @@
 import uuid
 from typing import Optional
 
+from core.models.broadcast_data import BroadcastData
+
+
 class SessionManager:
     def __init__(self):
         self._loop_index = None
@@ -12,6 +15,7 @@ class SessionManager:
         self._environment: Optional[dict] = None
         self._session_id: str = str(uuid.uuid4())
         self._project_id: Optional[int] = None
+        self._bc_collection = []
 
 
     def get_session_id(self):
@@ -78,5 +82,12 @@ class SessionManager:
     def get_global_step_name(self):
         return self._global_step_name
 
+    def collect_broadcast(self, bc: BroadcastData):
+        self._bc_collection.append(bc)
+
+    def get_broadcast_collection(self) -> list:
+        return self._bc_collection
+
 # Singleton instance for global usage
 session_manager = SessionManager()
+
