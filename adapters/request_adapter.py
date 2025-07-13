@@ -1,15 +1,18 @@
 import json
+import logging
+import os
 from typing import Dict, Any
-from flask import request, Flask, Response
+from flask import request, Flask, Response, session, has_request_context, g
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.adapters.file_adapter_interface import FileAdapterInterface
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
 from core.services.session import session_manager
+from web.session_manager import redis_client
 
 logger = LoggerService()
 
 
-class HttpRequestAdapter(FileAdapterInterface):
+class RequestAdapter(FileAdapterInterface):
     """
     Adapter for handling HTTP requests (POST, GET, PUT) and converting them to BroadcastData objects.
     The read method processes incoming requests, while write method does nothing.
@@ -40,7 +43,7 @@ class HttpRequestAdapter(FileAdapterInterface):
         """
         if not request:
             logger.error("No request context available")
-            return BroadcastData({})
+            return BroadcastData({"response": "No request context available"})
 
         # Extract request method
         method = request.method
@@ -50,7 +53,6 @@ class HttpRequestAdapter(FileAdapterInterface):
             'method': method,
             'path': request.path,
             'url': request.url,
-            'headers': dict(request.headers),
             'args': dict(request.args),
             'remote_addr': request.remote_addr
         }
@@ -107,33 +109,12 @@ class HttpRequestAdapter(FileAdapterInterface):
 
 
     def write(self, step_id: str, data: BroadcastData) -> bool:
-        """
-        Write method to send data as an HTTP response back to the client.
 
-        Args:
-            step_id (str): Identifier for the processing step.
-            data (BroadcastData): Data to be written into the response.
-
-        Returns:
-            Response: Flask Response object containing the serialized data.
-        """
         try:
-            # Serialize the BroadcastData object to JSON
-            response_body = data.to_json()  # Assuming BroadcastData has a `to_json` method
-            bc = BroadcastData(response_body)
-            session_manager.collect_broadcast(bc)
-            logger.info(f"HttpRequest::write: Data for written to session_manager for step_id: {step_id}")
+            session_manager.collect_broadcast(data)
             return True
         except Exception as e:
-            # Handle any exceptions and generate an error response
-            logger.error(f"Error writing response for step_id: {step_id}, error: {e}")
-
-            error_response = Response(
-                response=json.dumps({"error": str(e)}),
-                status=500,
-                mimetype="application/json"
-            )
-
+            logger.error(f"Error collecting broadcast: {e}")
             return False
 
 

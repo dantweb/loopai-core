@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import Optional, Any
 
 from core.models.broadcast_data import BroadcastData
 
@@ -87,6 +87,14 @@ class SessionManager:
 
     def get_broadcast_collection(self) -> list:
         return self._bc_collection
+
+    def get_bc_collection_json(self) -> list[Any]:
+        bc_list = []
+        for bc in self._bc_collection:
+            bc_list.append(bc.to_dict())
+
+        return bc_list
+
 
 # Singleton instance for global usage
 session_manager = SessionManager()

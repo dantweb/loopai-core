@@ -6,6 +6,7 @@ from typing import Optional, Dict
 
 from bs4 import BeautifulSoup
 import requests
+
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.adapters.file_adapter_interface import FileAdapterInterface

@@ -120,6 +120,10 @@ class StepModel:
                     self.broadcast_image_file = output_config.broadcast['image_file']
                 self.output_adapters.append(output_adapter_class())
 
+            if output_config.request:
+                output_adapter_class = self.load_adapter('request')
+                self.output_adapters.append(output_adapter_class())
+
         for input_config in self.input:
             if input_config.csv:
                 if input_config.csv['fields']:
@@ -145,6 +149,9 @@ class StepModel:
             if input_config.http:
                 input_adapter_class = self.load_adapter('http')
                 self.input_adapters.append(input_adapter_class(input_config.http['url']))
+            if input_config.request:
+                input_adapter_class = self.load_adapter('request')
+                self.input_adapters.append(input_adapter_class(input_config.request['method']))
             if input_config.text:
                 input_adapter_class = self.load_adapter('text')
                 self.input_adapters.append(input_adapter_class(input_config.text['name']))
@@ -350,7 +357,6 @@ class StepModel:
         self.executor.run(self.action.model, '', '', '')
 
     def cleanup(self, step_id):
-
         pass
 
     def get_prompt_templates(self):

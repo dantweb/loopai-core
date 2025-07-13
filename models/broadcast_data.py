@@ -86,12 +86,6 @@ class BroadcastData(UserDict):
         """
         return self.to_serializable()
 
-    def __json__(self):
-        """
-        Returns a JSON-serializable representation of the object.
-        Note: The built-in json module does not use this method by default.
-        """
-        return self.to_serializable()
 
     def to_serializable(self):
         """
@@ -146,3 +140,10 @@ class BroadcastData(UserDict):
             index += 1
             new_key = f"{base_key}_{index}"
         return new_key
+
+    def __json__(self):
+        """
+        Returns a JSON-serializable representation of the object.
+        Note: The built-in json module does not use this method by default.
+        """
+        return self.to_serializable()

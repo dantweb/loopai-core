@@ -32,7 +32,8 @@ class Looper:
                     source=step_input_config.get('broadcast').get('source') if 'broadcast' in step_input_config and 'source' in step_input_config['broadcast'] else None,
                     output_format=step_input_config.get('broadcast').get('output_format') if 'broadcast' in step_input_config and 'output_format' in step_input_config['broadcast'] else None,
                     field=step_input_config.get('broadcast').get('field') if 'broadcast' in step_input_config and 'field' in step_input_config['broadcast'] else None,
-                    filesystem=step_input_config.get('filesystem') if 'filesystem' in step_input_config else None
+                    filesystem=step_input_config.get('filesystem') if 'filesystem' in step_input_config else None,
+                    request=step_input_config.get('request') if 'request' in step_input_config else None
                 ) for step_input_config in step_details['input']
             ]
             output_config = [
@@ -42,7 +43,8 @@ class Looper:
                     broadcast=output.get('broadcast', False),
                     image=output.get('image'),
                     wordpress=output.get('wordpress'),
-                    filesystem=output.get('filesystem') if 'filesystem' in output else None
+                    filesystem=output.get('filesystem') if 'filesystem' in output else None,
+                    request=output.get('request') if 'request' in output else None
                 ) for output in step_details['output']
             ]
             action_config = ActionConfig(
