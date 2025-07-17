@@ -83,7 +83,7 @@ class SessionManager:
         return self._global_step_name
 
     def collect_broadcast(self, bc: BroadcastData):
-        self._bc_collection.append(bc)
+        self._bc_collection.append(bc['result'])
 
     def get_broadcast_collection(self) -> list:
         return self._bc_collection

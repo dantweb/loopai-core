@@ -1,4 +1,4 @@
-# src/looper/executors/lambda_executor.py
+##filepath: #project_root#/loopai_src/core/looper/executors/lambda_executor.py
 import json
 import re
 from app_global_config import is_valid_json

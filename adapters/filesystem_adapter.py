@@ -31,9 +31,7 @@ class FilesystemAdapter(FileAdapterInterface):
                 else:
                     self.logger.log(f"Can't read file {file_path}")
 
-                # Get the relative path from the root of the app or .env file location
                 relative_path = os.path.relpath(file_path, self.absolute_path)
-
                 file_paths.append({'path': relative_path, 'file_content': file_content})
 
         return BroadcastData({'result': file_paths})
