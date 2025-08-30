@@ -1,5 +1,7 @@
 import json
 import os
+from datetime import datetime
+
 import app_global_config as config
 from abc import ABC, abstractmethod
 from typing import List, Any, AnyStr, Dict, Union, Set, Optional
@@ -180,6 +182,7 @@ class FileAdapterInterface(ABC):
                 seen.add(item_tuple)
         return output_list
 
+
 def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
 
     if config.WEB_OR_CLI == 'cli':
@@ -248,3 +251,21 @@ def clean_env_content(env_content: str) -> str:
     cleaned_content = "\n".join(line.strip() for line in cleaned_content.splitlines() if line.strip())
 
     return cleaned_content
+
+
+def write_to_fs_log(data):
+    import json
+    import os
+
+    log_dir = "/app/log-dev"
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "fs_out.log")
+
+    logger = LoggerService()
+
+    try:
+        with open(log_file, "a") as f:
+            json_data = json.dumps(data, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+            f.write(json_data)
+    except Exception as e:
+        logger.error(f"Error writing log data: {e}")

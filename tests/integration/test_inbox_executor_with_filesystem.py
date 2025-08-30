@@ -13,7 +13,7 @@ class TestInboxExecutorWithFilesystemAdapter(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         # Create a temporary directory for testing
-        self.test_dir = os.path.join(os.path.dirname(__file__), 'test_inbox_output')
+        self.test_dir = "/app/var/users/1/loops/64/filesystem/"
         os.makedirs(self.test_dir, exist_ok=True)
 
         # Initialize the executor
@@ -46,7 +46,7 @@ class TestInboxExecutorWithFilesystemAdapter(unittest.TestCase):
         }
 
         # Initialize the filesystem adapter
-        self.adapter = FilesystemAdapter(source="/", global_user_id="1", global_loop_id="180")
+        self.adapter = FilesystemAdapter(source="/", global_user_id="1", global_loop_id="64")
 
     def tearDown(self):
         """Clean up after tests."""

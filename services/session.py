@@ -95,6 +95,9 @@ class SessionManager:
 
         return bc_list
 
+    def clear_broadcast_collection(self):
+        self._bc_collection = []
+
 
 # Singleton instance for global usage
 session_manager = SessionManager()

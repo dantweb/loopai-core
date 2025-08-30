@@ -1,7 +1,7 @@
 # src/adapters/filesystem_adapter.py
 import os
 import app_global_config as config
-from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop, write_to_fs_log
 from core.models.broadcast_data import BroadcastData
 
 
@@ -16,6 +16,7 @@ class FilesystemAdapter(FileAdapterInterface):
 
         self.absolute_path: str = self.base_path + self.source
         self.root_path = config.LOOPAI_ROOT
+
 
     def read(self, step_id, second_parameter=None) -> BroadcastData:
         file_paths = []
@@ -36,18 +37,13 @@ class FilesystemAdapter(FileAdapterInterface):
 
         return BroadcastData({'result': file_paths})
 
+
     def write(self, step_id: str, data: BroadcastData) -> bool:
-        if 'result' in data:
-            if 'response' in data['result']:
-                if 'updated_files' in data['result']['response']:
-                    updated_files = data['result']['response']['updated_files']
-                else:
-                    updated_files = data['result']['response']
-            if 'updated_files' in data['result']:
-                updated_files = data['result']['updated_files']
-        else:
-            self.logger.error(data)
-            raise Exception(f"no response in data result")
+
+        self.logger.log("FilesystemAdapter::write:: trying to extract files")
+        updated_files = self.extract_files(data)
+        write_to_fs_log({"input_data": data.data})
+        write_to_fs_log({"updated_files_found": updated_files})
 
         try:
             for file_info in updated_files:
@@ -63,6 +59,11 @@ class FilesystemAdapter(FileAdapterInterface):
                     os.remove(file_path)
 
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+                if not isinstance(file_content, str):
+                    write_to_fs_log({ "error": "wrong content type"})
+
+
                 with open(file_path, 'w') as f:
                     f.write(file_content)
                 self.logger.log(f"File {file_path} was saved successfully")
@@ -71,3 +72,59 @@ class FilesystemAdapter(FileAdapterInterface):
         except Exception as e:
             self.logger.error(f"Error writing to file: {e}")
             return False
+
+
+    def find_updated_files(self, data, parent_key=None):
+        """
+        Recursive function to locate all occurrences of 'updated_files'.
+        """
+        if isinstance(data, BroadcastData):
+            data = data.to_dict()
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key == "updated_files" and isinstance(value, list):
+                    self.logger.debug(f"Found 'updated_files' under key '{parent_key or 'root'}'")
+                    yield from value  # Yield all items
+                else:
+                    write_to_fs_log({"found type of item": str(type(value))})
+                    yield from self.find_updated_files(value, parent_key=key)
+
+        elif isinstance(data, list):
+            for item in data:
+                yield from self.find_updated_files(item, parent_key)
+
+
+    def extract_files(self, broadcast_data: BroadcastData):
+        # Validate that broadcast data isn't empty
+        if not broadcast_data.data:
+            self.logger.error("Broadcast data is empty. No files to extract.")
+            return []
+
+        extracted_files = []
+        found = self.find_updated_files(broadcast_data.data)
+        for file_data in found:
+            # Validate individual file entries
+            if not isinstance(file_data, dict):
+                self.logger.error(f"Skipping invalid file_data: {file_data}")
+                continue
+
+            # Ensure mandatory fields: `path` and `file_content`
+            if "path" not in file_data or "file_content" not in file_data:
+                self.logger.error(f"Skipping file_data without required fields: {file_data}")
+                continue
+
+            # Path normalization and safety validation
+            path = file_data.get("path")
+            norm_path = os.path.normpath(path)
+
+            if norm_path.startswith("..") or os.path.isabs(norm_path):
+                self.logger.error(f"Suspicious path detected (skipping): {path}")
+                continue
+
+
+            self.logger.log(f"Valid file_data extracted: {file_data}")
+            extracted_files.append(file_data)
+
+        self.logger.info(f"Total files extracted: {len(extracted_files)}")
+        return extracted_files

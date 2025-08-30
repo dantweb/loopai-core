@@ -9,7 +9,8 @@ from PIL.Image import Image
 from dotenv import dotenv_values
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
-from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop
+from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
+    write_to_fs_log
 from core.adapters.filesystem_adapter import FilesystemAdapter
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
@@ -293,7 +294,6 @@ class StepModel:
         logger.info(f"[StepModel::execute] system content name : {self.action.system_content}")
         logger.info(f"[StepModel::execute] system content template typeOf ({type(system_content)}) : {system_content}")
 
-        # Create prompt - reading context only from first input source
         prompt = self.executor.prepare_prompt(
             step_input_data,
             prompt_template

@@ -1,6 +1,9 @@
 # ./loopai_src/core/services/logger_service.py
+import logging
 import re
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
+
 import app_global_config as config
 import threading
 
@@ -10,7 +13,8 @@ from web.services.socket_io_service import send_message_to_user
 class LoggerService:
     _instance = None
     _lock = threading.Lock()
-    _num_of_logs_to_return = 10  # Default number of logs to return
+    _num_of_logs_to_return = 10
+    _logger = None
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, '_instance') or cls._instance is None:
@@ -18,6 +22,7 @@ class LoggerService:
                 if not hasattr(cls, '_instance') or cls._instance is None:
                     cls._instance = super(LoggerService, cls).__new__(cls, *args, **kwargs)
                     cls._instance.__initialized = False
+
         return cls._instance
 
     def __init__(self, user_id=None):
@@ -27,6 +32,15 @@ class LoggerService:
         self.log_lock = threading.Lock()
         self.logs = []
         self.__initialized = True
+
+        self._logger = logging.getLogger(__name__)
+        self._handler = RotatingFileHandler('core.log', maxBytes=10000, backupCount=3)
+        self._handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
+        self._handler.setFormatter(formatter)
+        self._logger.addHandler(self._handler)
+        self._logger.setLevel(logging.DEBUG)
+        self._logger.debug("Logging configured")
 
     def _filter_message(self, message: str) -> str:
         """
@@ -60,18 +74,19 @@ class LoggerService:
                 send_message_to_user(self.user_id, action, {'message': filtered_message})
 
         self.logs.append(log_message)
+        self._logger.debug(str(log_message))
 
     def info(self, message: str):
-        self.log(message, 'info')
+        self.log(str(message), 'info')
 
     def warning(self, message: str):
-        self.log(message, 'warning')
+        self.log(str(message), 'warning')
 
     def debug(self, message: str):
-        self.log(message, 'debug')
+        self.log(str(message), 'debug')
 
     def error(self, message: str):
-        self.log(message, 'error')
+        self.log(str(message), 'error')
 
     def get_logs(self):
         """Returns the last `n` logs as defined by `_num_of_logs_to_return`."""

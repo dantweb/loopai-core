@@ -45,10 +45,8 @@ class RequestAdapter(FileAdapterInterface):
             logger.error("No request context available")
             return BroadcastData({"response": "No request context available"})
 
-        # Extract request method
         method = request.method
 
-        # Initialize result dictionary
         result = {
             'method': method,
             'path': request.path,
@@ -57,7 +55,6 @@ class RequestAdapter(FileAdapterInterface):
             'remote_addr': request.remote_addr
         }
 
-        # Process body based on content type and method
         if method in ['POST', 'PUT', 'PATCH']:
             content_type = request.headers.get('Content-Type', '')
 
@@ -87,7 +84,6 @@ class RequestAdapter(FileAdapterInterface):
                 result['files'] = files
 
             else:
-                # Get raw data for other content types
                 try:
                     result['body'] = request.get_data(as_text=True)
                 except Exception as e:
@@ -95,15 +91,8 @@ class RequestAdapter(FileAdapterInterface):
                     result['body'] = None
                     result['body_error'] = str(e)
 
-        # For GET requests, just use the query parameters
         elif method == 'GET':
             result['query_params'] = dict(request.args)
-
-        # Add cookies if present
-        if request.cookies:
-            result['cookies'] = dict(request.cookies)
-
-        logger.info(f"Processed {method} request for path: {request.path}")
 
         return BroadcastData(result)
 
