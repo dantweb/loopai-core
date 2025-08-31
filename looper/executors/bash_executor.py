@@ -1,10 +1,12 @@
 import os
 import subprocess
 from dotenv import load_dotenv
-
+import tempfile
+import shutil
 from core.adapters.file_adapter_interface import get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.services.session import session_manager
+
 
 load_dotenv()
 
@@ -70,12 +72,27 @@ class BashExecutor(ExecutorInterface):
                 timeout=300  # 5-minute timeout
             )
 
-            copy_to_host_cmd = [
-                'docker', 'cp',
-                f'{container_name}:/var/www/filesystem/.',
-                f'{filesystem_path}/.'
+            temp_sync_dir = tempfile.mkdtemp()
+            try:
+                copy_to_temp_cmd = [
+                    'docker', 'cp',
+                    f'{container_name}:/var/www/filesystem/.',
+                    temp_sync_dir
+                ]
+                subprocess.run(copy_to_temp_cmd, check=True)
+
+                # Use Python function to sync downloaded content with the host folder
+                self.sync_directories(temp_sync_dir, filesystem_path)
+            finally:
+                shutil.rmtree(temp_sync_dir)
+
+            clear_mount_cmd = [
+                'docker', 'exec',
+                container_name,
+                '/bin/sh', '-c',
+                'rm -rf /var/www/filesystem/* /var/www/filesystem/.[!.]* /var/www/filesystem/..?*'
             ]
-            subprocess.run(copy_to_host_cmd, check=True)
+            subprocess.run(clear_mount_cmd, check=True)
 
             return {
                 'stdout': result.stdout,
@@ -103,7 +120,8 @@ class BashExecutor(ExecutorInterface):
             }
         finally:
             # Ensure container is removed
-            subprocess.run(['docker', 'rm', '-f', container_name], capture_output=True)
+            subprocess.run(['docker', 'rm', '-f', '-v', container_name], capture_output=True)
+
 
     def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         # Get bash script path
@@ -137,3 +155,38 @@ class BashExecutor(ExecutorInterface):
                 "result": str(e),
                 "success": False
             }
+
+
+    def sync_directories(self, src: str, dst: str):
+        """
+        Sync files from src to dst.
+        This function:
+          1. Deletes files and directories from dst that don't exist in src.
+          2. Copies/overwrites files from src to dst.
+        """
+        # Delete files/directories in dst that are not in src
+        for root, dirs, files in os.walk(dst, topdown=False):
+            rel_path = os.path.relpath(root, dst)
+            src_dir = os.path.join(src, rel_path)
+            # Remove extra files
+            for file in files:
+                dst_file = os.path.join(root, file)
+                src_file = os.path.join(src_dir, file)
+                if not os.path.exists(src_file):
+                    os.remove(dst_file)
+            # Remove extra directories
+            for d in dirs:
+                dst_subdir = os.path.join(root, d)
+                src_subdir = os.path.join(src_dir, d)
+                if not os.path.exists(src_subdir):
+                    shutil.rmtree(dst_subdir)
+
+        # Copy files and directories from src to dst
+        for root, dirs, files in os.walk(src):
+            rel_path = os.path.relpath(root, src)
+            dst_dir = os.path.join(dst, rel_path)
+            os.makedirs(dst_dir, exist_ok=True)
+            for file in files:
+                src_file = os.path.join(root, file)
+                dst_file = os.path.join(dst_dir, file)
+                shutil.copy2(src_file, dst_file)
