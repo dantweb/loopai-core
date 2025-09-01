@@ -14,6 +14,7 @@ from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_
 from core.adapters.filesystem_adapter import FilesystemAdapter
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
+from core.looper.executors.root_executor import RootExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
 from core.models.action_config import ActionConfig
 from core.models.broadcast_data import BroadcastData
@@ -306,7 +307,7 @@ class StepModel:
 
         if isinstance(self.executor, WordpressExecutor):
             result = step_input_data
-        elif isinstance(self.executor, BashExecutor):
+        elif isinstance(self.executor, BashExecutor) or isinstance(self.executor, RootExecutor):
             config = self.action.config if hasattr(self.action, 'config') else {}
             result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
