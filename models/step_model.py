@@ -192,11 +192,8 @@ class StepModel:
 
 
     def load_executor(self, executor_type: str):
-        module_name = f"core.looper.executors.{executor_type}_executor"
-        class_name = f"{executor_type.capitalize()}Executor"
-        module = importlib.import_module(module_name)
-        executor_class = getattr(module, class_name)
-        return executor_class
+
+        return load_executor_class(executor_type)
 
 
     def execute(self, step_name: str, loop_index: str):
@@ -423,3 +420,10 @@ class StepModel:
         session_manager.set_environment(merged_env)
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Environment {str(merged_env)}")
 
+
+def load_executor_class(executor_type: str):
+    module_name = f"core.looper.executors.{executor_type}_executor"
+    class_name = f"{executor_type.capitalize()}Executor"
+    module = importlib.import_module(module_name)
+    executor_class = getattr(module, class_name)
+    return executor_class

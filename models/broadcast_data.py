@@ -147,3 +147,28 @@ class BroadcastData(UserDict):
         Note: The built-in json module does not use this method by default.
         """
         return self.to_serializable()
+
+
+    def find_value_recursive_by_key(self, key):
+        """
+        Recursive function to locate all occurrences of a key in the instance's data.
+        Returns a generator that yields all values found for the specified key.
+        """
+
+        def _search_recursive(data, search_key):
+            if isinstance(data, BroadcastData):
+                data = data.data
+
+            if isinstance(data, dict):
+                for current_key, value in data.items():
+                    if current_key == search_key:
+                        yield value
+                    # Recursively search in nested structures
+                    if isinstance(value, (dict, list, BroadcastData)):
+                        yield from _search_recursive(value, search_key)
+            elif isinstance(data, list):
+                for item in data:
+                    if isinstance(item, (dict, list, BroadcastData)):
+                        yield from _search_recursive(item, search_key)
+
+        return _search_recursive(self.data, key)
