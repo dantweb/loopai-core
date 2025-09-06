@@ -1,45 +1,132 @@
 import json
-from collections import UserDict
+import re
+from collections import UserDict, deque
 from PIL import Image
 
 class BroadcastData(UserDict):
     def __init__(self, obj_input=None):
         super().__init__()
         self.properties = []
-        self.image = None  # Store image data if present
+        self.image = None
 
-        # Handle None explicitly
         if obj_input is None:
             self.data = None
             return
 
-        # Existing logic for other input types
-        if isinstance(obj_input, str):
-            try:
-                obj_input = json.loads(obj_input)
-            except json.JSONDecodeError:
-                obj_input = {}
+        normalized_data = self._normalize_and_flatten(obj_input)
 
-        if isinstance(obj_input, BroadcastData):
-            obj_input = obj_input.data
-
-        if isinstance(obj_input, dict):
-            self.data = obj_input
+        if isinstance(normalized_data, dict):
+            self.data = normalized_data
             self.properties = [type(v).__name__ for v in self.data.values()]
-        elif isinstance(obj_input, list):
-            self.data = obj_input
-            if obj_input:
-                if all(isinstance(item, dict) for item in obj_input):
-                    for item in obj_input:
+        elif isinstance(normalized_data, list):
+            self.data = normalized_data
+            if normalized_data:
+                if all(isinstance(item, dict) for item in normalized_data):
+                    for item in normalized_data:
                         if isinstance(item, Image.Image):
                             self.image = item
-                        self.properties.extend([type(v).__name__ for v in item.values()])
+                        else:
+                            self.properties.extend([type(v).__name__ for v in item.values()])
                 else:
-                    self.properties = [type(v).__name__ for v in obj_input]
-        elif isinstance(obj_input, Image.Image):
-            self.image = obj_input
+                    self.properties = [type(v).__name__ for v in normalized_data]
+        elif isinstance(normalized_data, Image.Image):
+            self.image = normalized_data
+            self.data = {}
         else:
             self.data = {}
+
+    def _normalize_and_flatten(self, data, depth=0, max_depth=100):
+        if depth > max_depth:
+            return data
+
+        stack = deque([(data, [])])
+        result = {}
+        visited = set()
+
+        while stack:
+            current, path = stack.pop()
+            obj_id = id(current)
+
+            if obj_id in visited:
+                continue
+            visited.add(obj_id)
+
+            if isinstance(current, BroadcastData):
+                stack.append((current.data, path))
+            elif isinstance(current, dict):
+                temp_dict = {}
+                for key, value in current.items():
+                    temp_dict[key] = None
+                    stack.append((value, path + [key]))
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = temp_dict
+                else:
+                    result.update(temp_dict)
+            elif isinstance(current, list):
+                temp_list = [None] * len(current)
+                for i, item in enumerate(current):
+                    stack.append((item, path + [i]))
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = temp_list
+                else:
+                    result = temp_list
+            elif isinstance(current, str) and self._looks_like_json(current):
+                normalized = self._normalize_json_string(current)
+                try:
+                    parsed = json.loads(normalized)
+                    stack.append((parsed, path))
+                except json.JSONDecodeError:
+                    if path:
+                        parent = result
+                        for key in path[:-1]:
+                            parent = parent[key]
+                        parent[path[-1]] = normalized
+                    else:
+                        result = normalized
+            else:
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = current
+                else:
+                    result = current
+
+        return result
+
+    def _looks_like_json(self, text: str) -> bool:
+        if not isinstance(text, str):
+            return False
+        text = text.strip()
+        return (text.startswith('{') and text.endswith('}')) or \
+               (text.startswith('[') and text.endswith(']'))
+
+    def _normalize_json_string(self, json_string: str) -> str:
+        if not isinstance(json_string, str):
+            return json_string
+        json_string = json_string.strip()
+        try:
+            json.loads(json_string)
+            return json_string
+        except json.JSONDecodeError:
+            pass
+        json_string = re.sub(r"(?<!\\)'", '"', json_string)
+        json_string = json_string.replace("True", "true").replace("False", "false").replace("None", "null")
+        json_string = re.sub(r'(\w+):', r'"\1":', json_string)
+        json_string = re.sub(r',\s*}', '}', json_string)
+        json_string = re.sub(r',\s*]', ']', json_string)
+        json_string = re.sub(r'\s+', ' ', json_string)
+        try:
+            json.loads(json_string)
+            return json_string
+        except json.JSONDecodeError:
+            return json_string
 
     def has(self, key):
         if isinstance(self.data, dict):
@@ -47,11 +134,11 @@ class BroadcastData(UserDict):
         elif isinstance(self.data, list):
             return any(isinstance(item, dict) and key in item for item in self.data)
         else:
-            return False  # Handle other data types if necessary
+            return False
 
     def set(self, key, value):
         if not isinstance(self.data, dict):
-            self.data = {}  # Convert to dict if it was a list or something else
+            self.data = {}
         self.data[key] = value
         if type(value).__name__ not in self.properties:
             self.properties.append(type(value).__name__)
@@ -60,77 +147,100 @@ class BroadcastData(UserDict):
         if isinstance(self.data, dict):
             return self.data.get(key, default)
         elif isinstance(self.data, list):
-            # Collect values from all dicts in the list that have the key
             values = [item[key] for item in self.data if isinstance(item, dict) and key in item]
             return values if values else default
         else:
-            return default  # Handle other data types if necessary
+            return default
 
     def to_json(self) -> str:
-        """
-        Serializes the internal data to a JSON-formatted string.
-        Returns:
-            A JSON-formatted string representation of the internal data.
-        """
         try:
-            json_string = json.dumps(self.to_serializable(), ensure_ascii=False)
-            return json_string
+            return json.dumps(self.to_serializable(), ensure_ascii=False)
         except (TypeError, OverflowError) as e:
             raise ValueError(f"Data contains non-serializable values: {e}")
 
-    def to_dict(self) -> dict:
-        """
-        Returns the internal data as a dictionary.
-        Returns:
-            A dictionary representation of the internal data.
-        """
-        return self.to_serializable()
-
-
     def to_serializable(self):
-        """
-        Recursively converts the data to a JSON-serializable format,
-        replacing any nested BroadcastData instances with their data.
-        """
+        stack = deque([(self.data, [])])
+        result = {}
+        visited = set()
 
-        def make_serializable(obj):
-            if isinstance(obj, BroadcastData):
-                return make_serializable(obj.data)
-            elif isinstance(obj, dict):
-                return {key: make_serializable(value) for key, value in obj.items()}
-            elif isinstance(obj, list):
-                return [make_serializable(item) for item in obj]
-            elif isinstance(obj, Image.Image):
-                return "<Image Object>"  # Placeholder for image objects to prevent JSON serialization issues
+        while stack:
+            current, path = stack.pop()
+            obj_id = id(current)
+
+            if obj_id in visited:
+                continue
+            visited.add(obj_id)
+
+            if isinstance(current, dict):
+                temp_dict = {}
+                for key, value in current.items():
+                    temp_dict[key] = None
+                    stack.append((value, path + [key]))
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = temp_dict
+                else:
+                    result.update(temp_dict)
+            elif isinstance(current, list):
+                temp_list = [None] * len(current)
+                for i, item in enumerate(current):
+                    stack.append((item, path + [i]))
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = temp_list
+                else:
+                    result = temp_list
+            elif isinstance(current, Image.Image):
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = "<Image Object>"
+                else:
+                    result = "<Image Object>"
             else:
-                return obj  # Assume other types are JSON-serializable
+                if path:
+                    parent = result
+                    for key in path[:-1]:
+                        parent = parent[key]
+                    parent[path[-1]] = current
+                else:
+                    result = current
 
-        return make_serializable(self.data) if self.image is None else self.image
+        return result if self.image is None else self.image
 
     def flatten_data(self):
-        """
-        Flattens nested dictionaries or lists into a single-level dictionary.
-        If duplicate field names are encountered, adds a suffix to create unique keys.
-        """
         flat_dict = {}
+        stack = deque([(self.data, "")])
+        visited = set()
 
-        def recursive_flatten(obj, parent_key=""):
+        while stack:
+            obj, parent_key = stack.pop()
+            obj_id = id(obj)
+
+            if obj_id in visited:
+                continue
+            visited.add(obj_id)
+
             if isinstance(obj, dict):
                 for key, value in obj.items():
                     new_key = f"{parent_key}_{key}" if parent_key else key
                     if new_key in flat_dict:
                         new_key = self.get_unique_key(new_key, flat_dict)
-                    recursive_flatten(value, new_key)
+                    stack.append((value, new_key))
             elif isinstance(obj, list):
                 for index, item in enumerate(obj):
                     new_key = f"{parent_key}_{index}" if parent_key else str(index)
                     if new_key in flat_dict:
                         new_key = self.get_unique_key(new_key, flat_dict)
-                    recursive_flatten(item, new_key)
+                    stack.append((item, new_key))
             else:
                 flat_dict[parent_key] = obj
 
-        recursive_flatten(self.data)
         return flat_dict
 
     def get_unique_key(self, base_key, existing_keys):
@@ -142,33 +252,74 @@ class BroadcastData(UserDict):
         return new_key
 
     def __json__(self):
-        """
-        Returns a JSON-serializable representation of the object.
-        Note: The built-in json module does not use this method by default.
-        """
         return self.to_serializable()
 
+    def get_by_path(self, path: str):
+        if not path:
+            return self.data
 
-    def find_value_recursive_by_key(self, key):
-        """
-        Recursive function to locate all occurrences of a key in the instance's data.
-        Returns a generator that yields all values found for the specified key.
-        """
+        keys = path.split('/')
+        stack = deque([(self.data, keys)])
+        results = []
 
-        def _search_recursive(data, search_key):
-            if isinstance(data, BroadcastData):
-                data = data.data
+        while stack:
+            current, remaining_keys = stack.pop()
+
+            if not remaining_keys:
+                results.append(current)
+                continue
+
+            key = remaining_keys[0]
+
+            if isinstance(current, dict):
+                if key in current:
+                    stack.append((current[key], remaining_keys[1:]))
+            elif isinstance(current, list):
+                for item in current:
+                    stack.append((item, remaining_keys))
+
+        return results[0] if len(results) == 1 else results if results else None
+
+    def find_value_recursive_by_key(self, field):
+        if isinstance(field, str) and '/' in field:
+            res = self.get_by_path(field)
+            if res is None:
+                return []
+            return [res] if not isinstance(res, list) else res
+
+        matches = []
+        stack = deque([(self.data, False)])
+        visited = set()
+
+        while stack:
+            data, parsed = stack.pop()
+            obj_id = id(data)
+
+            if obj_id in visited:
+                continue
+            visited.add(obj_id)
 
             if isinstance(data, dict):
-                for current_key, value in data.items():
-                    if current_key == search_key:
-                        yield value
-                    # Recursively search in nested structures
-                    if isinstance(value, (dict, list, BroadcastData)):
-                        yield from _search_recursive(value, search_key)
+                for k, v in data.items():
+                    if k == field:
+                        matches.append(v)
+                    if isinstance(v, (dict, list)):
+                        stack.append((v, False))
+                    elif isinstance(v, str) and not parsed:
+                        parsed_v = self._try_parse_string(v)
+                        if parsed_v is not None:
+                            stack.append((parsed_v, True))
             elif isinstance(data, list):
                 for item in data:
-                    if isinstance(item, (dict, list, BroadcastData)):
-                        yield from _search_recursive(item, search_key)
+                    stack.append((item, False))
 
-        return _search_recursive(self.data, key)
+        return matches
+
+    def _try_parse_string(self, s):
+        if not isinstance(s, str):
+            return None
+        try:
+            candidate = s.replace("'", '"')
+            return json.loads(candidate)
+        except Exception:
+            return None

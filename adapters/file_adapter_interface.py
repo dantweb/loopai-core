@@ -114,6 +114,7 @@ class FileAdapterInterface(ABC):
             self.logger.error(msg)
             raise IOError(msg)
 
+
     def extract_data_to_write(self, data: Any, fields: List[str]) -> Optional[
         Union[List[Dict[str, Any]], Dict[str, Any]]]:
         """
@@ -123,19 +124,12 @@ class FileAdapterInterface(ABC):
         :param fields: The required fields to find within the data.
         :return: The list of dictionaries or a dictionary containing the required fields.
         """
-        self.logger.info(f"[extract_data_to_write] Searching for valid data with fields: {fields}")
-        required_fields = set(fields)
+        bc = BroadcastData(data)
         found_items = []
+        self._recursive_collect(bc.data, set(fields), found_items)
+        found_items = self.remove_duplicates(found_items)
+        return found_items
 
-        # Use the recursive search to collect all valid items
-        self._recursive_collect(data, required_fields, found_items)
-
-        if not found_items:
-            self.logger.error("[extract_data_to_write] No valid data found.")
-            return None
-
-        # Return the list of found items or a single dictionary if only one item found
-        return found_items if len(found_items) > 1 else found_items[0]
 
     def _recursive_collect(self, data: Any, required_fields: Set[str], found_items: List[Dict[str, Any]]) -> None:
         """

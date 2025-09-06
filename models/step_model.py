@@ -228,7 +228,7 @@ class StepModel:
                     second_parameter = None
 
                 if input_item.field and input_item.output_format:
-                    input_adapter.setAdditionalParams(
+                    input_adapter.set_additional_params(
                         input_item.output_format,
                         input_item.field,
                     )

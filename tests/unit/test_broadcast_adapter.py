@@ -11,8 +11,6 @@ class TestBroadcastAdapter(unittest.TestCase):
 
 
     def test_prepare_result_with_missing_field(self):
-        # Mock the nested field structure
-        self.adapter.field = "result/result/nonexistent_field"
 
         # Input data
         row = {
@@ -26,7 +24,7 @@ class TestBroadcastAdapter(unittest.TestCase):
         }
         self.adapter.field = "result/result/title"
         result = self.adapter.prepare_result(row)
-
+        print(result)
         self.assertIsNone(result)
 
 

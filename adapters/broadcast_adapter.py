@@ -54,34 +54,14 @@ class BroadcastAdapter(FileAdapterInterface):
                 row = cursor.fetchone()
                 self.logger.info(f"[BroadcastAdapter::read] row: {str(row)}")
                 if row:
-                    # Deserialize the `data` field if it's a JSON string
-                    # Deserialize the `data` field if it's a JSON string
-                    if 'data' in row and isinstance(row['data'], str):
-                        try:
-                            row['data'] = json.loads(row['data'])
-                        except json.JSONDecodeError as e:
-                            self.logger.error(f"Error deserializing data field: {e}")
-                            return None
-
-                    # Validate structure
-                    if self.field.split('/')[0] not in row['data']:
-                        self.logger.error(
-                            f"Expected top-level key '{self.field.split('/')[0]}' not found in data: {row['data']}")
-                        return None
-
-                    saved_data = row['data']
-
-                    self.logger.info(f"[BroadcastAdapter::read] type of data : {type(saved_data)}")
 
                     # Prepare the broadcast data
-                    broadcast_data = self.prepare_result(saved_data)
+                    broadcast_data = self.prepare_result(row)
 
                     self.logger.info(f"[BroadcastAdapter::read] row has data: {broadcast_data}")
                     self.mark_row_as_read(row, self_step_id)
 
                     return broadcast_data
-
-                return None
 
         except Exception as e:
             traceback.print_exc()
@@ -93,7 +73,9 @@ class BroadcastAdapter(FileAdapterInterface):
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 
         # data_to_write = try_extract_data(data)
-        data_to_write = BroadcastData({ 'saved': data })
+        data_to_write = BroadcastData({"saved" : {"result": data }})
+        self.logger.info(f"[BroadcastAdapter::write] normalized data  : {str(data_to_write)}")
+
 
         if data_to_write is None:
             raise Exception("Error: No data possible to extract to write.")
@@ -119,60 +101,10 @@ class BroadcastAdapter(FileAdapterInterface):
             return False
 
 
-    def setAdditionalParams(self, output_format: str, field: str):
+    def set_additional_params(self, output_format: str, field: str):
         self.output_format = output_format
         self.field = field
 
-    def get_nested_data(self, data, field):
-        """
-        Traverse a potentially nested dictionary (or JSON-like structure)
-        using a '/'-delimited field path. If a value is encountered that is a string,
-        try to parse it as JSON and continue traversal on the parsed object.
-        """
-        import json
-        keys = field.split('/')
-
-        self.logger.info(f"[BroadcastAdapter::get_nested_data] Starting with keys: {keys}")
-        self.logger.info("[BroadcastAdapter::get_nested_data] Initial data structure:")
-        describe_structure(data)
-
-        def recurse(current_data, remaining_keys):
-            self.logger.info(f"[BroadcastAdapter::get_nested_data] Current level data type: {type(current_data)}")
-            self.logger.info(f"[BroadcastAdapter::get_nested_data] Remaining keys: {remaining_keys}")
-
-            if not remaining_keys:
-                self.logger.info("[BroadcastAdapter::get_nested_data] No remaining keys, returning current_data.")
-                return current_data
-
-            # If current_data is a string, try parsing it as JSON before proceeding
-            if isinstance(current_data, str):
-                self.logger.info(
-                    f"[BroadcastAdapter::get_nested_data] Current data is a string: '{current_data[:50]}...' (truncated)")
-                # Attempt to convert single quotes to double quotes (workaround)
-                current_data = current_data.replace("'", '"')
-                try:
-                    current_data = json.loads(current_data)
-                    self.logger.info("[BroadcastAdapter::get_nested_data] Successfully parsed string as JSON.")
-                except json.JSONDecodeError as e:
-                    self.logger.error(f"Failed to parse JSON: {e}")
-                    return None
-
-            if not isinstance(current_data, dict):
-                self.logger.error(f"Expected dict but got {type(current_data)}: {current_data}")
-                return None
-
-            key = remaining_keys[0]
-            self.logger.info(
-                f"[BroadcastAdapter::get_nested_data] Looking for key: '{key}' in current data keys: {list(current_data.keys())}")
-
-            if key not in current_data:
-                self.logger.error(f"Key '{key}' not found in current data: {current_data}")
-                return None
-
-            self.logger.info(f"[BroadcastAdapter::get_nested_data] Key '{key}' found. Descending deeper...")
-            return recurse(current_data[key], remaining_keys[1:])
-
-        return recurse(data, keys)
 
     def prepare_result(self, input_data):
         """
@@ -189,16 +121,32 @@ class BroadcastAdapter(FileAdapterInterface):
                 self.logger.error("Field path is not set.")
             return None
 
-        bd = BroadcastData(input_data)
+        broadcast_obj = BroadcastData(input_data)
 
-        # Get the nested data
-        data = self.get_nested_data(bd.to_dict(), self.field)
+        self.logger.info(f"[BroadcastAdapter::prepare_result] field : {self.field}")
+        self.logger.info(f"[BroadcastAdapter::prepare_result] type of field : {type(self.field)}")
+        self.logger.info(f"[BroadcastAdapter::prepare_result] data : {broadcast_obj}")
+        data = broadcast_obj.find_value_recursive_by_key(self.field)
+
+        if data is None:
+            return None
+
+        if isinstance(data, dict):
+            return BroadcastData(data)
 
         if isinstance(data, str):
-            data = {self.field.split('/')[-1]: data}
+            return data
 
-        # Return BroadcastData with the value
-        return BroadcastData(data) if data else None
+        if isinstance(data, list) and len(data) == 1:
+            elem = data[0]
+            if isinstance(elem, dict):
+                return BroadcastData(elem)
+            return elem
+
+        if isinstance(data, list) and len(data) == 0:
+            data = None
+
+        return data
 
 
     def mark_row_as_read(self, row: Dict, step_id: str) -> None:

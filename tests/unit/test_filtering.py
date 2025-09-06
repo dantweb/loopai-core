@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PIL import Image
 import os
 
@@ -17,12 +19,17 @@ def filter_binary_data(data):
         filtered_data[key] = value
     return filtered_data
 
+
+current_file = Path(__file__).resolve()   # absolute Path to the current file
+current_dir = current_file.parent
+image = os.path.join(current_dir, '../_data/input/img/binary_fitr_test.jpg')
+
 # Example usage
 data = {
     'name': 'Sample Post',
     'content': 'This is a sample content.',
-    'image': Image.open('../_data/generated.old.but.gold/img/foreach-38a00b9d-2bab-41e3-a8eb-4373f057bcae-step2.jpg'),  # This is a PIL Image object
-    'profile_pic': 'https://example.com/image.jpg',
+    'image': Image.open(image),  # This is a PIL Image object
+    'profile_pic': 'https://example.com/fraudblock.jpg',
     'binary_data': bytearray(b'\x00\x01\x02\x03'),
     'category': 'News'
 }

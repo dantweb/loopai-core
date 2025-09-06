@@ -56,7 +56,7 @@ class FeatherlessService(ServiceInterface):
                 )
 
                 self.logger.info(
-                    f"[FeatherlessService::get_response] Get response successfully on attempt {attempt}: {self.response}"
+                    f"[FeatherlessService::get_response] Get response successfully on attempt {attempt}: {str(self.response)}"
                 )
 
                 if hasattr(self.response, 'model_dump'):
@@ -72,6 +72,9 @@ class FeatherlessService(ServiceInterface):
                     )
                 else:
                     result_content = self.response.choices[0].message.content
+
+                if len(result_content) == 0:
+                    raise Exception("Empty LLM response")
 
                 return result_content
 

@@ -102,7 +102,8 @@ def fix_json(json_string):
     try:
         return json.loads(json_string)
     except json.JSONDecodeError:
-        self.logger_service.info(f"[GptExecutor::fix_json] JSONDecodeError: trying to fix json: {json_string}")
+        logger_service = LoggerService()
+        logger_service.info(f"[GptExecutor::fix_json] JSONDecodeError: trying to fix json: {json_string}")
         cleaned_json_string = clean_json_string(json_string)
         try:
             # Try to parse the cleaned JSON string
