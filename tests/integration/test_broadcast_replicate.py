@@ -141,7 +141,7 @@ class TestBroadcastReplicate(unittest.TestCase):
 
         try:
             # Act: call executor.run() which under the hood will call generate_image_from_replicate (mocked)
-            generated = self.executor.run(self.replicate_model, {}, "test prompt", None)
+            generated = self.executor.run(self.replicate_model, {}, "test prompt")
             self.assertIsNotNone(generated)
             self.assertIsInstance(generated, Image.Image)
 

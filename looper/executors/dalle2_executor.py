@@ -22,12 +22,8 @@ class Dalle2Executor(ExecutorInterface):
         super().__init__(model)
         self.model = model
 
-        open_ai_sdk_api_key = (
-                session_manager.get_env("USER_GPT_API_KEY")
-                or session_manager.get_env("OPENAI_API_KEY")
-                or session_manager.get_env("OPEN_AI_SDK_API_KEY")
-        )
-
+        open_ai_sdk_api_key =  session_manager.get_env("OPENAI_API_KEY")
+        logger.debug(f"[DalleExecutor::__init__] open_ai_sdk_api_key: {open_ai_sdk_api_key}")
         self.openai = openai.OpenAI(api_key=open_ai_sdk_api_key)
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
@@ -80,11 +76,12 @@ class Dalle2Executor(ExecutorInterface):
                 quality="standard",
                 n=1,
             )
-            self.logger_service.info(f"[dalle2_executor] Generated image response: {response}")
+            self.logger.info(f"[dalle2_executor] Generated image response: {response}")
             image_url = response.data[0].url
+            self.logger.info(f"[dalle2_executor] Generated image URL: {image_url}")
             response = requests.get(image_url)
             img = Image.open(BytesIO(response.content))
             return img
         except Exception as e:
-            self.logger_service.error(f"Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
+            self.logger.error(f"Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
             return None

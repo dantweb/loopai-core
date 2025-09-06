@@ -36,7 +36,7 @@ class FeatherlessService(ServiceInterface):
     ) -> str:
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
-        self.logger.info(f"[FeatherlessService::get_response] user_content: {user_content}")
+        self.logger.info(f"[FeatherlessService::get_response] user_content: {str(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
         self.logger.info(f"[FeatherlessService::get_response] url: {session_manager.get_env('FEATHERLESS_API_URL')}")
 
@@ -115,7 +115,7 @@ class FeatherlessService(ServiceInterface):
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
-                            {"role": "user", "content": json.dumps(user_content.__json__())}
+                            {"role": "user", "content": json.dumps(user_content.to_json())}
                         ],
                         timeout=300
                     )

@@ -19,9 +19,9 @@ class ReplicateExecutor(ExecutorInterface):
         self.logger_service = LoggerService()
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
-        self.logger_service.info(f"[DalleExecutor::prepare_prompt] preparing prompt for GPT...")
-        self.logger_service.info(f"[DalleExecutor::prepare_prompt] input_data: {input_data}")
-        self.logger_service.info(f"[DalleExecutor::prepare_prompt] input_data type: {type(input_data)}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] preparing prompt for GPT...")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data: {input_data}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data type: {type(input_data)}")
 
         if input_data is None or input_data == '':
             raise Exception("Input data is empty.")
@@ -34,10 +34,10 @@ class ReplicateExecutor(ExecutorInterface):
             request_content_json = json.dumps(input_data)
 
         if request_content_json == '' or request_content_json is None or request_content_json == '{}':
-            raise Exception("[dalle2_executor] Request content is empty.")
+            raise Exception("[ReplicateExecutor] Request content is empty.")
 
         prompt_template['requestContent'] = request_content_json
-        self.logger_service.info(f"[DalleExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
+        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
     def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
@@ -64,15 +64,9 @@ class ReplicateExecutor(ExecutorInterface):
             self.logger_service.info(f"[ReplicateExecutor] User content type: {type(user_content)}")
 
             # Ensure prompt is a plain string. If user_content is a BroadcastData or dict, serialize safely and truncate.
-            if isinstance(user_content, BroadcastData):
-                prompt_text = user_content.to_json()[:1000]
-            else:
-                try:
-                    prompt_text = json.dumps(user_content)[:1000]
-                except Exception:
-                    prompt_text = str(user_content)[:200]
+            prompt_text = user_content.to_json() if isinstance(user_content, BroadcastData) else str(user_content)
 
-            self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:200]}...")
+            self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
             self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
 
             # Call the Replicate API
@@ -85,9 +79,7 @@ class ReplicateExecutor(ExecutorInterface):
                 }
             )
 
-            # Log raw output for debugging
-            self.logger_service.info(f"[ReplicateExecutor] Raw API response: {repr(output)}")
-
+            self.logger_service.info(f"[ReplicateExecutor] Raw API response: {str(output)}")
             # Normalize output to a single URL string if possible
             image_url = None
 
@@ -139,11 +131,10 @@ class ReplicateExecutor(ExecutorInterface):
 
             # Download the image
             response = requests.get(image_url, timeout=30)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+            response.raise_for_status()
+            requests.session().close()
 
-            # Open the image using PIL
             img = Image.open(BytesIO(response.content))
-            # Ensure image is loaded into memory (avoid lazy file handles)
             img.load()
 
             self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {img}")

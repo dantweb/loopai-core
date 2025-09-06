@@ -73,7 +73,7 @@ class BroadcastAdapter(FileAdapterInterface):
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 
         # data_to_write = try_extract_data(data)
-        data_to_write = BroadcastData({"saved" : {"result": data }})
+        data_to_write = BroadcastData({"saved": {"result": data}})
         self.logger.info(f"[BroadcastAdapter::write] normalized data  : {str(data_to_write)}")
 
 
@@ -180,10 +180,10 @@ def try_extract_data_with_fields(data: BroadcastData) -> BroadcastData:
         logger_service.info(f"[BroadcastAdapter::write] result : '{data.get('result')}'")
         logger_service.info(
             f"[BroadcastAdapter::write] type of result.response : \"{type(data.get('result'))}\"")
-        data_to_write = data.get('result')
+        data_to_write = data.find_value_recursive_by_key('result')
 
     if data_to_write is None and 'response' in data:
-        data_to_write = data.get('response')
+        data_to_write = data.find_value_recursive_by_key('response')
         return data_to_write
 
     if data_to_write is None and data.has('title'):
