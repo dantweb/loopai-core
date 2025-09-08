@@ -1,6 +1,4 @@
-import base64
 import json
-import os
 from io import BytesIO
 from typing import Any
 
@@ -22,10 +20,6 @@ class ReplicateExecutor(ExecutorInterface):
         self.logger_service = LoggerService()
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
-        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] preparing prompt for GPT...")
-        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data: {input_data}")
-        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] input_data type: {type(input_data)}")
-
         if input_data is None or input_data == '':
             raise Exception("Input data is empty.")
 
@@ -67,10 +61,6 @@ class ReplicateExecutor(ExecutorInterface):
 
         try:
             # Log the input parameters
-            self.logger_service.info(f"[ReplicateExecutor] Generating image with model: {model}")
-            self.logger_service.info(f"[ReplicateExecutor] User content type: {type(user_content)}")
-
-            # Ensure prompt is a plain string. If user_content is a BroadcastData or dict, serialize safely and truncate.
             prompt_text = user_content.to_json() if isinstance(user_content, BroadcastData) else str(user_content)
 
             self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
@@ -86,11 +76,8 @@ class ReplicateExecutor(ExecutorInterface):
                 }
             )
 
-            self.logger_service.info(f"[ReplicateExecutor] Raw API response: {str(output)}")
-            # Normalize output to a single URL string if possible
             image_url = None
 
-            # If output is a list, prefer first non-empty element
             if isinstance(output, list):
                 first = output[0] if len(output) > 0 else None
                 candidate = first
@@ -159,8 +146,6 @@ class ReplicateExecutor(ExecutorInterface):
             # Re-open the JPEG data as a new image
             imp = Image.open(BytesIO(jpeg_data))  # Wrap jpeg_data in BytesIO
             imp.load()  # Load the new image data
-
-            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {imp}")
 
             return imp  # Return the new image object
 
