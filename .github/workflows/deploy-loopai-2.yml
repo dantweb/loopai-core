@@ -1,0 +1,202 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create Docker Network
+        run: |
+          docker network ls | grep "shared_network" || docker network create shared_network
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up Git credentials for HTTPS cloning
+        run: |
+          git config --global credential.helper store
+          echo "https://${{ github.actor }}:${{ secrets.DANTWEB_DEPLOY_TOKEN }}@github.com" > ~/.git-credentials
+
+      - name: Install dependencies and build Docker containers
+        run: |
+          # Run the install script to build and prepare containers locally
+          chmod +x ./bin/install.sh 
+
+          ./bin/install.sh \
+            --web-branch production \
+            --view-branch production \
+            --core-branch production \
+            --force-http
+          
+          sed -i "s/POSTGRESQL_DB_USER=.*/POSTGRESQL_DB_USER=${{ secrets.POSTGRES_DB_USER }}/" .env
+          sed -i "s/POSTGRESQL_DB_PASSWORD=.*/POSTGRESQL_DB_PASSWORD=${{ secrets.POSTGRES_DB_PASSWORD }}/" .env
+
+      - name: Copy bin directory into loopai_src
+        run: |
+          rm -rf ./loopai_src/bin
+          cp -R ./bin ./loopai_src/
+
+      - name: Prepare SSH Key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+           mkdir -p .ssh
+           echo "${{ secrets.SSH_PRIVATE_KEY }}" > .ssh/id_rsa
+           echo "${{ secrets.SSH_PUBLIC_KEY }}" > .ssh/id_rsa
+           chmod 600 .ssh/id_rsa
+           ssh-keyscan github.com > .ssh/known_hosts
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.DANTWEB_DEPLOY_TOKEN }}
+
+      - name: Build and Push Backend Docker Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/loopai_web:latest ./loopai_src
+          docker push ghcr.io/${{ github.repository_owner }}/loopai_web:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.DANTWEB_DEPLOY_TOKEN }}
+
+      - name: Run server-side deployment script
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOOPAI_SERVER2_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.LOOPAI_SERVER2_IP_SSH_PRIVATE_KEY }}
+          script: |
+            # Navigate to the deployment directory
+            cd /home/${{ secrets.SERVER_USERNAME }}/web_server/loopai_app
+            ls -la
+            docker network ls | grep "shared_network" || docker network create shared_network
+            docker compose pull loopai_web
+            
+            docker compose up -d --remove-orphans --force-recreate
+            
+
+  live-prod-checkup:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install curl
+        run: sudo apt-get update && sudo apt-get install -y curl
+
+      - name: Verify All Docker Containers Are Running
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOOPAI_SERVER2_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.LOOPAI_SERVER2_IP_SSH_PRIVATE_KEY }}
+          script: |
+            #!/bin/bash
+
+            set -e  # Exit immediately if a command exits with a non-zero status
+
+            echo "Checking status of all Docker containers..."
+
+            # Navigate to the deployment directory
+            cd /home/${{ secrets.SERVER_USERNAME }}/web_server/loopai_app
+
+            # Get the number of running containers
+            RUNNING_CONTAINERS=$(docker compose ps --filter "status=running" | grep "Up" | wc -l)
+
+            # Get the total number of services
+            TOTAL_SERVICES=$(docker compose config --services | wc -l)
+
+            echo "Running containers: $RUNNING_CONTAINERS"
+            echo "Total services: $TOTAL_SERVICES"
+
+            if [ "$RUNNING_CONTAINERS" -ne "$TOTAL_SERVICES" ]; then
+              echo "Try to restart all Docker containers..."
+              docker compose up -d
+              exit 1
+            else
+              echo "All Docker containers are running successfully."
+            fi
+
+      - name: Verify Frontend Accessibility
+        run: |
+          echo "Checking frontend accessibility at http://${{ secrets.LOOPAI_SERVER2_IP }}:${{ secrets.PROD_WEB_PORT80 }}/..."
+          FRONTEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.LOOPAI_SERVER2_IP }}:${{ secrets.PROD_WEB_PORT80 }}/)
+          if [ "$FRONTEND_RESPONSE" -ne 200 ]; then
+            echo "Error: Frontend is not accessible. HTTP Status Code: $FRONTEND_RESPONSE"
+            exit 1
+          else
+            echo "Frontend is accessible."
+          fi
+            
+
+  post_deploy_checks_server_2:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install curl
+        run: sudo apt-get update && sudo apt-get install -y curl
+
+      - name: Verify All Docker Containers Are Running
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOOPAI_SERVER2_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.LOOPAI_SERVER2_IP_SSH_PRIVATE_KEY }}
+          script: |
+            #!/bin/bash
+
+            set -e  # Exit immediately if a command exits with a non-zero status
+
+            echo "Checking status of all Docker containers..."
+
+            # Navigate to the deployment directory
+            cd /home/${{ secrets.SERVER_USERNAME }}/web_server/loopai_app
+            
+            docker network inspect app_network || docker network create --driver bridge app_network
+            
+            # Get the number of running containers
+            RUNNING_CONTAINERS=$(docker compose ps --filter "status=running" | grep "Up" | wc -l)
+
+            # Get the total number of services
+            TOTAL_SERVICES=$(docker compose config --services | wc -l)
+
+            echo "Running containers: $RUNNING_CONTAINERS"
+            echo "Total services: $TOTAL_SERVICES"
+            
+            if [ "$RUNNING_CONTAINERS" -ne "$TOTAL_SERVICES" ]; then
+              echo "Error: Not all Docker containers are running."
+              docker compose ps
+              echo "Try to restart all Docker containers..."
+              docker compose up -d
+              exit 1
+            else
+              echo "All Docker containers are running successfully."
+            fi
+
+
+      - name: Verify Frontend Accessibility
+        run: |
+          echo "Checking frontend accessibility at http://${{ secrets.LOOPAI_SERVER2_IP }}:${{ secrets.PROD_WEB_PORT80 }}/..."
+          FRONTEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.LOOPAI_SERVER2_IP }}:${{ secrets.PROD_WEB_PORT80 }}/)
+          if [ "$FRONTEND_RESPONSE" -ne 200 ]; then
+            echo "Error: Frontend is not accessible. HTTP Status Code: $FRONTEND_RESPONSE"
+            exit 1
+          else
+            echo "Frontend is accessible."
+          fi
