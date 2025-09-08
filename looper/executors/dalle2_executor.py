@@ -81,7 +81,10 @@ class Dalle2Executor(ExecutorInterface):
             self.logger.info(f"[dalle2_executor] Generated image URL: {image_url}")
             response = requests.get(image_url)
             img = Image.open(BytesIO(response.content))
-            return img
+
+            bd = BroadcastData()
+            base64_encoded = bd.convert_to_base64(img)
+            return BroadcastData({"image_base64": base64_encoded})
         except Exception as e:
             self.logger.error(f"Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
             return None

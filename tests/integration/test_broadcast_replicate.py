@@ -1,4 +1,5 @@
 # python
+import base64
 import os
 import io
 import unittest
@@ -142,8 +143,17 @@ class TestBroadcastReplicate(unittest.TestCase):
         try:
             # Act: call executor.run() which under the hood will call generate_image_from_replicate (mocked)
             generated = self.executor.run(self.replicate_model, {}, "test prompt")
-            self.assertIsNotNone(generated)
-            self.assertIsInstance(generated, Image.Image)
+
+            self.assertIsInstance(generated, BroadcastData)
+            image_base64 = generated.get("image_base64")
+            self.assertIsNotNone(image_base64)
+
+            # Decode to Image and assert type
+            image_bytes = base64.b64decode(image_base64)
+            img = Image.open(io.BytesIO(image_bytes))
+            img.load()
+
+            self.assertIsInstance(img, Image.Image)
 
             # Prepare BroadcastData object that matches how executor results are expected to be saved.
             bd = BroadcastData({"model_id": self.replicate_model, "step_id": "replicate_step", "result": generated})
@@ -169,7 +179,7 @@ class TestBroadcastReplicate(unittest.TestCase):
 
             # Verify that stored data contains the 'result' key (either image placeholder or other representation)
             result_value = read_dict.get("result")
-            if result_value == "<Image Object>" or result_value is None:
+            if result_value is None:
                 # Accept placeholder; also verify DB actually contains JSON with model_id and result
                 # Query DB directly to fetch raw stored JSON for this session/step
                 from core.services.postgres_db_connect import get_db_cursor

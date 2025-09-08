@@ -1,6 +1,9 @@
+import base64
 import os
 import sys
 import unittest
+from io import BytesIO
+
 from PIL import Image
 import replicate
 from core.services.session import session_manager
@@ -48,7 +51,7 @@ class TestReplicateExecutor(unittest.TestCase):
 
         try:
             # Generate the image
-            generated_image = self.executor.run(
+            executor_result = self.executor.run(
                 model=self.model,
                 system_content={"system": "You are a picure editor"},
                 user_content=user_content
@@ -57,11 +60,16 @@ class TestReplicateExecutor(unittest.TestCase):
         except Exception as e:
             self.fail(f"Image generation failed with error: {e}")
 
-        print("Generated image: ", str(generated_image))
+        print("Generated image var type: ", type(executor_result))
 
-        self.assertIsNotNone(generated_image, "Image generation failed.")
+        generated_image_base64 = executor_result["image_base64"]
+        generated_image_bytes = base64.b64decode(generated_image_base64)
 
+        self.assertIsNotNone(generated_image_bytes, "Image generation failed.")
+
+        generated_image = Image.open(BytesIO(generated_image_bytes))
         image_format = generated_image.format.lower()  # e.g., 'WEBP' -> 'webp'
+        # e.g., 'WEBP' -> 'webp'
         print(f"Image format: {image_format}")
 
         # Save the generated image to a file with the correct extension

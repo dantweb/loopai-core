@@ -1,4 +1,8 @@
+import base64
+import io
 import os
+from readline import set_completer_delims
+
 from PIL import Image
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
@@ -21,19 +25,26 @@ class ImageAdapter(FileAdapterInterface):
         self.logger.info(f"[ImageAdapter::write] Writing image to file...")
         self.logger.info(f"[ImageAdapter::write] data type of {type(data)}")
         self.logger.info(f"[ImageAdapter::write] data: {str(data)}")
+        d = BroadcastData(data)
+        self.logger.info(f"[ImageAdapter::write] data type of {type(d)}")
+        self.logger.info(f"[ImageAdapter::write] data {str(d['result'])}")
 
-        image = data.get('result') # Get the image data from the BroadcastData instance
-        # Replace {{SESSION_ID}} with the actual session_id
+        image = data["result"]["image_base64"]
+        if len(image) == len(d["result"]["image_base64"]):
+            self.logger.info(f"[ImageAdapter::write] YEEEEEEESESESESESW \n\n\n\n")
+
+        generated_image_bytes = base64.b64decode(image)
+
+        generated_image = Image.open(io.BytesIO(generated_image_bytes))
+        self.logger.info(f"[ImageAdapter::write] image type of {type(image)}")
+
         filename = self.get_full_path(self.file_path_template)
-        # Ensure the directory exists
         directory = os.path.dirname(filename)
-
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         try:
-            image.save(filename)
-            # Verify if the image is saved correctly
+            generated_image.save(filename)
             if os.path.exists(filename):
                 self.logger.log(f"Image saved successfully: {filename}")
                 return True

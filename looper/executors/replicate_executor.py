@@ -1,10 +1,13 @@
+import base64
 import json
+import os
 from io import BytesIO
 from typing import Any
 
 import requests
 from PIL import Image
 import replicate
+from sqlalchemy.util import md5_hex
 
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
@@ -46,7 +49,11 @@ class ReplicateExecutor(ExecutorInterface):
         """
         result = self.generate_image_from_replicate(model, user_content)
 
-        return result
+        bd = BroadcastData()
+        base64_encoded = bd.convert_to_base64(result)
+        filename = md5_hex(base64_encoded) + ".jpg"
+
+        return BroadcastData({"image_base64": base64_encoded, "image_file": filename })
 
     def generate_image_from_replicate(self, model: str, user_content: Any, width: int = 1024, height: int = 1024):
         """
@@ -132,14 +139,31 @@ class ReplicateExecutor(ExecutorInterface):
             # Download the image
             response = requests.get(image_url, timeout=30)
             response.raise_for_status()
-            requests.session().close()
+            requests.session().close()  # Close the session
 
+            # Open the image
             img = Image.open(BytesIO(response.content))
-            img.load()
+            img.load()  # Load the image data
 
-            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {img}")
+            # Convert to RGB if necessary
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
 
-            return img
+            # Save to a new BytesIO object as JPEG
+            jpeg_buffer = BytesIO()
+            img.save(jpeg_buffer, format='JPEG', quality=95)
+            jpeg_data = jpeg_buffer.getvalue()  # Get the JPEG bytes
+
+            img.close()  # Close the original image
+
+            # Re-open the JPEG data as a new image
+            imp = Image.open(BytesIO(jpeg_data))  # Wrap jpeg_data in BytesIO
+            imp.load()  # Load the new image data
+
+            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {imp}")
+
+            return imp  # Return the new image object
+
 
         except Exception as e:
             # Log error with safe representation of user_content

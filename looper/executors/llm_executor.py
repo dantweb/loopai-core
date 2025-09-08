@@ -55,7 +55,9 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    user_content['error'] = "Your response cannot be converted to a valid JSON. Please try again. Avoid using special characters like new line CR and escaping symbols."
+                    user_content['error'] = ("Your response cannot be converted to a valid JSON." 
+                                             "Please try again. Avoid using special or escaped symbols"
+                                             "Keep it ASCII complient.")
                     self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
 
                     count += 1

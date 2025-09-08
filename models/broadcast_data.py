@@ -1,7 +1,12 @@
+# python
 import json
 import re
 from collections import UserDict, deque
+from typing import Any
+import base64
+from io import BytesIO
 from PIL import Image
+
 
 class BroadcastData(UserDict):
     def __init__(self, obj_input=None):
@@ -13,120 +18,98 @@ class BroadcastData(UserDict):
             self.data = None
             return
 
-        normalized_data = self._normalize_and_flatten(obj_input)
+        # Process input data without flattening
+        processed_data = self._process_input(obj_input)
 
-        if isinstance(normalized_data, dict):
-            self.data = normalized_data
-            self.properties = [type(v).__name__ for v in self.data.values()]
-        elif isinstance(normalized_data, list):
-            self.data = normalized_data
-            if normalized_data:
-                if all(isinstance(item, dict) for item in normalized_data):
-                    for item in normalized_data:
-                        if isinstance(item, Image.Image):
-                            self.image = item
-                        else:
-                            self.properties.extend([type(v).__name__ for v in item.values()])
+        if isinstance(processed_data, dict):
+            self.data = processed_data
+            self.properties = [type(v).__name__ for v in processed_data.values() if not isinstance(v, (dict, list))]
+        elif isinstance(processed_data, list):
+            self.data = processed_data
+            self.properties = []
+            for item in processed_data:
+                if isinstance(item, dict):
+                    self.properties.extend([type(v).__name__ for v in item.values() if not isinstance(v, (dict, list))])
+                elif isinstance(item, Image.Image):
+                    self.image = item
+                    self.properties.append("Image")
                 else:
-                    self.properties = [type(v).__name__ for v in normalized_data]
-        elif isinstance(normalized_data, Image.Image):
-            self.image = normalized_data
+                    self.properties.append(type(item).__name__)
+        elif isinstance(processed_data, Image.Image):
+            self.image = processed_data
             self.data = {}
+            self.properties.append("Image")
         else:
             self.data = {}
+            self.properties.append(type(processed_data).__name__)
 
-    def _normalize_and_flatten(self, data, depth=0, max_depth=100):
+    def _process_input(self, data, depth=0, max_depth=100):
         if depth > max_depth:
             return data
 
-        stack = deque([(data, [])])
-        result = {}
-        visited = set()
+        if isinstance(data, BroadcastData):
+            return self._process_input(data.data, depth + 1, max_depth)
 
-        while stack:
-            current, path = stack.pop()
-            obj_id = id(current)
+        if isinstance(data, str):
+            parsed = self._try_parse_json(data)
+            if parsed is not None:
+                return self._process_input(parsed, depth + 1, max_depth)
+            return data
 
-            if obj_id in visited:
-                continue
-            visited.add(obj_id)
+        if isinstance(data, dict):
+            result = {}
+            for key, value in data.items():
+                result[key] = self._process_input(value, depth + 1, max_depth)
+            return result
 
-            if isinstance(current, BroadcastData):
-                stack.append((current.data, path))
-            elif isinstance(current, dict):
-                temp_dict = {}
-                for key, value in current.items():
-                    temp_dict[key] = None
-                    stack.append((value, path + [key]))
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = temp_dict
-                else:
-                    result.update(temp_dict)
-            elif isinstance(current, list):
-                temp_list = [None] * len(current)
-                for i, item in enumerate(current):
-                    stack.append((item, path + [i]))
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = temp_list
-                else:
-                    result = temp_list
-            elif isinstance(current, str) and self._looks_like_json(current):
-                normalized = self._normalize_json_string(current)
-                try:
-                    parsed = json.loads(normalized)
-                    stack.append((parsed, path))
-                except json.JSONDecodeError:
-                    if path:
-                        parent = result
-                        for key in path[:-1]:
-                            parent = parent[key]
-                        parent[path[-1]] = normalized
-                    else:
-                        result = normalized
-            else:
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = current
-                else:
-                    result = current
+        if isinstance(data, list):
+            return [self._process_input(item, depth + 1, max_depth) for item in data]
 
-        return result
+        if isinstance(data, Image.Image):
+            self.image = data
+            return data
+
+        return data
+
+    def _try_parse_json(self, text: str):
+        if not isinstance(text, str):
+            return None
+        text = text.strip()
+        if not self._looks_like_json(text):
+            return None
+
+        # Try parsing with original quotes
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Try normalizing single quotes to double quotes
+        normalized = re.sub(r"(?<!\\)'", '"', text)
+        try:
+            return json.loads(normalized)
+        except json.JSONDecodeError:
+            pass
+
+        # Handle escaped quotes
+        normalized = re.sub(r"\\(['\"])", r'\1', normalized)  # Remove escaping for quotes
+        normalized = normalized.replace("True", "true").replace("False", "false").replace("None", "null")
+        normalized = re.sub(r'(\w+):', r'"\1":', normalized)  # Quote unquoted keys
+        normalized = re.sub(r',\s*}', '}', normalized)  # Remove trailing commas
+        normalized = re.sub(r',\s*]', ']', normalized)
+        normalized = re.sub(r'\s+', ' ', normalized)
+
+        try:
+            return json.loads(normalized)
+        except json.JSONDecodeError:
+            return None
 
     def _looks_like_json(self, text: str) -> bool:
         if not isinstance(text, str):
             return False
         text = text.strip()
         return (text.startswith('{') and text.endswith('}')) or \
-               (text.startswith('[') and text.endswith(']'))
-
-    def _normalize_json_string(self, json_string: str) -> str:
-        if not isinstance(json_string, str):
-            return json_string
-        json_string = json_string.strip()
-        try:
-            json.loads(json_string)
-            return json_string
-        except json.JSONDecodeError:
-            pass
-        json_string = re.sub(r"(?<!\\)'", '"', json_string)
-        json_string = json_string.replace("True", "true").replace("False", "false").replace("None", "null")
-        json_string = re.sub(r'(\w+):', r'"\1":', json_string)
-        json_string = re.sub(r',\s*}', '}', json_string)
-        json_string = re.sub(r',\s*]', ']', json_string)
-        json_string = re.sub(r'\s+', ' ', json_string)
-        try:
-            json.loads(json_string)
-            return json_string
-        except json.JSONDecodeError:
-            return json_string
+            (text.startswith('[') and text.endswith(']'))
 
     def has(self, key):
         if isinstance(self.data, dict):
@@ -159,59 +142,11 @@ class BroadcastData(UserDict):
             raise ValueError(f"Data contains non-serializable values: {e}")
 
     def to_serializable(self):
-        stack = deque([(self.data, [])])
-        result = {}
-        visited = set()
-
-        while stack:
-            current, path = stack.pop()
-            obj_id = id(current)
-
-            if obj_id in visited:
-                continue
-            visited.add(obj_id)
-
-            if isinstance(current, dict):
-                temp_dict = {}
-                for key, value in current.items():
-                    temp_dict[key] = None
-                    stack.append((value, path + [key]))
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = temp_dict
-                else:
-                    result.update(temp_dict)
-            elif isinstance(current, list):
-                temp_list = [None] * len(current)
-                for i, item in enumerate(current):
-                    stack.append((item, path + [i]))
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = temp_list
-                else:
-                    result = temp_list
-            elif isinstance(current, Image.Image):
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = "<Image Object>"
-                else:
-                    result = "<Image Object>"
-            else:
-                if path:
-                    parent = result
-                    for key in path[:-1]:
-                        parent = parent[key]
-                    parent[path[-1]] = current
-                else:
-                    result = current
-
-        return result if self.image is None else self.image
+        if isinstance(self.data, (dict, list)):
+            return self._process_input(self.data)  # Reuse _process_input for serialization
+        elif isinstance(self.data, Image.Image):
+            return self.convert_to_base64(self.data)
+        return self.data
 
     def flatten_data(self):
         flat_dict = {}
@@ -306,7 +241,7 @@ class BroadcastData(UserDict):
                     if isinstance(v, (dict, list)):
                         stack.append((v, False))
                     elif isinstance(v, str) and not parsed:
-                        parsed_v = self._try_parse_string(v)
+                        parsed_v = self._try_parse_json(v)
                         if parsed_v is not None:
                             stack.append((parsed_v, True))
             elif isinstance(data, list):
@@ -315,11 +250,13 @@ class BroadcastData(UserDict):
 
         return matches
 
-    def _try_parse_string(self, s):
-        if not isinstance(s, str):
-            return None
-        try:
-            candidate = s.replace("'", '"')
-            return json.loads(candidate)
-        except Exception:
-            return None
+    def convert_to_base64(self, input_obj: Any) -> str:
+        if isinstance(input_obj, Image.Image):
+            buffered = BytesIO()
+            input_obj.save(buffered, format="PNG")
+            encoded_bytes = base64.b64encode(buffered.getvalue())
+            return encoded_bytes.decode('utf-8')
+        elif isinstance(input_obj, str):
+            return base64.b64encode(input_obj.encode('utf-8')).decode('utf-8')
+        else:
+            raise TypeError(f"Unsupported type for base64 conversion: {type(input_obj)}")

@@ -1,3 +1,5 @@
+import base64
+import io
 import unittest
 import os
 from dotenv import load_dotenv
@@ -41,17 +43,18 @@ class TestExecutorCompatibility(unittest.TestCase):
 
         # Call the real Dalle2Executor
         try:
-            dalle_image = dalle_executor.run(
+            executor_result = dalle_executor.run(
                 model=self.dalle_model,
                 system_content={"system": "You are a pciture editor"},
                 user_content=self.user_content,
             )
-            print(str(dalle_image))
             output_file = os.path.join(self.output_dir_dalle, f"generated_image_dalle.png")
 
-            print(f"Saving image to: {os.path.abspath(output_file)}")  # Debugging: Print the full path
+            dalle_image_base64 = executor_result["image_base64"]
 
-            # Save the image with the correct format
+            image_bytes = base64.b64decode(dalle_image_base64)
+            dalle_image = Image.open(io.BytesIO(image_bytes))
+            dalle_image.load()
             dalle_image.save(output_file, format="png")
 
         except Exception as e:
@@ -59,7 +62,7 @@ class TestExecutorCompatibility(unittest.TestCase):
 
         # Call the real ReplicateExecutor
         try:
-            replicate_image = replicate_executor.run(
+            executor_result = replicate_executor.run(
                 model=self.replicate_model,
                 system_content={"system": "You are a pciture editor"},
                 user_content=self.user_content,
@@ -67,7 +70,11 @@ class TestExecutorCompatibility(unittest.TestCase):
         except Exception as e:
             self.fail(f"ReplicateExecutor failed with error: {e}")
 
-        # Print image types for debugging
+        image_base64 = executor_result["image_base64"]
+        image_bytes = base64.b64decode(image_base64)
+        replicate_image = Image.open(io.BytesIO(image_bytes))
+        replicate_image.load()
+
         print(f"DALL-E Image Type: {type(dalle_image)}")
         print(f"Replicate Image Type: {type(replicate_image)}")
 

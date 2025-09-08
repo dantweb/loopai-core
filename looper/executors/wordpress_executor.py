@@ -4,7 +4,7 @@ import os
 
 from core.looper.executors.executor_interface import ExecutorInterface
 
-
+## deprecated with new BroadcastData and BroadcastAdapter
 class WordpressExecutor(ExecutorInterface):
     def __init__(self, model: str):
         self.parent_step = None

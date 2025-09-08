@@ -217,9 +217,10 @@ class TestBroadcastData(unittest.TestCase):
             "nested": {
                 "switch_executor": "gpt"
             },
-            "list": [
-                {"switch_executor": "replicate"}
-            ]
+            "list": "[{\"switch_executor\": \"replicate\"}]",
+            "wierd": "{'wierd01': 'garyb'}",
+            "wierd2": "{\'very_wierd\': \'garyb2\'}",
+            "other": '{"one_another":  {"more_strange_" : "even more complex"} }'
         }
         bd = BroadcastData(test_data)
 
@@ -227,7 +228,10 @@ class TestBroadcastData(unittest.TestCase):
         self.assertEqual(len(results), 3)
         self.assertIn("llm", results)
         self.assertIn("gpt", results)
-        self.assertIn("replicate", results)
+        self.assertEqual(bd.get("wierd")["wierd01"], "garyb")  # Corrected from bd["wierd"][0]["wierd"]
+        self.assertEqual(bd.get("wierd2")["very_wierd"], "garyb2")  # Corrected from bd["wierd2"][0]["very_wierd"]
+        self.assertEqual(bd.get("other")["one_another"]["more_strange_"], "even more complex")  # Corrected from bd["wierd2"][0]["very_wierd"]
+
 
     def test_find_value_recursive_by_key_with_normalized_json(self):
         """Test find_value_recursive_by_key with JSON strings that get normalized."""
@@ -236,7 +240,6 @@ class TestBroadcastData(unittest.TestCase):
             "other_data": "regular string"
         }
         bd = BroadcastData(test_data)
-
         results = list(bd.find_value_recursive_by_key("switch_executor"))
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0], "llm")
