@@ -5,7 +5,7 @@ from typing import Any
 class DbAdapterInterface(ABC):
 
     @abstractmethod
-    def read(self, session_id: str, step_id: str):
+    async def read(self, session_id: str, step_id: str):
         """
         Reads data from the database based on session_id and step_id.
 
@@ -16,7 +16,7 @@ class DbAdapterInterface(ABC):
         pass
 
     @abstractmethod
-    def write(self, data: Any) -> bool:
+    async def write(self, data: Any) -> bool:
         """
         Writes data to the database.
 

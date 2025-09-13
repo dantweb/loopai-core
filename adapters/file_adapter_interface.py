@@ -20,11 +20,11 @@ class FileAdapterInterface(ABC):
         self.logger = LoggerService()
 
     @abstractmethod
-    def read(self, file_path: str) -> List[str]:
+    async def read(self, file_path: str) -> List[str]:
         pass
 
     @abstractmethod
-    def write(self, file_path: str, data: List[str]) -> None:
+    async def write(self, file_path: str, data: List[str]) -> None:
         pass
 
     def set_append(self):

@@ -17,7 +17,7 @@ class ExecutorInterface(ABC):
         pass
 
     @abstractmethod
-    def run(self,
+    async def run(self,
             model,
             system_content,
             user_content,

@@ -42,7 +42,7 @@ class GptExecutor(ExecutorInterface):
         self.logger_service.info(f"[GptExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
-    def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
+    async def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
         self.logger_service.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, tkns {max_tokens}")
         result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
 

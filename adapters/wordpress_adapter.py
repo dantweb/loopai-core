@@ -16,11 +16,11 @@ class WordpressAdapter(FileAdapterInterface):
         self.loopai_direct_wpapi_service = LoopAIDirectWPAPIService(wp_site, wp_username, wp_application_password)
         super().__init__()
 
-    def read(self, step_id) -> list:
+    async def read(self, step_id) -> list:
         all_posts = self.loopai_direct_wpapi_service.get_all_posts()
         return all_posts
 
-    def write(self, step_id: str, data: BroadcastData) -> bool:
+    async def write(self, step_id: str, data: BroadcastData) -> bool:
         return_from_wp = self.loopai_direct_wpapi_service.create_post(data)
         self.logger.log(f"[Class WordpressAdapter::write] data type {type(return_from_wp)} ")
         self.logger.log(f"[Class WordpressAdapter::write] data {str(return_from_wp)} ")

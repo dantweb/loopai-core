@@ -18,7 +18,7 @@ class FilesystemAdapter(FileAdapterInterface):
         self.root_path = config.LOOPAI_ROOT
 
 
-    def read(self, step_id, second_parameter=None) -> BroadcastData:
+    async def read(self, step_id, second_parameter=None) -> BroadcastData:
         file_paths = []
         for root, _, files in os.walk(self.absolute_path):
             for file in files:
@@ -38,7 +38,7 @@ class FilesystemAdapter(FileAdapterInterface):
         return BroadcastData({'result': file_paths})
 
 
-    def write(self, step_id: str, data: BroadcastData) -> bool:
+    async def write(self, step_id: str, data: BroadcastData) -> bool:
 
         self.logger.log("FilesystemAdapter::write:: trying to extract files")
         updated_files = self.extract_files(data)

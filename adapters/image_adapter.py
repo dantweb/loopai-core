@@ -16,12 +16,12 @@ class ImageAdapter(FileAdapterInterface):
         super().__init__()
         self.file_path_template = file_path_template
 
-    def read(self, *args, **kwargs):
+    async def read(self, *args, **kwargs):
         filename = self.get_full_path(self.file_path_template)
         # Not implemented because it's not required for images as per the provided context.
         return filename
 
-    def write(self, step_id: str, data: BroadcastData) -> bool:
+    async def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[ImageAdapter::write] Writing image to file...")
         self.logger.info(f"[ImageAdapter::write] data type of {type(data)}")
         self.logger.info(f"[ImageAdapter::write] data: {str(data)}")

@@ -66,12 +66,13 @@ class LoggerService:
         filtered_message = self._filter_message(message)
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
         web_user_id = session_manager.get_user_id()
-        log_message = f"[{timestamp}] UserID=[{web_user_id}] {action}: {filtered_message}"
+        loop_id = session_manager.get_loop_id()
+        log_message = f"[{timestamp}] [server] UserID=[{web_user_id}] {action}: {filtered_message}"
 
         if config.WEB_OR_CLI == 'web':
             # Send the log message to the user if needed.
             if self.user_id:
-                send_message_to_user(self.user_id, action, {'message': filtered_message})
+                send_message_to_user(self.user_id, action, {'fuck':'yes! it is a logger','message': filtered_message, 'loop_id': loop_id})
 
         self.logs.append(log_message)
         self._logger.debug(str(log_message))

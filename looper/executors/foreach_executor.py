@@ -38,7 +38,7 @@ class ForeachExecutor(ExecutorInterface):
     def set_foreach_data(self, foreach_data) -> str:
         self.foreach_data = foreach_data
 
-    def run(self, model, system_content, user_content, fine_tuning):
+    async def run(self, model, system_content, user_content, fine_tuning):
         logger.info(f"[ForeachExecutor::run] ..going to run foreach-executor")
 
         looper = Looper(self.loop_data, self.loop_data['session']['code_source'], self.parent_step)

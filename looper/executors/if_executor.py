@@ -12,7 +12,7 @@ class IfExecutor(ExecutorInterface):
         # Not needed for IfExecutor
         pass
 
-    def run(self, model, system_content, user_content, max_tokens):
+    async def run(self, model, system_content, user_content, max_tokens):
         try:
             # Dynamically import the module and function
             module_path = os.path.join(os.getcwd(), system_content['module_path'])

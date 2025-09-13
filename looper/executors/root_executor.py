@@ -48,7 +48,7 @@ class RootExecutor(ExecutorInterface):
                 'return_code': -1
             }
 
-    def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
+    async def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         bash_script_path = config.get('bash_script_path')
         self.logger_service.log(f"Bash script path: {bash_script_path}")
 

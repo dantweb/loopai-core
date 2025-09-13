@@ -196,7 +196,7 @@ class StepModel:
         return load_executor_class(executor_type)
 
 
-    def execute(self, step_name: str, loop_index: str):
+    async def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
         session_manager.set_step_name(step_name)
         session_manager.set_global_loop_index(loop_index)
@@ -241,9 +241,9 @@ class StepModel:
             logger.info(f"[StepModel::execute] args for adapter a1={first_parameter} a2={second_parameter}")
 
             if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
-                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
+                fresh_data_from_input = await input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
             else:
-                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
+                fresh_data_from_input = await input_adapter.read(first_parameter, second_parameter)
 
             logger.info(f"[StepModel::execute] Read data from adapter {input_adapter.__class__}")
             logger.info(f"[StepModel::execute] Data we have read: {fresh_data_from_input}")

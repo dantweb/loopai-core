@@ -19,6 +19,6 @@ class LambdaExecutor(ExecutorInterface):
 
         return input_data
 
-    def run(self, model, system_content, user_content, temperature=0.7, **kwargs) -> BroadcastData:
+    async def run(self, model, system_content, user_content, temperature=0.7, **kwargs) -> BroadcastData:
 
         return user_content

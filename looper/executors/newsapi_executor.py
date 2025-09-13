@@ -12,7 +12,7 @@ class NewsapiExecutor(ExecutorInterface):
         input_data = input_data[0][0]
         return input_data
 
-    def run(self, model, system_content, user_content, max_tokens) -> list:
+    async def run(self, model, system_content, user_content, max_tokens) -> list:
         newsapi_response = self.news_api_service.get_fresh_headlines_by_topic(user_content, system_content, '', max_tokens)
 
         return newsapi_response

@@ -35,7 +35,7 @@ class SwitchExecutor(ExecutorInterface):
         return prompt_template
 
 
-    def run(self, model, system_content, user_content, max_tokens):
+    async def run(self, model, system_content, user_content, max_tokens):
 
         broadcast_data_json = fix_json(json.loads(str(user_content.flatten_data())))
         self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor input type: {type(broadcast_data_json)}")

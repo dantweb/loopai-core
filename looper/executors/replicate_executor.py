@@ -37,7 +37,7 @@ class ReplicateExecutor(ExecutorInterface):
         self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
-    def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
+    async def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
         """
         Run the executor: generate an image from replicate and return the PIL Image.
         """

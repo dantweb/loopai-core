@@ -7,7 +7,6 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
 from core.services.session import session_manager
-from web.session_manager import redis_client
 
 logger = LoggerService()
 
@@ -29,7 +28,7 @@ class RequestAdapter(FileAdapterInterface):
         super().__init__()
 
 
-    def read(self, step_id: str, *args: str) -> BroadcastData:
+    async def read(self, step_id: str, *args: str) -> BroadcastData:
         """
         Reads the current HTTP request and packs it into a BroadcastData object.
         Handles POST, GET, PUT and other HTTP methods.
@@ -97,7 +96,7 @@ class RequestAdapter(FileAdapterInterface):
         return BroadcastData(result)
 
 
-    def write(self, step_id: str, data: BroadcastData) -> bool:
+    async def write(self, step_id: str, data: BroadcastData) -> bool:
 
         try:
             session_manager.collect_broadcast(data)

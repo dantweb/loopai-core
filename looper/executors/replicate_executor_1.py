@@ -21,7 +21,7 @@ class ReplicateExecutor(ExecutorInterface):
 
         return final_prompt.to_json()
 
-    def run(self, model, system_content, user_content, max_tokens):
+    async def run(self, model, system_content, user_content, max_tokens):
         img = self.generate_image_from_replicate(model, user_content)
 
         self.logger_service.info(f"[ReplicateExecutor::run] ReplicateExecutor response type: {type(result)}")

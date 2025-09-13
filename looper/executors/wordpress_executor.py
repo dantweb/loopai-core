@@ -22,7 +22,7 @@ class WordpressExecutor(ExecutorInterface):
 
         return input_data
 
-    def run(self, model, system_content, user_content, max_tokens) -> str:
+    async def run(self, model, system_content, user_content, max_tokens) -> str:
 
         return ''
 

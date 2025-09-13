@@ -17,7 +17,7 @@ class LoopController:
         session_manager.set_loop_id(loop_id)
         self.loop_file_path = loop_file_path
 
-    def run(self):
+    async def run(self):
         with open(self.loop_file_path, 'r', encoding='utf-8') as file:
             loop_data = yaml.safe_load(file)
 
@@ -28,6 +28,6 @@ class LoopController:
 
         for index, step in enumerate(steps):
             index_uuid = str(uuid.uuid4())
-            step.execute(step.name, index_uuid)
+            await step.execute(step.name, index_uuid)
 
         cleanup_session()

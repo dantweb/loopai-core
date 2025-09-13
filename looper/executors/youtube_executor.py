@@ -16,7 +16,7 @@ class YoutubeExecutor(ExecutorInterface):
     def prepare_prompt(self, input_data: list, prompt_template=''):
         return input_data[0]
 
-    def run(self, model, system_content, user_content, max_tokens):
+    async def run(self, model, system_content, user_content, max_tokens):
         result = {'embed_code': self.get_youtube_embed_code(user_content)}
         return result
 

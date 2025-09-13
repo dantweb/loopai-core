@@ -1,3 +1,4 @@
+# core/services/featherless_service.py
 import json
 import os
 import re
@@ -25,7 +26,7 @@ class FeatherlessService(ServiceInterface):
             base_url=session_manager.get_env('FEATHERLESS_API_URL') or 'none',
             api_key=session_manager.get_env('FEATHERLESS_API_KEY') or 'fucking_api_key_is_wrong',
             timeout=120
-        )
+        )  # Removed proxies argument
 
     def get_response(
         self,
@@ -44,7 +45,6 @@ class FeatherlessService(ServiceInterface):
         for attempt in range(1, self.RETRY_ATTEMPTS + 1):
             self.logger.info(f"[FeatherlessService::get_response] Attempt {attempt} of {self.RETRY_ATTEMPTS}")
             try:
-
                 self.response = self.fetch_response_with_retries(
                     self.client,
                     model,

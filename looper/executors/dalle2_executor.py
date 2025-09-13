@@ -49,7 +49,7 @@ class Dalle2Executor(ExecutorInterface):
         logger.info(f"[DalleExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
-    def run(self, model, system_content, user_content, fine_tuning = {}, **kwargs):
+    async def run(self, model, system_content, user_content, fine_tuning = {}, **kwargs):
         result = self.generate_image_from_dalle(model, user_content)
 
         if result == 'Suggestion failed.':
