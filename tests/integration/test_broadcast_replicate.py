@@ -159,12 +159,12 @@ class TestBroadcastReplicate(unittest.TestCase):
             bd = BroadcastData({"model_id": self.replicate_model, "step_id": "replicate_step", "result": generated})
 
             # Write to DB via BroadcastAdapter (real DB)
-            write_success = self.adapter.write("replicate_step", bd)
+            write_success = await self.adapter.write("replicate_step", bd)
             self.assertTrue(write_success, "BroadcastAdapter.write should return True")
 
             # Now read it back using BroadcastAdapter.read() (real DB)
             self.adapter.field = "result"
-            read_result = self.adapter.read(self_step_id="replicate_step", ref_step_id="replicate_step",
+            read_result = await self.adapter.read(self_step_id="replicate_step", ref_step_id="replicate_step",
                                             ignore_read_status=True)
 
             # The adapter.prepare_result may return BroadcastData or dict — normalize

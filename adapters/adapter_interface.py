@@ -11,8 +11,8 @@ class AdapterInterface:
     def get_input(self) -> str:
         pass
 
-    def read(self, session_id: str, step_id: str) -> BroadcastData:
+    async def read(self, session_id: str, step_id: str) -> BroadcastData:
         pass
 
-    def write(self, step_id, data: BroadcastData) -> bool:
+    async def write(self, step_id, data: BroadcastData) -> bool:
         pass

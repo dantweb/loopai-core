@@ -317,12 +317,12 @@ class StepModel:
         self.packed_blob['step_id'] = step_id
         self.packed_blob['result'] = result
 
-        self.write(step_id)
+        await self.write(step_id)
         self.cleanup(step_id)
 
         return self.packed_blob
 
-    def write(self, step_id: str):
+    async def write(self, step_id: str):
 
         self.logger_service.log(f"Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
 
@@ -336,7 +336,7 @@ class StepModel:
             self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__} BroadcastData {str(broadcast_data)}")
 
             try:
-                a = output_adapter.write(step_id, broadcast_data)
+                a = await output_adapter.write(step_id, broadcast_data)
                 if a is True:
                     self.logger_service.log(f"Step \"{self.name}\" is saved by the adapter {output_adapter.__class__} ")
                 else:

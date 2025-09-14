@@ -1,10 +1,8 @@
 import csv
-import json
 import logging
 import os
 import re
-from typing import Tuple, Iterable, Hashable, Dict, List, Union, Optional, Any, Set
-
+from typing import Tuple, Iterable, Hashable, Dict, List, Union, Optional, Any, Set, Coroutine
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 
@@ -12,7 +10,6 @@ import pandas as pd
 from pandas import Series
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.services.session import session_manager
 
 logger = LoggerService()
 
@@ -26,14 +23,14 @@ class CsvAdapter(FileAdapterInterface):
         self.mapping: dict = mapping
 
     # Public Methods
-    async def read(self, step_id: str, *args: str) -> list[dict[str, Any]]:
+    async def read(self, step_id: str, *args: str) -> BroadcastData:
         path: str = self.get_full_path(self.file_path)
         self.logger.info('[CsvAdapter::read] Reading CSV file' + path)
         df: pd.DataFrame = pd.read_csv(path, sep=self.separator)
         self.logger.info('[CsvAdapter::read] Finished reading CSV file')
         data_list: List[Dict[str, Any]] = df.to_dict(orient='records')
         self.logger.info(f'[CsvAdapter::read] Converted DataFrame to list of dicts: {data_list}')
-        return data_list
+        return BroadcastData({'list':data_list})
 
     async def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[CsvAdapter::write] data type of : {type(data)}")

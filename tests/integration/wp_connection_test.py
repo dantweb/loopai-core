@@ -8,7 +8,7 @@ import json
 # Load environment variables
 load_dotenv('WPCreatePostTest.env')
 
-WP_URL = os.getenv("WORDPRESS_URL")
+WP_URL = os.getenv("WORDPRESS_URL") or "https://wp-mysql:8085"
 WP_USERNAME = os.getenv("WORDPRESS_USERNAME")
 WP_APPLICATION_PASSWORD = os.getenv("WORDPRESS_PASSWORD")
 

@@ -15,7 +15,6 @@ FEATHERLESS_API_KEY = os.getenv('FEATHERLESS_API_KEY', 'dummy_key')
 
 class ServiceInterface:
 
-
     def __init__(self, model: str):
         self.logger = LoggerService()
         self.model = model

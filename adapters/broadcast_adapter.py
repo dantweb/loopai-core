@@ -116,12 +116,13 @@ class BroadcastAdapter(FileAdapterInterface):
         Returns:
             BroadcastData: An instance of BroadcastData containing the extracted data or None.
         """
+
+        broadcast_obj = BroadcastData(input_data)
+
         if not self.field:
             if self.logger:
                 self.logger.error("Field path is not set.")
-            return None
-
-        broadcast_obj = BroadcastData(input_data)
+            return broadcast_obj
 
         self.logger.info(f"[BroadcastAdapter::prepare_result] field : {self.field}")
         self.logger.info(f"[BroadcastAdapter::prepare_result] type of field : {type(self.field)}")

@@ -208,13 +208,13 @@ class TestBroadcastReplicate(unittest.TestCase):
             bd = BroadcastData(result_data)
 
             # Write to DB
-            write_success = self.adapter.write(step_id, bd)
+            write_success = await self.adapter.write(step_id, bd)
             self.assertTrue(write_success, "BroadcastAdapter.write should return True")
 
             # Read it back
             self.adapter.field = "result"
 
-            read_result = self.adapter.read(self_step_id=step_id, ref_step_id=step_id,
+            read_result = await self.adapter.read(self_step_id=step_id, ref_step_id=step_id,
                                            ignore_read_status=True)
 
             self.assertIsNotNone(read_result, "BroadcastAdapter.read returned None, expected saved data.")
