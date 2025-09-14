@@ -87,7 +87,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         return json.loads(json_str)
 
     @patch.object(ReplicateExecutor, "generate_image_from_replicate")
-    def test_replicate_produces_image_and_broadcast_adapter_handles_payload(self, mock_generate):
+    async def test_replicate_produces_image_and_broadcast_adapter_handles_payload(self, mock_generate):
         """
         Integration test:
          - Mock ReplicateExecutor.generate_image_from_replicate to return a PIL Image
@@ -100,7 +100,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         mock_generate.return_value = test_img
 
         # Act: call the (mocked) executor to "generate" an image
-        generated_image = self.executor.generate_image_from_replicate(
+        generated_image = await self.executor.generate_image_from_replicate(
             model=self.replicate_model,
             user_content="test prompt",
             width=256,
@@ -164,7 +164,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         mock_generate.assert_called_once()
 
     @patch.object(ReplicateExecutor, "generate_image_from_replicate")
-    def test_replicate_run_saved_and_read_via_broadcast_adapter_with_base64_image(self, mock_generate):
+    async def test_replicate_run_saved_and_read_via_broadcast_adapter_with_base64_image(self, mock_generate):
         """
         End-to-end test using the real database connection:
          - Mock ReplicateExecutor.generate_image_from_replicate to return a PIL Image
@@ -184,7 +184,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         session_module.session_manager.get_session_id = MagicMock(return_value="test-session")
 
         try:
-            generated = self.executor.run(self.replicate_model, {}, "test prompt")
+            generated = await self.executor.run(self.replicate_model, {}, "test prompt")
             self.assertIsInstance(generated, BroadcastData)
             image_base64 = generated.get("image_base64")
             self.assertIsNotNone(image_base64)

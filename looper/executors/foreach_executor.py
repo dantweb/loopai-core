@@ -62,7 +62,7 @@ class ForeachExecutor(ExecutorInterface):
                 self.logger_service.log(f"[ForeachExecutor::run] data is a list with length: {len(self.foreach_data)}")
 
                 for item in self.foreach_data:
-                    self.process_row_and_execute_steps(self.parent_step, item, steps)
+                    await self.process_row_and_execute_steps(self.parent_step, item, steps)
             else:
                 raise ValueError("Foreach data must be either a list of pandas DataFrames or a list of other elements.")
 
@@ -88,7 +88,7 @@ class ForeachExecutor(ExecutorInterface):
         broadcast_adapter = BroadcastAdapter()
         broadcast_adapter.delete_entries_by_session_id()
 
-    def process_row_and_execute_steps(self, step_name, row, steps):
+    async def process_row_and_execute_steps(self, step_name, row, steps):
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Step_name: '{step_name}'")
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Processing row data: {row}")
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Datatype is: {type(row)}")
@@ -98,7 +98,7 @@ class ForeachExecutor(ExecutorInterface):
 
         for step in steps:
             session_manager.set_global_step_name(str(uuid.uuid4()))
-            step_result = step.execute(step.name, self.parent_step)
+            step_result = await step.execute(step.name, self.parent_step)
             logger.info(f"[ForeachExecutor::process_row_and_execute_steps] execute result: {str(step_result['result'])}")
             self.result.append(step_result['result'])
 

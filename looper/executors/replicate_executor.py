@@ -41,7 +41,7 @@ class ReplicateExecutor(ExecutorInterface):
         """
         Run the executor: generate an image from replicate and return the PIL Image.
         """
-        result = self.generate_image_from_replicate(model, user_content)
+        result = await self.generate_image_from_replicate(model, user_content)
 
         bd = BroadcastData()
         base64_encoded = bd.convert_to_base64(result)
@@ -49,7 +49,7 @@ class ReplicateExecutor(ExecutorInterface):
 
         return BroadcastData({"image_base64": base64_encoded, "image_file": filename })
 
-    def generate_image_from_replicate(self, model: str, user_content: Any, width: int = 1024, height: int = 1024):
+    async def generate_image_from_replicate(self, model: str, user_content: Any, width: int = 1024, height: int = 1024):
         """
         Calls Replicate API to generate an image and returns a PIL.Image on success,
         otherwise returns None. Handles multiple possible response formats from

@@ -63,24 +63,25 @@ class HttpAdapter(FileAdapterInterface):
     async def _get_url_contents(self, url, timeout=None):
         if timeout is None:
             timeout = self.DEFAULT_TIMEOUT
-        logger.info(f"[HttpAdapter::_get_url_contents] Attempting to fetch: {url} (timeout={timeout})")
+        self.logger.info(f"[HttpAdapter::_get_url_contents] Attempting to fetch: {url} (timeout={timeout})")
         for attempt in range(self.RETRY_ATTEMPTS):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
                         if response.status != 200:
                             text = await response.text()
-                            logger.error(f"[HttpAdapter::_get_url_contents] HTTP error {response.status}: {text[:200]}...")
+                            self.logger.error(f"[HttpAdapter::_get_url_contents] HTTP error {response.status}: {text[:200]}...")
                             raise Exception(f"HTTP error: {response.status} - {text[:200]}...")
                         text = await response.text()
-                        logger.info(f"[HttpAdapter::_get_url_contents] Success: {text[:100]}...")
+                        self.logger.info(f"[HttpAdapter::_get_url_contents] Success: {text[:100]}...")
                         return text
             except Exception as e:
-                logger.error(f"[HttpAdapter::_get_url_contents] Attempt {attempt + 1} failed: {str(e)}")
+                self.logger.error(f"[HttpAdapter::_get_url_contents] Attempt {attempt + 1} failed: {str(e)}")
                 if attempt < self.RETRY_ATTEMPTS - 1:
                     sleep(self.RETRY_DELAY)
                 else:
                     raise Exception(f"Failed to fetch {url} after {self.RETRY_ATTEMPTS} attempts: {str(e)}")
+        return None
 
     def clean_html(self, html_content, remove_tags=None, keep_tags=None, min_text_length=1):
         """Advanced HTML cleaning function."""
@@ -153,7 +154,7 @@ class HttpAdapter(FileAdapterInterface):
                 result['channel'][field] = elem.text if elem is not None else ''
             for item in channel.findall('item'):
                 item_dict = {}
-                fields_to_extract = ['title', 'link', 'description', 'pubDate', 'guid', 'author', 'category', 'comments']
+                fields_to_extract = ['title', 'link', 'description', 'pubDate', 'guid', 'author', 'category']
                 for field in fields_to_extract:
                     elem = item.find(field)
                     if elem is not None:

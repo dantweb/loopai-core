@@ -256,7 +256,7 @@ class TestFilesystemAdapterWithBroadcast(unittest.TestCase):
         ]
         self.assertEqual(files, expected_files)
 
-    def test_write_files_to_desired_location_with_broadcast_data(self):
+    async def test_write_files_to_desired_location_with_broadcast_data(self):
         # Mocked BroadcastData object containing file data
         data = {
             "result": {
@@ -268,13 +268,13 @@ class TestFilesystemAdapterWithBroadcast(unittest.TestCase):
         }
         broadcast_data = BroadcastData(data)
 
-        expected_full_dir_path = '/app/log-dev'
+        expected_full_dir_path = '/app/var/tmp/log-dev'
 
         # Mock filesystem operations
         with patch("builtins.open", unittest.mock.mock_open()) as mock_file, \
                 patch("os.makedirs") as mock_makedirs:
             # Call the write method on the adapter
-            self.adapter.write('step1', broadcast_data)
+            await self.adapter.write('step1', broadcast_data)
 
             mock_makedirs.assert_called_with(expected_full_dir_path, exist_ok=True)
 

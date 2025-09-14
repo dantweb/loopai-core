@@ -50,7 +50,7 @@ class Dalle2Executor(ExecutorInterface):
         return prompt_template
 
     async def run(self, model, system_content, user_content, fine_tuning = {}, **kwargs):
-        result = self.generate_image_from_dalle(model, user_content)
+        result = await self.generate_image_from_dalle(model, user_content)
 
         if result == 'Suggestion failed.':
             raise Exception("Suggestion failed.")
@@ -59,7 +59,7 @@ class Dalle2Executor(ExecutorInterface):
 
         return result
 
-    def generate_image_from_dalle(self, model, user_content, width: int = 1024, height: int = 1024):
+    async def generate_image_from_dalle(self, model, user_content, width: int = 1024, height: int = 1024):
 
         try:
             # Use the closest supported size

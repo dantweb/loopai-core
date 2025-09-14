@@ -251,7 +251,7 @@ def write_to_fs_log(data):
     import json
     import os
 
-    log_dir = "/app/log-dev"
+    log_dir = "/app/var/tmp/log-dev"
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "fs_out.log")
 

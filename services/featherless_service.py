@@ -24,9 +24,9 @@ class FeatherlessService(ServiceInterface):
         self.logger = LoggerService()
         self.client = OpenAI(
             base_url=session_manager.get_env('FEATHERLESS_API_URL') or 'none',
-            api_key=session_manager.get_env('FEATHERLESS_API_KEY') or 'fucking_api_key_is_wrong',
+            api_key=session_manager.get_env('FEATHERLESS_API_KEY') or 'api_key_is_wrong',
             timeout=120
-        )  # Removed proxies argument
+        )
 
     def get_response(
         self,

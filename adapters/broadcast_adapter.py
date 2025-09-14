@@ -68,7 +68,7 @@ class BroadcastAdapter(FileAdapterInterface):
             self.logger.error(f"Error reading from database: {e}")
             return None
 
-    def write(self, step_id: str, data: BroadcastData) -> bool:
+    async def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 

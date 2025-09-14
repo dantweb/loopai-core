@@ -30,7 +30,7 @@ class TestExecutorCompatibility(unittest.TestCase):
         self.height = 1024
 
 
-    def test_executor_output_compatibility(self):
+    async def test_executor_output_compatibility(self):
         # Generate images using both executors
         from core.looper.executors.dalle2_executor import Dalle2Executor
         from core.looper.executors.replicate_executor import ReplicateExecutor
@@ -43,7 +43,7 @@ class TestExecutorCompatibility(unittest.TestCase):
 
         # Call the real Dalle2Executor
         try:
-            executor_result = dalle_executor.run(
+            executor_result = await dalle_executor.run(
                 model=self.dalle_model,
                 system_content={"system": "You are a pciture editor"},
                 user_content=self.user_content,
@@ -62,7 +62,7 @@ class TestExecutorCompatibility(unittest.TestCase):
 
         # Call the real ReplicateExecutor
         try:
-            executor_result = replicate_executor.run(
+            executor_result = await replicate_executor.run(
                 model=self.replicate_model,
                 system_content={"system": "You are a pciture editor"},
                 user_content=self.user_content,

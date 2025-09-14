@@ -53,7 +53,7 @@ class SwitchExecutor(ExecutorInterface):
         executor_object = load_executor_class(switch)
         self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor class {executor_object} is loaded")
 
-        result = executor_object.run(
+        result = await executor_object.run(
             model,
             system_content,
             user_content,

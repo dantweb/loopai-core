@@ -72,7 +72,7 @@ class LoggerService:
         if config.WEB_OR_CLI == 'web':
             # Send the log message to the user if needed.
             if self.user_id:
-                send_message_to_user(self.user_id, action, {'fuck':'yes! it is a logger','message': filtered_message, 'loop_id': loop_id})
+                send_message_to_user(self.user_id, action, {'message': filtered_message, 'loop_id': loop_id})
 
         self.logs.append(log_message)
         self._logger.debug(str(log_message))

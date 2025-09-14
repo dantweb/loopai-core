@@ -45,13 +45,13 @@ class TestReplicateExecutor(unittest.TestCase):
         pass
 
 
-    def test_generate_image_from_replicate(self):
+    async def test_generate_image_from_replicate(self):
         # Define the test prompt
         user_content = {'loopai_project_id': 'OCVA', 'looai_project_descritption': 'Easy reading professional blog about health', 'loopai_mode': 'draw illustration for our blog', 'request': "Make a vibrant illustration for our blog based on the description in the field 'requestContent'. \n      Do not take the description literally, use allegoric or metaphoric choaice of ideas for painting the illustration. \n      But keep it nice looking. Try to be creative", 'requestContent': 'null'}
 
         try:
             # Generate the image
-            executor_result = self.executor.run(
+            executor_result = await self.executor.run(
                 model=self.model,
                 system_content={"system": "You are a picure editor"},
                 user_content=user_content

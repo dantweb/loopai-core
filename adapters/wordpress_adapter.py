@@ -21,7 +21,7 @@ class WordpressAdapter(FileAdapterInterface):
         return all_posts
 
     async def write(self, step_id: str, data: BroadcastData) -> bool:
-        return_from_wp = self.loopai_direct_wpapi_service.create_post(data)
-        self.logger.log(f"[Class WordpressAdapter::write] data type {type(return_from_wp)} ")
+        return_from_wp = await self.loopai_direct_wpapi_service.create_post(data)
         self.logger.log(f"[Class WordpressAdapter::write] data {str(return_from_wp)} ")
-        return True if return_from_wp.status_code == 200 else False
+        print(f"[Class WordpressAdapter::write] data {str(return_from_wp)} ")
+        return True if return_from_wp.status == 200 else False
