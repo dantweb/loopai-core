@@ -11,7 +11,7 @@ from core.services.session import session_manager
 load_dotenv()
 
 
-class BashExecutor(ExecutorInterface):
+class DockerExecutor(ExecutorInterface):
 
     def __init__(self, model: str):
         super().__init__(model)

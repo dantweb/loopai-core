@@ -12,9 +12,9 @@ from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop, \
     write_to_fs_log
 from core.adapters.filesystem_adapter import FilesystemAdapter
-from core.looper.executors.bash_executor import BashExecutor
+from core.looper.executors.bash_executor import DockerExecutor
 from core.looper.executors.gpt2code_executor import Gpt2codeExecutor
-from core.looper.executors.root_executor import RootExecutor
+from core.looper.executors.root_executor import BashExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
 from core.models.action_config import ActionConfig
 from core.models.broadcast_data import BroadcastData
@@ -304,9 +304,9 @@ class StepModel:
 
         if isinstance(self.executor, WordpressExecutor):
             result = step_input_data
-        elif isinstance(self.executor, BashExecutor) or isinstance(self.executor, RootExecutor):
+        elif isinstance(self.executor, DockerExecutor) or isinstance(self.executor, BashExecutor):
             config = self.action.config if hasattr(self.action, 'config') else {}
-            result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
+            result = await self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
             result = await self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning)
 

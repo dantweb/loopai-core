@@ -5,7 +5,7 @@ from core.looper.executors.executor_interface import ExecutorInterface
 from core.services.session import session_manager
 from core.looper.executors.bash_executor import get_file_system_by_user_and_loop
 
-class RootExecutor(ExecutorInterface):
+class BashExecutor(ExecutorInterface):
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
