@@ -1,5 +1,7 @@
 # src/adapters/filesystem_adapter.py
+import json
 import os
+
 import app_global_config as config
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop, write_to_fs_log
 from core.models.broadcast_data import BroadcastData
@@ -41,6 +43,7 @@ class FilesystemAdapter(FileAdapterInterface):
     async def write(self, step_id: str, data: BroadcastData) -> bool:
 
         self.logger.log("FilesystemAdapter::write:: trying to extract files")
+        print("[FilesystemAdapter::write]:: trying to extract files")
         updated_files = self.extract_files(data)
         write_to_fs_log({"input_data": data.data})
         write_to_fs_log({"updated_files_found": updated_files})
@@ -65,8 +68,8 @@ class FilesystemAdapter(FileAdapterInterface):
 
 
                 with open(file_path, 'w') as f:
-                    f.write(file_content)
-                self.logger.log(f"File {file_path} was saved successfully")
+                    f.write(json.dumps(file_content))
+                    self.logger.log(f"File {file_path} was saved successfully")
 
             return True
         except Exception as e:
