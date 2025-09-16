@@ -10,6 +10,18 @@ from PIL.Image import Image
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
+
+def get_session_manager():
+    """Get the appropriate session manager based on thread context"""
+    try:
+        # If thread-safe session manager has active session for this thread, use it
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    # Fall back to global session manager
+    return session_manager
 
 
 class FileAdapterInterface(ABC):
@@ -213,15 +225,25 @@ def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
 
 
 def get_full_path(file_path_template: str) -> str:
-    loop_index = session_manager.get_loop_index()
-    step = session_manager.get_global_step_name()
-    path = f"loop.{step}.{loop_index}"
-    user_id = session_manager.get_user_id()
-    loop_id = session_manager.get_loop_id()
+    # Use the appropriate session manager
+    current_session = get_session_manager()
 
+    loop_index = current_session.get_loop_index()
+    step = current_session.get_global_step_name()
+    path = f"loop.{step}.{loop_index}"
+    user_id = current_session.get_user_id()
+    loop_id = current_session.get_loop_id()
+
+    # Add debug logging
+    logger = LoggerService()
+    logger.info(f"[get_full_path] Using session manager: {type(current_session).__name__}")
+    logger.info(f"[get_full_path] User ID: {user_id}, Loop ID: {loop_id}")
+
+    session_id = current_session.get_session_id()
+    session_id_short = session_id[:8] if session_id else 'no-session'
 
     last_part_of_the_path: str = file_path_template.replace(
-        '{{SESSION_ID}}', session_manager.get_session_id()[:8]
+        '{{SESSION_ID}}', session_id_short
     ).replace(
         '{{FOREACH_STEP_UUID}}', str(loop_index)
     ).replace('{{PATH}}', path)
@@ -229,6 +251,7 @@ def get_full_path(file_path_template: str) -> str:
     base_path = get_file_system_by_user_and_loop(user_id, loop_id)
 
     full_path = f'{base_path}/{last_part_of_the_path}'
+    logger.info(f"[get_full_path] Resolved path: {full_path}")
 
     return full_path
 

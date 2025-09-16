@@ -8,7 +8,19 @@ import app_global_config as config
 import threading
 
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
 from web.services.socket_io_service import send_message_to_user
+
+def get_session_manager():
+    """Get the appropriate session manager based on thread context"""
+    try:
+        # If thread-safe session manager has active session for this thread, use it
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    # Fall back to global session manager
+    return session_manager
 
 class LoggerService:
     _instance = None
@@ -65,8 +77,12 @@ class LoggerService:
         # Apply filtering to the log message.
         filtered_message = self._filter_message(message)
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
-        web_user_id = session_manager.get_user_id()
-        loop_id = session_manager.get_loop_id()
+
+        # Use the appropriate session manager
+        current_session = get_session_manager()
+        web_user_id = current_session.get_user_id()
+        loop_id = current_session.get_loop_id()
+
         log_message = f"[{timestamp}] [server] UserID=[{web_user_id}] {action}: {filtered_message}"
 
         if config.WEB_OR_CLI == 'web':

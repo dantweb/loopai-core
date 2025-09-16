@@ -19,9 +19,21 @@ from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
 from web.admin_models import db
 
 logger = LoggerService()
+
+def get_session_manager():
+    """Get the appropriate session manager based on thread context"""
+    try:
+        # If thread-safe session manager has active session for this thread, use it
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    # Fall back to global session manager
+    return session_manager
 
 class StepModel:
     def __init__(self,
@@ -195,9 +207,11 @@ class StepModel:
 
     async def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
-        session_manager.set_step_name(step_name)
-        session_manager.set_global_loop_index(loop_index)
-        session_manager.set_global_step_name(step_name)
+        current_session = get_session_manager()
+
+        current_session.set_step_name(step_name)
+        current_session.set_global_loop_index(loop_index)
+        current_session.set_global_step_name(step_name)
         step_input_data = []
         # Load executor
         executor_class = self.load_executor(self.action.executor)
@@ -365,11 +379,17 @@ class StepModel:
         return getattr(self.code_module, variable_name)
 
     def load_code_module(self, module_path: str):
+        # Use the appropriate session manager
+        current_session = get_session_manager()
+
+        user_id = current_session.get_user_id()
+        loop_id = current_session.get_loop_id()
+
+        logger.info(f"[StepModel::load_code_module] Using session manager: {type(current_session).__name__}")
+        logger.info(f"[StepModel::load_code_module] User ID: {user_id}, Loop ID: {loop_id}")
+
         module_absolute_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(
-                session_manager.get_user_id(),
-                session_manager.get_loop_id()
-            ),
+            get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
             module_path
         )
 
@@ -386,19 +406,48 @@ class StepModel:
 
     def project_env(self, project_id: str) -> Dict[str, str]:
         from web.admin_models import Project
+        if not project_id:
+            logger.warning(f"[StepModel::project_env] No project_id provided")
+            return {}
+
         db.session.query(Project)
         project = db.session.query(Project).filter_by(id=project_id).first()
+        if not project:
+            logger.warning(f"[StepModel::project_env] Project {project_id} not found")
+            return {}
+
+        if not hasattr(project, 'project_env') or not project.project_env:
+            logger.warning(f"[StepModel::project_env] Project {project_id} has no project_env")
+            return {}
+
         return dotenv_values(stream=io.StringIO(project.project_env))
 
     def get_loop_env(self, loop_id: str) -> Dict[str, str]:
-        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(session_manager.get_user_id(), loop_id), ".env")
+        # Use the appropriate session manager
+        current_session = get_session_manager()
+        user_id = current_session.get_user_id()
+
+        if not user_id or not loop_id:
+            logger.warning(f"[StepModel::get_loop_env] Missing user_id ({user_id}) or loop_id ({loop_id})")
+            return {}
+
+        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(user_id, loop_id), ".env")
         if os.path.exists(loop_env_path):
             return dotenv_values(loop_env_path)
         return {}
 
     def get_step_env(self, step_name: str) -> Dict[str, str]:
+        # Use the appropriate session manager
+        current_session = get_session_manager()
+        user_id = current_session.get_user_id()
+        loop_id = current_session.get_loop_id()
+
+        if not user_id or not loop_id:
+            logger.warning(f"[StepModel::get_step_env] Missing user_id ({user_id}) or loop_id ({loop_id})")
+            return {}
+
         step_env_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(session_manager.get_user_id(), session_manager.get_loop_id()),
+            get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
             f"{step_name}.env")
         # step .env are in filesystem root of the current loop
         step_env_path = step_env_path.replace('/config/', '/filesystem/')
@@ -409,12 +458,22 @@ class StepModel:
 
     def compile_environment_for_step(self, step_name: str):
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Compiling environment for step {step_name}")
-        project_env = self.project_env(session_manager.get_project_id())
-        loop_env = self.get_loop_env(session_manager.get_loop_id())
+
+        # Use the appropriate session manager
+        current_session = get_session_manager()
+
+        project_id = current_session.get_project_id()
+        loop_id = current_session.get_loop_id()
+
+        self.logger_service.info(f"[StepModel::compile_environment_for_step] Using session manager: {type(current_session).__name__}")
+        self.logger_service.info(f"[StepModel::compile_environment_for_step] Project ID: {project_id}, Loop ID: {loop_id}")
+
+        project_env = self.project_env(project_id)
+        loop_env = self.get_loop_env(loop_id)
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
-        session_manager.set_environment(merged_env)
+        current_session.set_environment(merged_env)
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Environment {str(merged_env)}")
 
 

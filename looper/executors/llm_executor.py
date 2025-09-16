@@ -41,7 +41,7 @@ class LlmExecutor(ExecutorInterface):
         response = None
 
         while (not valid_response) and count < 10:
-            response = self.send_prompt_to_llm(model, system_content, user_content, temperature)
+            response = await self.send_prompt_to_llm(model, system_content, user_content, temperature)
             valid_response = is_valid_json(response)
             if valid_response:
                 count = 99
@@ -78,7 +78,7 @@ class LlmExecutor(ExecutorInterface):
 
         return broadcast_data
 
-    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.7):
+    async def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.7):
 
         if temperature is None:
             temperature = 0.7
@@ -94,7 +94,7 @@ class LlmExecutor(ExecutorInterface):
 
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
 
-        return self.featherless.get_response(model, system_content, user_content, temperature)
+        return await self.featherless.get_response(model, system_content, user_content, temperature)
 
 
     @staticmethod

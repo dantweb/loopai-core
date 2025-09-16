@@ -7,6 +7,7 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
 
 logger = LoggerService()
 
@@ -30,7 +31,7 @@ class RequestAdapter(FileAdapterInterface):
 
     async def read(self, step_id: str, *args: str) -> BroadcastData:
         """
-        Reads the current HTTP request and packs it into a BroadcastData object.
+        Reads the HTTP request data from session and packs it into a BroadcastData object.
         Handles POST, GET, PUT and other HTTP methods.
 
         Args:
@@ -40,60 +41,71 @@ class RequestAdapter(FileAdapterInterface):
         Returns:
             BroadcastData: Object containing the request data
         """
-        if not request:
-            logger.error("No request context available")
-            return BroadcastData({"response": "No request context available"})
+        # Try to get request data from thread-safe session manager first
+        request_data = thread_safe_session_manager.get_request_data()
 
-        method = request.method
+        if request_data:
+            logger.info(f"[RequestAdapter::read] Found request data in thread-safe session: {request_data}")
+            return BroadcastData(request_data)
 
-        result = {
-            'method': method,
-            'path': request.path,
-            'url': request.url,
-            'args': dict(request.args),
-            'remote_addr': request.remote_addr
-        }
+        # Fall back to trying direct Flask request access (for non-concurrent execution)
+        if has_request_context() and request:
+            logger.info("[RequestAdapter::read] Using direct Flask request context")
+            method = request.method
 
-        if method in ['POST', 'PUT', 'PATCH']:
-            content_type = request.headers.get('Content-Type', '')
+            result = {
+                'method': method,
+                'path': request.path,
+                'url': request.url,
+                'args': dict(request.args),
+                'remote_addr': request.remote_addr,
+                'headers': dict(request.headers)
+            }
 
-            if 'application/json' in content_type:
-                try:
-                    result['body'] = request.get_json()
-                except Exception as e:
-                    logger.error(f"Error parsing JSON body: {e}")
-                    result['body'] = None
-                    result['body_error'] = str(e)
+            if method in ['POST', 'PUT', 'PATCH']:
+                content_type = request.headers.get('Content-Type', '')
 
-            elif 'application/x-www-form-urlencoded' in content_type:
-                result['body'] = dict(request.form)
+                if 'application/json' in content_type:
+                    try:
+                        result['body'] = request.get_json()
+                    except Exception as e:
+                        logger.error(f"Error parsing JSON body: {e}")
+                        result['body'] = None
+                        result['body_error'] = str(e)
 
-            elif 'multipart/form-data' in content_type:
-                # Handle form data
-                result['body'] = dict(request.form)
-                # Handle files
-                files = {}
-                for file_key in request.files:
-                    file = request.files[file_key]
-                    files[file_key] = {
-                        'filename': file.filename,
-                        'content_type': file.content_type,
-                        'content_length': file.content_length,
-                    }
-                result['files'] = files
+                elif 'application/x-www-form-urlencoded' in content_type:
+                    result['body'] = dict(request.form)
 
-            else:
-                try:
-                    result['body'] = request.get_data(as_text=True)
-                except Exception as e:
-                    logger.error(f"Error reading request body: {e}")
-                    result['body'] = None
-                    result['body_error'] = str(e)
+                elif 'multipart/form-data' in content_type:
+                    # Handle form data
+                    result['body'] = dict(request.form)
+                    # Handle files
+                    files = {}
+                    for file_key in request.files:
+                        file = request.files[file_key]
+                        files[file_key] = {
+                            'filename': file.filename,
+                            'content_type': file.content_type,
+                            'content_length': file.content_length,
+                        }
+                    result['files'] = files
 
-        elif method == 'GET':
-            result['query_params'] = dict(request.args)
+                else:
+                    try:
+                        result['body'] = request.get_data(as_text=True)
+                    except Exception as e:
+                        logger.error(f"Error reading request body: {e}")
+                        result['body'] = None
+                        result['body_error'] = str(e)
 
-        return BroadcastData(result)
+            elif method == 'GET':
+                result['query_params'] = dict(request.args)
+
+            return BroadcastData(result)
+
+        # No request context available
+        logger.error("No request context available")
+        return BroadcastData({"response": "No request context available"})
 
 
     async def write(self, step_id: str, data: BroadcastData) -> bool:

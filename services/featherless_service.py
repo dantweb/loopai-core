@@ -3,16 +3,29 @@ import json
 import os
 import re
 import time
+import asyncio
 
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from dotenv import load_dotenv
 
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
 
 load_dotenv()
+
+def get_session_manager():
+    """Get the appropriate session manager based on thread context"""
+    try:
+        # If thread-safe session manager has active session for this thread, use it
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    # Fall back to global session manager
+    return session_manager
 
 class FeatherlessService(ServiceInterface):
     RETRY_ATTEMPTS = 5
@@ -22,31 +35,41 @@ class FeatherlessService(ServiceInterface):
         super().__init__(model)
         self.response = None
         self.logger = LoggerService()
-        self.client = OpenAI(
-            base_url=session_manager.get_env('FEATHERLESS_API_URL') or 'none',
-            api_key=session_manager.get_env('FEATHERLESS_API_KEY') or 'api_key_is_wrong',
-            timeout=120
-        )
+        # We'll create the async client when needed instead of here
 
-    def get_response(
+    async def get_response(
         self,
         model: str,
         system_content: dict,
         user_content: BroadcastData,
         temperature: float
     ) -> str:
+        session = get_session_manager()
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] user_content: {str(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
-        self.logger.info(f"[FeatherlessService::get_response] url: {session_manager.get_env('FEATHERLESS_API_URL')}")
+        self.logger.info(f"[FeatherlessService::get_response] url: {session.get_env('FEATHERLESS_API_URL')}")
+
+
+        featherless_url = session.get_env('FEATHERLESS_API_URL')
+        featherless_key = session.get_env('FEATHERLESS_API_KEY')
+
+        if not featherless_url or not featherless_key:
+            raise ValueError(f"Missing Featherless API configuration: URL={featherless_url}, KEY={'set' if featherless_key else 'missing'}")
+
+        async_client = AsyncOpenAI(
+            base_url=featherless_url,
+            api_key=featherless_key,
+            timeout=120
+        )
 
         last_exception = None
         for attempt in range(1, self.RETRY_ATTEMPTS + 1):
             self.logger.info(f"[FeatherlessService::get_response] Attempt {attempt} of {self.RETRY_ATTEMPTS}")
             try:
-                self.response = self.fetch_response_with_retries(
-                    self.client,
+                self.response = await self.fetch_response_with_retries(
+                    async_client,
                     model,
                     system_content,
                     user_content,
@@ -87,11 +110,11 @@ class FeatherlessService(ServiceInterface):
                 last_exception = e
 
                 if attempt < self.RETRY_ATTEMPTS:
-                    time.sleep(self.RETRY_DELAY)
+                    await asyncio.sleep(self.RETRY_DELAY)
                 else:
                     raise last_exception
 
-    def fetch_response_with_retries(self, client, model, system_content, user_content, temperature, max_retries, pause_time):
+    async def fetch_response_with_retries(self, client, model, system_content, user_content, temperature, max_retries, pause_time):
         """
         Repeats the API call X times with a pause if the response is empty.
 
@@ -111,7 +134,7 @@ class FeatherlessService(ServiceInterface):
         for attempt in range(max_retries):
             try:
                 if "o3-mini" in model:
-                    response = client.chat.completions.create(
+                    response = await client.chat.completions.create(
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
@@ -121,7 +144,7 @@ class FeatherlessService(ServiceInterface):
                     )
                 else:
                     # Make the request
-                    response = client.chat.completions.create(
+                    response = await client.chat.completions.create(
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
@@ -139,12 +162,12 @@ class FeatherlessService(ServiceInterface):
 
                 # If empty, print a message and retry
                 self.logger.info(f"Attempt {attempt + 1}/{max_retries}: Empty response, retrying in {pause_time} seconds...")
-                time.sleep(pause_time)
+                await asyncio.sleep(pause_time)
 
             except Exception as e:
                 # Handle exceptions (e.g., network issues) and retry
                 self.logger.error(f"Attempt {attempt + 1}/{max_retries}: Error occurred: {e}. Retrying in {pause_time} seconds...")
-                time.sleep(pause_time)
+                await asyncio.sleep(pause_time)
 
         # If all retries fail, return None
         self.logger.info(f"All {max_retries} attempts failed. No valid response received.")

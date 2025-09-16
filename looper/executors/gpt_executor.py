@@ -44,7 +44,7 @@ class GptExecutor(ExecutorInterface):
 
     async def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
         self.logger_service.info(f"[GptExecutor::run] ..going to call GPT with model: {model}, tkns {max_tokens}")
-        result = self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
+        result = await self.getResponseFromOpenAI(model, system_content, user_content, max_tokens)
 
         try:
             # cleaned_result = clean_json_string(result)
@@ -62,12 +62,17 @@ class GptExecutor(ExecutorInterface):
         return broadcast_data
 
 
-    def getResponseFromOpenAI(self, model, system_content, user_content, max_tokens):
+    async def getResponseFromOpenAI(self, model, system_content, user_content, max_tokens):
         self.logger_service.info(f"[GptExecutor::getResponseFromOpenAI] trying to get response from OpenAI...")
         self.logger_service.info(f"[GptExecutor::getResponseFromOpenAI] type of system_content: {type(system_content)}")
         self.logger_service.info(f"[GptExecutor::getResponseFromOpenAI] type of user_content: {type(user_content)}")
         try:
-            result = self.openai.chat.completions.create(
+            # Use AsyncOpenAI client for async operations
+            from openai import AsyncOpenAI
+            gpt_api_key = session_manager.get_env('USER_GPT_API_KEY')
+            async_client = AsyncOpenAI(api_key=gpt_api_key)
+
+            result = await async_client.chat.completions.create(
                 model=model,
                 messages=[
                     {

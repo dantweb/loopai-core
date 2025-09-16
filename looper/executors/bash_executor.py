@@ -3,6 +3,18 @@ import subprocess
 from core.adapters.file_adapter_interface import get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
+
+def get_session_manager():
+    """Get the appropriate session manager based on thread context"""
+    try:
+        # If thread-safe session manager has active session for this thread, use it
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    # Fall back to global session manager
+    return session_manager
 
 class BashExecutor(ExecutorInterface):
     def __init__(self, model: str):
@@ -61,9 +73,12 @@ class BashExecutor(ExecutorInterface):
         if not os.path.exists(full_script_path):
             raise ValueError("Bash script does not exist at the resolved path.")
 
-        # Get filesystem path for the loop
-        user_id = session_manager.get_user_id()
-        loop_id = session_manager.get_loop_id()
+        # Get filesystem path for the loop using appropriate session manager
+        current_session = get_session_manager()
+        user_id = current_session.get_user_id()
+        loop_id = current_session.get_loop_id()
+        self.logger_service.log(f"BashExecutor using session manager: {type(current_session).__name__}")
+        self.logger_service.log(f"User ID: {user_id}, Loop ID: {loop_id}")
         filesystem_path = get_file_system_by_user_and_loop(user_id, loop_id)
         self.logger_service.log(f"Using filesystem root: {filesystem_path}")
 
