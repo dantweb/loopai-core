@@ -1,5 +1,6 @@
 import os
 import subprocess
+import asyncio
 from core.adapters.file_adapter_interface import get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.services.session import session_manager
@@ -59,6 +60,41 @@ class BashExecutor(ExecutorInterface):
                 'return_code': -1
             }
 
+    async def run_bash_on_host_async(self, script_path: str, working_dir: str):
+        """
+        Execute a bash script asynchronously using asyncio subprocess to avoid blocking the event loop.
+        """
+        try:
+            process = await asyncio.create_subprocess_exec(
+                'bash', script_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=working_dir
+            )
+
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=300)
+
+            return {
+                'stdout': stdout.decode('utf-8') if stdout else '',
+                'stderr': stderr.decode('utf-8') if stderr else '',
+                'return_code': process.returncode
+            }
+
+        except asyncio.TimeoutError:
+            # Kill the process if it times out
+            if process and process.returncode is None:
+                process.kill()
+                await process.wait()
+            return {
+                'error': 'Bash script execution timed out',
+                'return_code': -1
+            }
+        except Exception as e:
+            return {
+                'error': f'Bash script execution failed: {str(e)}',
+                'return_code': -1
+            }
+
     async def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         bash_script_path = config.get('bash_script_path')
         self.logger_service.log(f"Bash script path: {bash_script_path}")
@@ -83,8 +119,8 @@ class BashExecutor(ExecutorInterface):
         self.logger_service.log(f"Using filesystem root: {filesystem_path}")
 
         try:
-            # Execute bash script using the filesystem path as the working directory
-            return self.run_bash_on_host(full_script_path, filesystem_path)
+            # Execute bash script using async subprocess to avoid blocking the event loop
+            return await self.run_bash_on_host_async(full_script_path, filesystem_path)
         except Exception as e:
             self.logger_service.log(f"Execution error: {str(e)}")
             return {

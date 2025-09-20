@@ -52,12 +52,20 @@ class TestConcurrentLoopsRealCase(unittest.TestCase):
         self.test_loop_ids = [int(id.strip()) for id in loop_ids_str.split(',')]
 
         # Mock socket messaging to avoid actual socket connections
-        # Mock both import paths to ensure coverage
+        # We need to mock where send_message_to_user is used, not where it's defined
+        # Mock the ConcurrentWebLoopRunner usage
         self.patcher_send_message_1 = patch('web.services.concurrent_web_loop_runner.send_message_to_user')
         self.mock_send_message_1 = self.patcher_send_message_1.start()
 
-        self.patcher_send_message_2 = patch('tests.unit.test_concurrent_loops_real_case.send_message_to_user')
+        # Mock the direct usage in this test module (where we import it directly)
+        # Need to patch it in the current test module namespace
+        current_module_name = self.__class__.__module__
+        self.patcher_send_message_2 = patch(f'{current_module_name}.send_message_to_user')
         self.mock_send_message_2 = self.patcher_send_message_2.start()
+
+        # Also patch it in the socket_io_service module itself as a fallback
+        self.patcher_send_message_3 = patch('web.services.socket_io_service.send_message_to_user')
+        self.mock_send_message_3 = self.patcher_send_message_3.start()
 
         # Mock log to redis
         self.patcher_log_redis = patch('web.services.concurrent_web_loop_runner.log_to_redis')
@@ -70,6 +78,7 @@ class TestConcurrentLoopsRealCase(unittest.TestCase):
         # Clean up patches
         self.patcher_send_message_1.stop()
         self.patcher_send_message_2.stop()
+        self.patcher_send_message_3.stop()
         self.patcher_log_redis.stop()
 
         # Clean up any remaining sessions
@@ -209,12 +218,15 @@ class TestConcurrentLoopsRealCase(unittest.TestCase):
             self.assertEqual(len(unique_sessions), len(session_ids), "All sessions should be unique")
 
             # Verify socket messages were sent (success and completion messages)
-            # Check that socket messages were called across both mocks
-            total_mock_calls = self.mock_send_message_1.call_count + self.mock_send_message_2.call_count
+            # Check that socket messages were called across all three mocks
+            total_mock_calls = (self.mock_send_message_1.call_count +
+                              self.mock_send_message_2.call_count +
+                              self.mock_send_message_3.call_count)
             expected_message_count = len(real_loops) * 1  # 1 completion message per loop
 
             print(f"Mock 1 calls: {self.mock_send_message_1.call_count}")
             print(f"Mock 2 calls: {self.mock_send_message_2.call_count}")
+            print(f"Mock 3 calls: {self.mock_send_message_3.call_count}")
             print(f"Total mock calls: {total_mock_calls}")
 
             self.assertEqual(total_mock_calls, expected_message_count,

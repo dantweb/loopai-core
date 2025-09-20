@@ -98,6 +98,42 @@ class SessionManager:
     def clear_broadcast_collection(self):
         self._bc_collection = []
 
+    def get_request_data(self) -> Optional[dict]:
+        """
+        Bridge method to access request data from thread_safe_session_manager.
+
+        This method provides compatibility for lambda code that expects
+        session_manager.get_request_data() to work, bridging to the
+        thread_safe_session_manager where the data is actually stored.
+        """
+        try:
+            from core.services.thread_safe_session import thread_safe_session_manager
+            return thread_safe_session_manager.get_request_data()
+        except ImportError:
+            # Fallback if thread_safe_session_manager is not available
+            return None
+        except Exception:
+            # Handle any other errors gracefully
+            return None
+
+    def set_request_data(self, request_data: dict):
+        """
+        Bridge method to store request data in thread_safe_session_manager.
+
+        This method provides compatibility for code that expects
+        session_manager.set_request_data() to work, bridging to the
+        thread_safe_session_manager where the data should be stored.
+        """
+        try:
+            from core.services.thread_safe_session import thread_safe_session_manager
+            return thread_safe_session_manager.set_request_data(request_data)
+        except ImportError:
+            # Fallback if thread_safe_session_manager is not available
+            pass
+        except Exception:
+            # Handle any other errors gracefully
+            pass
+
 
 # Singleton instance for global usage
 session_manager = SessionManager()

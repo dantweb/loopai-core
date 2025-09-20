@@ -1,8 +1,9 @@
 import json
+import asyncio
 from io import BytesIO
 from typing import Any
 
-import requests
+import aiohttp
 from PIL import Image
 import replicate
 from sqlalchemy.util import md5_hex
@@ -11,6 +12,16 @@ from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
+
+def get_session_manager():
+    """Get appropriate session manager (thread-safe or regular)"""
+    try:
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    return session_manager
 
 
 class ReplicateExecutor(ExecutorInterface):
@@ -55,7 +66,8 @@ class ReplicateExecutor(ExecutorInterface):
         otherwise returns None. Handles multiple possible response formats from
         replicate.Client.run (list of urls, list of FileOutput objects, dicts, etc).
         """
-        REPLICATE_API_TOKEN = session_manager.get_env('REPLICATE_API_TOKEN')
+        current_session = get_session_manager()
+        REPLICATE_API_TOKEN = current_session.get_env('REPLICATE_API_TOKEN')
 
         client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
@@ -66,15 +78,18 @@ class ReplicateExecutor(ExecutorInterface):
             self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
             self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
 
-            # Call the Replicate API
-            output = client.run(
-                model,
-                input={
-                    "prompt": prompt_text,
-                    "width": width,
-                    "height": height,
-                }
-            )
+            # Call the Replicate API in a thread to avoid blocking the event loop
+            def run_replicate():
+                return client.run(
+                    model,
+                    input={
+                        "prompt": prompt_text,
+                        "width": width,
+                        "height": height,
+                    }
+                )
+
+            output = await asyncio.to_thread(run_replicate)
 
             image_url = None
 
@@ -123,13 +138,14 @@ class ReplicateExecutor(ExecutorInterface):
 
             self.logger_service.info(f"[ReplicateExecutor] Resolved image URL: {image_url}")
 
-            # Download the image
-            response = requests.get(image_url, timeout=30)
-            response.raise_for_status()
-            requests.session().close()  # Close the session
+            # Download the image using async HTTP
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    response.raise_for_status()
+                    image_data = await response.read()
 
             # Open the image
-            img = Image.open(BytesIO(response.content))
+            img = Image.open(BytesIO(image_data))
             img.load()  # Load the image data
 
             # Convert to RGB if necessary

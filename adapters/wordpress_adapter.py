@@ -24,4 +24,10 @@ class WordpressAdapter(FileAdapterInterface):
         return_from_wp = await self.loopai_direct_wpapi_service.create_post(data)
         self.logger.log(f"[Class WordpressAdapter::write] data {str(return_from_wp)} ")
         print(f"[Class WordpressAdapter::write] data {str(return_from_wp)} ")
+
+        # Handle None response (when service fails)
+        if return_from_wp is None:
+            self.logger.error("WordPress API call failed - received None response")
+            return False
+
         return True if return_from_wp.status == 200 else False

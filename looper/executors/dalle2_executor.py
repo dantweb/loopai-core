@@ -1,30 +1,40 @@
-# src/looper/executors/gpt_executor.py
+# src/looper/executors/dalle2_executor.py
 import json
-import requests
+import aiohttp
 from io import BytesIO
 
-import openai
+from openai import AsyncOpenAI
 from PIL import Image
 from dotenv import load_dotenv
-from openai import api_key
 
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
 from core.services.session import session_manager
+from core.services.thread_safe_session import thread_safe_session_manager
 
 load_dotenv()
 
 from core.services.logger_service import LoggerService
 logger = LoggerService()
 
+def get_session_manager():
+    """Get appropriate session manager (thread-safe or regular)"""
+    try:
+        if thread_safe_session_manager.has_current_session():
+            return thread_safe_session_manager
+    except:
+        pass
+    return session_manager
+
 class Dalle2Executor(ExecutorInterface):
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
 
-        open_ai_sdk_api_key =  session_manager.get_env("OPENAI_API_KEY")
+        current_session = get_session_manager()
+        open_ai_sdk_api_key = current_session.get_env("OPENAI_API_KEY")
         logger.debug(f"[DalleExecutor::__init__] open_ai_sdk_api_key: {open_ai_sdk_api_key}")
-        self.openai = openai.OpenAI(api_key=open_ai_sdk_api_key)
+        self.async_client = AsyncOpenAI(api_key=open_ai_sdk_api_key)
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
         logger.info(f"[DalleExecutor::prepare_prompt] preparing prompt for GPT...")
@@ -69,7 +79,9 @@ class Dalle2Executor(ExecutorInterface):
             self.logger_service.log(f"Creating image for prompt {str(user_content)} with ")
             self.logger_service.log(f"size {size_param}")
             prompt = json.dumps(user_content.__json__())
-            response = openai.images.generate(
+
+            # Use async OpenAI client
+            response = await self.async_client.images.generate(
                 model=model,
                 prompt=prompt[:500],
                 size=size_param,
@@ -78,8 +90,12 @@ class Dalle2Executor(ExecutorInterface):
             )
             image_url = response.data[0].url
             self.logger.info(f"[dalle2_executor] Generated image URL: {image_url}")
-            response = requests.get(image_url)
-            img = Image.open(BytesIO(response.content))
+
+            # Use async HTTP request
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as http_response:
+                    image_data = await http_response.read()
+                    img = Image.open(BytesIO(image_data))
 
             bd = BroadcastData()
             base64_encoded = bd.convert_to_base64(img)
