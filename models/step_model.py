@@ -27,7 +27,11 @@ logger = LoggerService()
 def get_session_manager():
     """Get the appropriate session manager based on thread context"""
     try:
-        # If thread-safe session manager has active session for this thread, use it
+        # First try the enhanced session manager (works in both thread and gevent contexts)
+        if session_manager.has_current_session():
+            return session_manager
+
+        # If thread-safe session manager has active session, use it (backward compatibility)
         if thread_safe_session_manager.has_current_session():
             return thread_safe_session_manager
     except:

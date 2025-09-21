@@ -41,11 +41,29 @@ class RequestAdapter(FileAdapterInterface):
         Returns:
             BroadcastData: Object containing the request data
         """
-        # Try to get request data from thread-safe session manager first
-        request_data = thread_safe_session_manager.get_request_data()
+        # Try to get request data from appropriate session manager first
+        def get_current_session_manager():
+            """Get the appropriate session manager based on execution context"""
+            try:
+                from core.services.session import session_manager
+                # First try the enhanced session manager (works in both thread and gevent contexts)
+                if session_manager.has_current_session():
+                    return session_manager
+
+                # If thread-safe session manager has active session, use it (backward compatibility)
+                if thread_safe_session_manager.has_current_session():
+                    return thread_safe_session_manager
+            except:
+                pass
+            # Fall back to global session manager
+            from core.services.session import session_manager
+            return session_manager
+
+        current_session = get_current_session_manager()
+        request_data = current_session.get_request_data()
 
         if request_data:
-            logger.info(f"[RequestAdapter::read] Found request data in thread-safe session: {request_data}")
+            logger.info(f"[RequestAdapter::read] Found request data in session manager: {request_data}")
             return BroadcastData(request_data)
 
         # Fall back to trying direct Flask request access (for non-concurrent execution)

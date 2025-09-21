@@ -1,8 +1,10 @@
 # ./loopai_src/core/services/logger_service.py
 import logging
+import os
 import re
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
+from typing import Optional, Dict, Any
 
 import app_global_config as config
 import threading
@@ -14,19 +16,11 @@ from web.services.socket_io_service import send_message_to_user
 def get_session_manager():
     """Get the appropriate session manager based on execution context"""
     try:
-        # If we're in a gevent greenlet, try to get session context from GeventLoopExecutor
-        if thread_safe_session_manager._is_in_gevent_context():
-            # First try GeventLoopExecutor session context
-            try:
-                from web.services.async_loop_executor import async_loop_executor
-                gevent_session = async_loop_executor.get_current_session_context()
-                if gevent_session:
-                    # Create a bridge object that provides the session manager interface
-                    return GeventSessionBridge(gevent_session)
-            except:
-                pass
+        # First try the enhanced session manager (works in both thread and gevent contexts)
+        if session_manager.has_current_session():
+            return session_manager
 
-        # If thread-safe session manager has active session, use it
+        # If thread-safe session manager has active session, use it (backward compatibility)
         if thread_safe_session_manager.has_current_session():
             return thread_safe_session_manager
     except:
@@ -54,21 +48,42 @@ class GeventSessionBridge:
         return self.context.get_session_id()
 
 class LoggerService:
+    # For backward compatibility - single legacy instance
     _instance = None
+    # Component-specific instances for enhanced usage
+    _component_instances: Dict[str, 'LoggerService'] = {}
     _lock = threading.Lock()
     _num_of_logs_to_return = 10
     _logger = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, user_id=None, component: str = 'core'):
+        # Validate component
+        valid_components = ['core', 'web', 'system']
+        if component not in valid_components:
+            raise ValueError(f"Invalid component '{component}'. Must be one of: {valid_components}")
+
+        # If component is explicitly provided and not 'core', use component-specific instance
+        if component != 'core':
+            if component not in cls._component_instances:
+                with cls._lock:
+                    if component not in cls._component_instances:
+                        instance = super(LoggerService, cls).__new__(cls)
+                        instance.__initialized = False
+                        instance._component = component
+                        cls._component_instances[component] = instance
+            return cls._component_instances[component]
+
+        # Legacy behavior: maintain single instance for 'core' component
         if not hasattr(cls, '_instance') or cls._instance is None:
             with cls._lock:
                 if not hasattr(cls, '_instance') or cls._instance is None:
-                    cls._instance = super(LoggerService, cls).__new__(cls, *args, **kwargs)
+                    cls._instance = super(LoggerService, cls).__new__(cls)
                     cls._instance.__initialized = False
+                    cls._instance._component = 'core'
 
         return cls._instance
 
-    def __init__(self, user_id=None):
+    def __init__(self, user_id=None, component: str = 'core'):
         # Store user_id per thread since this is a singleton
         if not hasattr(self, '_thread_user_ids'):
             self._thread_user_ids = {}
@@ -77,12 +92,29 @@ class LoggerService:
             thread_id = threading.get_ident()
             self._thread_user_ids[thread_id] = user_id
 
-        if self.__initialized:
+        if hasattr(self, '_LoggerService__initialized') and self.__initialized:
             return
+
         self.log_lock = threading.Lock()
         self.logs = []
+        self._component = getattr(self, '_component', component)
         self.__initialized = True
 
+        # Use enhanced configuration if available, otherwise fall back to legacy
+        if hasattr(self, '_configure_enhanced_logger'):
+            try:
+                self._configure_enhanced_logger()
+            except Exception as e:
+                # Fall back to legacy configuration if enhanced fails
+                self._configure_legacy_logger()
+                print(f"Enhanced logging configuration failed, using legacy: {e}")
+        else:
+            self._configure_legacy_logger()
+
+        self._logger.debug(f"Logging configured for component '{self._component}'")
+
+    def _configure_legacy_logger(self):
+        """Configure logger using legacy settings for backward compatibility"""
         self._logger = logging.getLogger(__name__)
         self._handler = RotatingFileHandler('core.log', maxBytes=10000, backupCount=3)
         self._handler.setLevel(logging.DEBUG)
@@ -90,7 +122,6 @@ class LoggerService:
         self._handler.setFormatter(formatter)
         self._logger.addHandler(self._handler)
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Logging configured")
 
     def _get_current_user_id(self):
         """Get current user ID from either thread-local user_id or session manager"""
@@ -165,3 +196,134 @@ class LoggerService:
         """Sets the number of logs to return in the `get_logs` method."""
         with self.log_lock:
             self._num_of_logs_to_return = num
+
+    # Enhanced LoggerService methods
+
+    def _configure_enhanced_logger(self):
+        """Configure logger with environment-based settings"""
+        # Get log configuration from environment
+        log_path = self.get_log_path()
+        log_file = self.get_log_file()
+        log_level = self.get_log_level()
+        max_size = self._parse_file_size(os.environ.get('LOOPAI_LOG_MAX_SIZE', '1MB'))
+        backup_count = int(os.environ.get('LOOPAI_LOG_BACKUP_COUNT', '3'))
+
+        # Ensure log directory exists
+        self.ensure_log_directory()
+
+        # Configure logger
+        component = getattr(self, '_component', 'core')
+        logger_name = f"loopai.{component}"
+        self._logger = logging.getLogger(logger_name)
+
+        # Remove existing handlers to avoid duplicates
+        for handler in self._logger.handlers[:]:
+            self._logger.removeHandler(handler)
+
+        # Create rotating file handler
+        self._handler = RotatingFileHandler(
+            log_file,
+            maxBytes=max_size,
+            backupCount=backup_count,
+            encoding='utf-8'
+        )
+
+        # Set log level
+        level = getattr(logging, log_level.upper(), logging.DEBUG)
+        self._handler.setLevel(level)
+        self._logger.setLevel(level)
+
+        # Enhanced formatter with component and user context
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s [%(name)s] %(threadName)s : %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        self._handler.setFormatter(formatter)
+        self._logger.addHandler(self._handler)
+
+    def get_log_path(self) -> str:
+        """Get log directory path from environment or use default"""
+        return os.environ.get('LOOPAI_LOG_PATH', '/app/var/logs')
+
+    def get_log_file(self) -> str:
+        """Get component-specific log file path"""
+        log_path = self.get_log_path()
+        component = getattr(self, '_component', 'core')
+        return os.path.join(log_path, f'{component}.log')
+
+    def get_log_level(self) -> str:
+        """Get log level from environment or use default"""
+        return os.environ.get('LOOPAI_LOG_LEVEL', 'DEBUG')
+
+    def get_max_file_size(self) -> str:
+        """Get maximum file size setting"""
+        return os.environ.get('LOOPAI_LOG_MAX_SIZE', '10MB')
+
+    def get_backup_count(self) -> int:
+        """Get backup count setting"""
+        return int(os.environ.get('LOOPAI_LOG_BACKUP_COUNT', '3'))
+
+    def ensure_log_directory(self):
+        """Ensure log directory exists"""
+        log_path = self.get_log_path()
+        os.makedirs(log_path, exist_ok=True)
+
+    def _parse_file_size(self, size_str: str) -> int:
+        """Parse file size string (e.g., '10MB') to bytes"""
+        size_str = size_str.upper().strip()
+        if size_str.endswith('KB'):
+            return int(size_str[:-2]) * 1024
+        elif size_str.endswith('MB'):
+            return int(size_str[:-2]) * 1024 * 1024
+        elif size_str.endswith('GB'):
+            return int(size_str[:-2]) * 1024 * 1024 * 1024
+        else:
+            # Assume bytes if no unit
+            return int(size_str)
+
+    def get_component(self) -> str:
+        """Get logger component name"""
+        return getattr(self, '_component', 'core')
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Get logger statistics"""
+        return {
+            'component': self.get_component(),
+            'log_file': self.get_log_file(),
+            'log_level': self.get_log_level(),
+            'max_file_size': self.get_max_file_size(),
+            'backup_count': self.get_backup_count(),
+            'active_threads': len(self._thread_user_ids) if hasattr(self, '_thread_user_ids') else 0
+        }
+
+
+# Enhanced singleton functions
+_logger_service_instances: Dict[str, LoggerService] = {}
+_service_lock = threading.Lock()
+
+
+def get_logger_service(component: str = 'core') -> LoggerService:
+    """
+    Get singleton LoggerService instance for specified component.
+
+    Args:
+        component: Component name (core, web, system)
+
+    Returns:
+        LoggerService: Component-specific logger instance
+    """
+    global _logger_service_instances
+
+    # Validate component
+    valid_components = ['core', 'web', 'system']
+    if component not in valid_components:
+        raise ValueError(f"Invalid component '{component}'. Must be one of: {valid_components}")
+
+    if component not in _logger_service_instances:
+        with _service_lock:
+            if component not in _logger_service_instances:
+                # Create instance with enhanced configuration
+                instance = LoggerService(component=component)
+                _logger_service_instances[component] = instance
+
+    return _logger_service_instances[component]
