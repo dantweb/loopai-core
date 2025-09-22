@@ -9,24 +9,8 @@ from typing import Optional, Dict, Any
 import app_global_config as config
 import threading
 
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
+from core.services.session_dependent import SessionDependent
 from web.services.socket_io_service import send_message_to_user
-
-def get_session_manager():
-    """Get the appropriate session manager based on execution context"""
-    try:
-        # First try the enhanced session manager (works in both thread and gevent contexts)
-        if session_manager.has_current_session():
-            return session_manager
-
-        # If thread-safe session manager has active session, use it (backward compatibility)
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    # Fall back to global session manager
-    return session_manager
 
 
 class GeventSessionBridge:
@@ -47,7 +31,7 @@ class GeventSessionBridge:
     def get_session_id(self):
         return self.context.get_session_id()
 
-class LoggerService:
+class LoggerService(SessionDependent):
     # For backward compatibility - single legacy instance
     _instance = None
     # Component-specific instances for enhanced usage
@@ -95,6 +79,9 @@ class LoggerService:
         if hasattr(self, '_LoggerService__initialized') and self.__initialized:
             return
 
+        # Initialize SessionDependent
+        SessionDependent.__init__(self)
+
         self.log_lock = threading.Lock()
         self.logs = []
         self._component = getattr(self, '_component', component)
@@ -131,9 +118,8 @@ class LoggerService:
             if thread_id in self._thread_user_ids:
                 return self._thread_user_ids[thread_id]
 
-        # Otherwise, get from the appropriate session manager
-        current_session = get_session_manager()
-        return current_session.get_user_id()
+        # Otherwise, get from SessionDependent
+        return self.get_user_id()
 
     def _filter_message(self, message: str) -> str:
         """
@@ -159,10 +145,9 @@ class LoggerService:
         filtered_message = self._filter_message(message)
         timestamp = datetime.now().strftime("%y%m%d-%H%M%S")
 
-        # Use the appropriate session manager
-        current_session = get_session_manager()
-        web_user_id = current_session.get_user_id()
-        loop_id = current_session.get_loop_id()
+        # Use SessionDependent methods
+        web_user_id = self.get_user_id()
+        loop_id = self.get_loop_id()
 
         log_message = f"[{timestamp}] [server] UserID=[{web_user_id}] {action}: {filtered_message}"
 

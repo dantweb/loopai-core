@@ -11,17 +11,6 @@ from sqlalchemy.util import md5_hex
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
-
-def get_session_manager():
-    """Get appropriate session manager (thread-safe or regular)"""
-    try:
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    return session_manager
 
 
 class ReplicateExecutor(ExecutorInterface):
@@ -66,8 +55,8 @@ class ReplicateExecutor(ExecutorInterface):
         otherwise returns None. Handles multiple possible response formats from
         replicate.Client.run (list of urls, list of FileOutput objects, dicts, etc).
         """
-        current_session = get_session_manager()
-        REPLICATE_API_TOKEN = current_session.get_env('REPLICATE_API_TOKEN')
+        current_session = self.get_current_session()
+        REPLICATE_API_TOKEN = current_session.get_env('REPLICATE_API_TOKEN') if current_session else ''
 
         client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 

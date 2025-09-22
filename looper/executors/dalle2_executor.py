@@ -9,30 +9,19 @@ from dotenv import load_dotenv
 
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
 
 load_dotenv()
 
 from core.services.logger_service import LoggerService
 logger = LoggerService()
 
-def get_session_manager():
-    """Get appropriate session manager (thread-safe or regular)"""
-    try:
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    return session_manager
-
 class Dalle2Executor(ExecutorInterface):
     def __init__(self, model: str):
         super().__init__(model)
         self.model = model
 
-        current_session = get_session_manager()
-        open_ai_sdk_api_key = current_session.get_env("OPENAI_API_KEY")
+        current_session = self.get_current_session()
+        open_ai_sdk_api_key = current_session.get_env("OPENAI_API_KEY") if current_session else ''
         logger.debug(f"[DalleExecutor::__init__] open_ai_sdk_api_key: {open_ai_sdk_api_key}")
         self.async_client = AsyncOpenAI(api_key=open_ai_sdk_api_key)
 

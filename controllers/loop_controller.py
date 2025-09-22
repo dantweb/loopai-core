@@ -4,44 +4,32 @@ import uuid, yaml, os
 from core.adapters.broadcast_adapter import cleanup_session
 from core.looper.looper import Looper
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
-
-def get_session_manager():
-    """Get the appropriate session manager based on execution context"""
-    try:
-        # First try the enhanced session manager (works in both thread and gevent contexts)
-        if session_manager.has_current_session():
-            return session_manager
-
-        # If thread-safe session manager has active session, use it (backward compatibility)
-        from core.services.thread_safe_session import thread_safe_session_manager
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    # Fall back to global session manager
-    return session_manager
+from core.services.session_dependent import SessionDependent
 
 
-class LoopController:
+class LoopController(SessionDependent):
 
     # var loop_file_path should be only absolute path. Use
     # get_file_system_by_user_and_loop(user_id, loop_id) to get the absolute path
-    def __init__(self, loop_file_path, user_id, project_id, loop_id):
-        current_session = get_session_manager()
+    def __init__(self, loop_file_path, user_id, project_id, loop_id, request_data=None):
+        SessionDependent.__init__(self)
 
-        # Only create new session if one doesn't exist (backward compatibility)
-        if not current_session.has_current_session():
-            current_session.regenerate_session_id()
-            current_session.set_user_id(user_id)
-            current_session.set_project_id(project_id)
-            current_session.set_loop_id(loop_id)
-        else:
-            # If session exists, just update project_id as it might be None initially
-            if project_id:
-                current_session.set_project_id(project_id)
+        # Note: In the new AsyncLoopManager architecture, session is already
+        # set up by the thread context. This controller should just validate
+        # that the session data matches the expected parameters.
+        current_session = self.get_current_session()
+
+        if current_session:
+            # Verify session data matches expected parameters
+            if (current_session.user_id != user_id or
+                current_session.loop_id != loop_id):
+                self.logger_service.warning(
+                    f"Session data mismatch: session({current_session.user_id}, {current_session.loop_id}) "
+                    f"vs expected({user_id}, {loop_id})"
+                )
 
         self.loop_file_path = loop_file_path
+        self.request_data = request_data  # Store request_data for use in loops
         self.logger_service = LoggerService()
 
     async def run(self):

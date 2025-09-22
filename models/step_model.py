@@ -18,28 +18,12 @@ from core.models.broadcast_data import BroadcastData
 from core.models.input_config import InputConfig
 from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
+from core.services.session_dependent import SessionDependent
 from web.admin_models import db
 
 logger = LoggerService()
 
-def get_session_manager():
-    """Get the appropriate session manager based on thread context"""
-    try:
-        # First try the enhanced session manager (works in both thread and gevent contexts)
-        if session_manager.has_current_session():
-            return session_manager
-
-        # If thread-safe session manager has active session, use it (backward compatibility)
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    # Fall back to global session manager
-    return session_manager
-
-class StepModel:
+class StepModel(SessionDependent):
     def __init__(self,
                  name: str,
                  description: str,
@@ -51,6 +35,7 @@ class StepModel:
                  code_source: str
                 ):
 
+        SessionDependent.__init__(self)
         self.logger_service = LoggerService()
         self.loop_python_src = None
         self.packed_blob = {}
@@ -65,9 +50,12 @@ class StepModel:
         self.executor = None
         self.output_adapters = []
         self.input_adapters = []
-        session_manager.set_step_name(self.name)
-        session_manager.set_global_loop_index('start')
-        session_manager.set_loop_index(str(uuid.uuid4()))
+        # Session operations through SessionDependent methods
+        current_session = self.get_current_session()
+        if current_session:
+            current_session.set_step_name(self.name)
+            current_session.set_global_loop_index('start')
+            current_session.set_loop_index(str(uuid.uuid4()))
 
 
         # Parse the loop YAML file to get the code source path
@@ -106,9 +94,10 @@ class StepModel:
                 self.output_adapters.append(output_adapter_class(output_config.image['name']))
             if output_config.wordpress:
                 output_adapter_class = self.load_adapter('wordpress')
-                wp_site = session_manager.get_env(output_config.wordpress['wp_site'])
-                wp_username = session_manager.get_env(output_config.wordpress['wp_username'])
-                wp_password = session_manager.get_env(output_config.wordpress['wp_password'])
+                current_session = self.get_current_session()
+                wp_site = current_session.get_env(output_config.wordpress['wp_site']) if current_session else ''
+                wp_username = current_session.get_env(output_config.wordpress['wp_username']) if current_session else ''
+                wp_password = current_session.get_env(output_config.wordpress['wp_password']) if current_session else ''
                 self.output_adapters.append(
                     output_adapter_class(
                         connector_id = output_config.wordpress['connector'],
@@ -200,11 +189,11 @@ class StepModel:
 
     async def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
-        current_session = get_session_manager()
-
-        current_session.set_step_name(step_name)
-        current_session.set_global_loop_index(loop_index)
-        current_session.set_global_step_name(step_name)
+        current_session = self.get_current_session()
+        if current_session:
+            current_session.set_step_name(step_name)
+            current_session.set_global_loop_index(loop_index)
+            current_session.set_global_step_name(step_name)
         step_input_data = []
         # Load executor
         executor_class = self.load_executor(self.action.executor)
@@ -370,13 +359,9 @@ class StepModel:
         return getattr(self.code_module, variable_name)
 
     def load_code_module(self, module_path: str):
-        # Use the appropriate session manager
-        current_session = get_session_manager()
+        user_id = self.get_user_id()
+        loop_id = self.get_loop_id()
 
-        user_id = current_session.get_user_id()
-        loop_id = current_session.get_loop_id()
-
-        logger.info(f"[StepModel::load_code_module] Using session manager: {type(current_session).__name__}")
         logger.info(f"[StepModel::load_code_module] User ID: {user_id}, Loop ID: {loop_id}")
 
         module_absolute_path = os.path.join(
@@ -414,9 +399,7 @@ class StepModel:
         return dotenv_values(stream=io.StringIO(project.project_env))
 
     def get_loop_env(self, loop_id: str) -> Dict[str, str]:
-        # Use the appropriate session manager
-        current_session = get_session_manager()
-        user_id = current_session.get_user_id()
+        user_id = self.get_user_id()
 
         if not user_id or not loop_id:
             logger.warning(f"[StepModel::get_loop_env] Missing user_id ({user_id}) or loop_id ({loop_id})")
@@ -428,10 +411,8 @@ class StepModel:
         return {}
 
     def get_step_env(self, step_name: str) -> Dict[str, str]:
-        # Use the appropriate session manager
-        current_session = get_session_manager()
-        user_id = current_session.get_user_id()
-        loop_id = current_session.get_loop_id()
+        user_id = self.get_user_id()
+        loop_id = self.get_loop_id()
 
         if not user_id or not loop_id:
             logger.warning(f"[StepModel::get_step_env] Missing user_id ({user_id}) or loop_id ({loop_id})")
@@ -450,13 +431,9 @@ class StepModel:
     def compile_environment_for_step(self, step_name: str):
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Compiling environment for step {step_name}")
 
-        # Use the appropriate session manager
-        current_session = get_session_manager()
+        project_id = self.get_project_id()
+        loop_id = self.get_loop_id()
 
-        project_id = current_session.get_project_id()
-        loop_id = current_session.get_loop_id()
-
-        self.logger_service.info(f"[StepModel::compile_environment_for_step] Using session manager: {type(current_session).__name__}")
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Project ID: {project_id}, Loop ID: {loop_id}")
 
         project_env = self.project_env(project_id)
@@ -464,7 +441,9 @@ class StepModel:
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
-        current_session.set_environment(merged_env)
+        current_session = self.get_current_session()
+        if current_session:
+            current_session.set_environment(merged_env)
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Environment {str(merged_env)}")
 
 

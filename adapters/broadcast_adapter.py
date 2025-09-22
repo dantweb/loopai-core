@@ -7,7 +7,6 @@ import traceback
 from typing import Any, Dict
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.services.session import session_manager
 from core.services.postgres_db_connect import get_db_cursor
 from core.services.logger_service import LoggerService
 from core.models.broadcast_data import BroadcastData

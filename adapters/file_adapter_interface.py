@@ -9,29 +9,14 @@ from PIL.Image import Image
 
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
-
-def get_session_manager():
-    """Get the appropriate session manager based on thread context"""
-    try:
-        # First try the enhanced session manager (works in both thread and gevent contexts)
-        if session_manager.has_current_session():
-            return session_manager
-
-        # If thread-safe session manager has active session, use it (backward compatibility)
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    # Fall back to global session manager
-    return session_manager
+from core.services.session_dependent import SessionDependent
 
 
-class FileAdapterInterface(ABC):
+class FileAdapterInterface(ABC, SessionDependent):
     filesystem_path: str = ''
 
     def __init__(self):
+        SessionDependent.__init__(self)
         self.file_mode = 'a'
         self.logger = LoggerService()
 

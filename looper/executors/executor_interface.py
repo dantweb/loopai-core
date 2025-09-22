@@ -3,11 +3,13 @@ from abc import ABC, abstractmethod
 from typing import Any
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
+from core.services.session_dependent import SessionDependent
 
 
-class ExecutorInterface(ABC):
+class ExecutorInterface(ABC, SessionDependent):
     @abstractmethod
     def __init__(self, model: str):
+        SessionDependent.__init__(self)
         self.parent_step = None
         self.logger = LoggerService()
         self.logger_service = self.logger
