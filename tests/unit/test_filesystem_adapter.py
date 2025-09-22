@@ -19,22 +19,22 @@ class TestFilesystemAdapterWithBroadcast(unittest.TestCase):
             mock_get_user_loop.return_value = "/mock/user_loop_path"
 
             self.adapter = FilesystemAdapter(
-                source=self.source,
-                global_user_id=self.global_user_id,
-                global_loop_id=self.global_loop_id
+                source=self.source
             )
 
     def test_extract_files_from_nested_broadcast(self):
         data = {
             "result": {
-                "response": {
-                    "updated_files": [
-                        {
-                            "path": "post/inbox/new/message1756287702.json",
-                            "file_operation": "update",
-                            "file_content": "{\"message\": {\"from\": \"FRBG/cityhall\", \"to\": \"FRBG/Agent_hwp2bg\", \"data\": \"Test message eb3b740d sent at 2025-08-27T09:41:42.822348\", \"id\": 1756287702, \"created_at\": \"2025-08-27T09:41:42.822348\"}}"
-                        }
-                    ]
+                "result": {
+                    "result": {
+                        "updated_files": [
+                            {
+                                "path": "post/inbox/new/message1756287702.json",
+                                "file_operation": "update",
+                                "file_content": "{\"message\": {\"from\": \"FRBG/cityhall\", \"to\": \"FRBG/Agent_hwp2bg\", \"data\": \"Test message eb3b740d sent at 2025-08-27T09:41:42.822348\", \"id\": 1756287702, \"created_at\": \"2025-08-27T09:41:42.822348\"}}"
+                            }
+                        ]
+                    }
                 }
             }
         }

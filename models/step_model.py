@@ -75,19 +75,17 @@ class StepModel:
         self.code_source = code_source
         self.code_module = self.load_code_module(self.code_source)
         self.compile_environment_for_step(self.name)
-        self.logger_service.info(f"[StepModel::__init__] environment '{str(session_manager.get_environment())}'")
-
         for output_config in self.output:
             if output_config.csv:
                 if output_config.csv['fields']:
                     fields = self.get_variable_from_py_template(output_config.csv['fields'])
-                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined Fields: {str(fields)}")
+                    self.logger_service.info(f"[StepModel::__init__] CSV step {self.name} has defined Fields: {str(fields)}")
                 else:
                     fields = []
 
                 if output_config.csv['mapping']:
                     mapping = self.get_variable_from_py_template(output_config.csv['mapping'])
-                    logger.info(f"[StepModel::__init__] CSV step {self.name} has defined mapping: {str(mapping)}")
+                    self.logger_service.info(f"[StepModel::__init__] CSV step {self.name} has defined mapping: {str(mapping)}")
                 else:
                     mapping = {}
 
@@ -121,14 +119,10 @@ class StepModel:
                 )
 
             if output_config.filesystem:
+                logger.info(f"[StepModel::__init__] filesystem step {self.name} has defined mapping: {str(output_config.filesystem)}")
                 output_adapter_class = self.load_adapter('filesystem')
-                self.output_adapters.append(
-                    output_adapter_class(
-                        output_config.filesystem['code_dir'],
-                        session_manager.get_user_id(),
-                        session_manager.get_loop_id()
-                    )
-                )
+                self.output_adapters.append(output_adapter_class(output_config.filesystem['code_dir']))
+
             if output_config.broadcast:
                 output_adapter_class = self.load_adapter('broadcast')
                 if isinstance(output_config.broadcast, dict) and 'image_file' in output_config.broadcast:
@@ -139,6 +133,7 @@ class StepModel:
                 output_adapter_class = self.load_adapter('request')
                 self.output_adapters.append(output_adapter_class())
 
+        self.logger_service.info(f"[StepModel::__init__] input_config '{self.input}'")
         for input_config in self.input:
             if input_config.csv:
                 if input_config.csv['fields']:
@@ -178,13 +173,7 @@ class StepModel:
                 self.input_adapters.append(input_adapter_class())
             if input_config.filesystem:
                 input_adapter_class = self.load_adapter('filesystem')
-                self.input_adapters.append(
-                    input_adapter_class(
-                        input_config.filesystem['code_dir'],
-                        session_manager.get_user_id(),
-                        session_manager.get_loop_id()
-                    )
-                )
+                self.input_adapters.append(input_adapter_class(input_config.filesystem['code_dir']))
 
 
     def get_system_content(self, variable_name: str) -> str:
@@ -317,9 +306,7 @@ class StepModel:
 
         prompt = BroadcastData(prompt)
 
-        if isinstance(self.executor, WordpressExecutor):
-            result = step_input_data
-        elif isinstance(self.executor, DockerExecutor) or isinstance(self.executor, BashExecutor):
+        if isinstance(self.executor, DockerExecutor) or isinstance(self.executor, BashExecutor):
             config = self.action.config if hasattr(self.action, 'config') else {}
             result = await self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:

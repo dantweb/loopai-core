@@ -6,9 +6,6 @@ import re
 import traceback
 from typing import Any, Dict
 
-from PIL.Image import Image
-from psycopg2.extras import DictCursor
-
 from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.services.session import session_manager
 from core.services.postgres_db_connect import get_db_cursor
@@ -76,7 +73,6 @@ class BroadcastAdapter(FileAdapterInterface):
         data_to_write = BroadcastData({"saved": {"result": data}})
         self.logger.info(f"[BroadcastAdapter::write] normalized data  : {str(data_to_write)}")
 
-
         if data_to_write is None:
             raise Exception("Error: No data possible to extract to write.")
 
@@ -91,7 +87,7 @@ class BroadcastAdapter(FileAdapterInterface):
                     (
                         session_manager.get_session_id(),
                         step_id,
-                        json.dumps(data_to_write.__json__())
+                        data_to_write.to_json()
                     )
                 )
                 return True

@@ -194,9 +194,7 @@ class TestAgentReceivePostFlow(unittest.TestCase):
 
         # Create filesystem adapter with required parameters
         filesystem_adapter = FilesystemAdapter(
-            source=self.agent_inbox,
-            global_user_id=1,
-            global_loop_id=999
+            source=self.agent_inbox
         )
 
         # Create output model for filesystem

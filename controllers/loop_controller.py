@@ -3,6 +3,7 @@ import uuid, yaml, os
 
 from core.adapters.broadcast_adapter import cleanup_session
 from core.looper.looper import Looper
+from core.services.logger_service import LoggerService
 from core.services.session import session_manager
 
 def get_session_manager():
@@ -41,8 +42,10 @@ class LoopController:
                 current_session.set_project_id(project_id)
 
         self.loop_file_path = loop_file_path
+        self.logger_service = LoggerService()
 
     async def run(self):
+        self.logger_service.info(f"[LoopController::run] Running loop from file: {self.loop_file_path}")
         with open(self.loop_file_path, 'r', encoding='utf-8') as file:
             loop_data = yaml.safe_load(file)
 

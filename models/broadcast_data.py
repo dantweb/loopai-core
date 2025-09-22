@@ -142,11 +142,71 @@ class BroadcastData(UserDict):
             raise ValueError(f"Data contains non-serializable values: {e}")
 
     def to_serializable(self):
+        import datetime
+        import decimal
+        import uuid
+
         if isinstance(self.data, (dict, list)):
-            return self._process_input(self.data)  # Reuse _process_input for serialization
+            return self._process_serializable(self.data)
         elif isinstance(self.data, Image.Image):
             return self.convert_to_base64(self.data)
+        elif isinstance(self.data, datetime.datetime):
+            return self.data.isoformat()
+        elif isinstance(self.data, datetime.date):
+            return self.data.isoformat()
+        elif isinstance(self.data, datetime.time):
+            return self.data.isoformat()
+        elif isinstance(self.data, decimal.Decimal):
+            return float(self.data)
+        elif isinstance(self.data, uuid.UUID):
+            return str(self.data)
+        elif isinstance(self.data, bytes):
+            return base64.b64encode(self.data).decode('utf-8')
+        elif isinstance(self.data, set):
+            return list(self.data)
+        elif hasattr(self.data, '__dict__'):
+            # Handle custom objects with attributes
+            return {key: self._serialize_value(value) for key, value in self.data.__dict__.items()}
         return self.data
+
+    def _process_serializable(self, data):
+        """Process data recursively to handle non-serializable types"""
+        if isinstance(data, dict):
+            return {key: self._serialize_value(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._serialize_value(item) for item in data]
+        else:
+            return self._serialize_value(data)
+
+    def _serialize_value(self, value):
+        """Convert individual values to serializable types"""
+        import datetime
+        import decimal
+        import uuid
+
+        if isinstance(value, datetime.datetime):
+            return value.isoformat()
+        elif isinstance(value, datetime.date):
+            return value.isoformat()
+        elif isinstance(value, datetime.time):
+            return value.isoformat()
+        elif isinstance(value, decimal.Decimal):
+            return float(value)
+        elif isinstance(value, uuid.UUID):
+            return str(value)
+        elif isinstance(value, bytes):
+            return base64.b64encode(value).decode('utf-8')
+        elif isinstance(value, set):
+            return list(value)
+        elif isinstance(value, Image.Image):
+            return self.convert_to_base64(value)
+        elif isinstance(value, (dict, list)):
+            return self._process_serializable(value)
+        elif hasattr(value, '__dict__'):
+            # Handle custom objects with attributes
+            return {key: self._serialize_value(val) for key, val in value.__dict__.items()}
+        else:
+            return value
 
     def flatten_data(self):
         flat_dict = {}
