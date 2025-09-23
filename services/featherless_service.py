@@ -1,8 +1,6 @@
-# core/services/featherless_service.py
+## ./loopai_src/core/services/featherless_service.py
 import json
-import os
 import re
-import time
 import asyncio
 
 from openai import OpenAI, AsyncOpenAI
@@ -11,21 +9,9 @@ from dotenv import load_dotenv
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
+from core.services.session_manager import session_manager
 
 load_dotenv()
-
-def get_session_manager():
-    """Get the appropriate session manager based on thread context"""
-    try:
-        # If thread-safe session manager has active session for this thread, use it
-        if thread_safe_session_manager.has_current_session():
-            return thread_safe_session_manager
-    except:
-        pass
-    # Fall back to global session manager
-    return session_manager
 
 class FeatherlessService(ServiceInterface):
     RETRY_ATTEMPTS = 5
@@ -44,7 +30,7 @@ class FeatherlessService(ServiceInterface):
         user_content: BroadcastData,
         temperature: float
     ) -> str:
-        session = get_session_manager()
+        session = session_manager
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] user_content: {str(user_content)}")

@@ -5,7 +5,7 @@ from core.adapters.file_adapter_interface import FileAdapterInterface
 from typing import List
 from core.models.broadcast_data import BroadcastData
 
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 
 class TextAdapter(FileAdapterInterface):

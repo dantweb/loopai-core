@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from PIL import Image
 from core.models.broadcast_data import BroadcastData
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 # Load environment variables from .env file
 env_path = os.path.join(os.path.dirname(__file__), "test_executor_compatibility.env")

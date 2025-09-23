@@ -151,6 +151,11 @@ class LoggerService(SessionDependent):
 
         log_message = f"[{timestamp}] [server] UserID=[{web_user_id}] {action}: {filtered_message}"
 
+        if action == 'error':
+            import traceback
+            filtered_message = f"{filtered_message}: \nTraceback:\n{traceback.format_exc()}"
+
+
         if config.WEB_OR_CLI == 'web':
             # Send the log message to the user if needed.
             current_user_id = self._get_current_user_id()

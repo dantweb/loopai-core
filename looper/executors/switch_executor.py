@@ -1,3 +1,5 @@
+##filepath: ./loopai_src/core/looper/executors/switch_executor.py
+
 import json
 
 import replicate
@@ -12,10 +14,8 @@ from core.services.logger_service import LoggerService
 
 class SwitchExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
-        self.logger_service = LoggerService()
-
 
     def prepare_prompt(self, input_data: list, prompt_template: str):
         self.logger.info("[LlmExecutor::prepare_prompt] Preparing prompt for LLM...")
@@ -38,12 +38,12 @@ class SwitchExecutor(ExecutorInterface):
     async def run(self, model, system_content, user_content, max_tokens):
 
         broadcast_data_json = fix_json(json.loads(str(user_content.flatten_data())))
-        self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor input type: {type(broadcast_data_json)}")
+        self.logger.info(f"[SwtichExecutor::run] SwtichExecutor input type: {type(broadcast_data_json)}")
         broadcast_data = BroadcastData(broadcast_data_json)
         broadcast_data = broadcast_data.flatten_data()
 
-        self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor broadcast_data type: {type(broadcast_data)}")
-        self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor broadcast_data: {str(broadcast_data)}")
+        self.logger.info(f"[SwtichExecutor::run] SwtichExecutor broadcast_data type: {type(broadcast_data)}")
+        self.logger.info(f"[SwtichExecutor::run] SwtichExecutor broadcast_data: {str(broadcast_data)}")
 
         switch_generator = broadcast_data.find_value_recursive_by_key('switch_executor')
         switch = next(switch_generator, None)
@@ -51,7 +51,7 @@ class SwitchExecutor(ExecutorInterface):
             raise Exception("[SwtichExecutor] switch_executor is None.")
 
         executor_object = load_executor_class(switch)
-        self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor class {executor_object} is loaded")
+        self.logger.info(f"[SwtichExecutor::run] SwtichExecutor class {executor_object} is loaded")
 
         result = await executor_object.run(
             model,
@@ -63,6 +63,6 @@ class SwitchExecutor(ExecutorInterface):
         if result == 'Suggestion failed.':
             raise Exception("Suggestion failed.")
 
-        self.logger_service.info(f"[SwtichExecutor::run] SwtichExecutor response type: {type(result)}")
+        self.logger.info(f"[SwtichExecutor::run] SwtichExecutor response type: {type(result)}")
 
         return result

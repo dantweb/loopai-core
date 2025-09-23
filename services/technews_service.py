@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from eventregistry import *
 import feedparser
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 from web.routes.filesystem import logger_service
 

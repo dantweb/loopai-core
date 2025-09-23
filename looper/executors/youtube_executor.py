@@ -1,9 +1,9 @@
-# src/looper/executors/gpt_executor.py
+#filesystem ./loopai_src/core/looper/executors/gpt_executor.py
 import requests
 from dotenv import load_dotenv
 
 from core.looper.executors.executor_interface import ExecutorInterface
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 load_dotenv()
 
@@ -11,6 +11,7 @@ YOUTUBE_API_KEY = session_manager.get_env('YOUTUBE_API_KEY') or 'no-youtoube-api
 
 class YoutubeExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__()
         self.model = model
 
     def prepare_prompt(self, input_data: list, prompt_template=''):

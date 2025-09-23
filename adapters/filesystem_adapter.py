@@ -5,8 +5,9 @@ import os
 import app_global_config as config
 from core.adapters.file_adapter_interface import FileAdapterInterface, get_file_system_by_user_and_loop, write_to_fs_log
 from core.models.broadcast_data import BroadcastData
-from core.services.session import session_manager
+from core.services.logger_service import LoggerService
 
+logger = LoggerService(component='core')
 
 class FilesystemAdapter(FileAdapterInterface):
 
@@ -14,8 +15,8 @@ class FilesystemAdapter(FileAdapterInterface):
         super().__init__()
         self.source = source
         self.base_path = config.LOOPAI_SINGLE_FILESYSTEM_PATH
-        self.user_id = session_manager.get_user_id()
-        self.loop_id = session_manager.get_loop_id()
+        self.user_id = self.get_user_id()
+        self.loop_id = self.get_loop_id()
         if config.WEB_OR_CLI == 'web':
             self.base_path = get_file_system_by_user_and_loop(self.user_id, self.loop_id)
 
@@ -71,7 +72,7 @@ class FilesystemAdapter(FileAdapterInterface):
         self.logger.debug(f"[FilesystemAdapter::read] Total files read: {file_count}")
         self.logger.debug(f"[FilesystemAdapter::read] Returning BroadcastData with {len(file_paths)} files")
 
-        return BroadcastData({'result': file_paths})
+        return BroadcastData({'updated_files': file_paths})
 
 
     async def write(self, step_id: str, data: BroadcastData) -> bool:
@@ -115,7 +116,7 @@ class FilesystemAdapter(FileAdapterInterface):
         Recursive function to locate all occurrences of 'updated_files'.
         """
         if isinstance(data, BroadcastData):
-            data = data.to_dict()
+            data = json.loads(data.to_json())
 
         if isinstance(data, dict):
             for key, value in data.items():

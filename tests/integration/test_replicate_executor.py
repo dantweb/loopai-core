@@ -6,7 +6,7 @@ from io import BytesIO
 
 from PIL import Image
 import replicate
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 # Debugging: Print the Python path
 print("Python Path (sys.path):")

@@ -1,3 +1,5 @@
+##filepath: ./loopai_src/core/looper/executors/replicate_executor.py
+
 import json
 import asyncio
 from io import BytesIO
@@ -15,7 +17,7 @@ from core.services.logger_service import LoggerService
 
 class ReplicateExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
         self.logger_service = LoggerService()
 
@@ -34,7 +36,7 @@ class ReplicateExecutor(ExecutorInterface):
             raise Exception("[ReplicateExecutor] Request content is empty.")
 
         prompt_template['requestContent'] = request_content_json
-        self.logger_service.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
+        self.logger.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
     async def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
@@ -55,7 +57,7 @@ class ReplicateExecutor(ExecutorInterface):
         otherwise returns None. Handles multiple possible response formats from
         replicate.Client.run (list of urls, list of FileOutput objects, dicts, etc).
         """
-        current_session = self.get_current_session()
+        current_session = self.get_current_session_manager()
         REPLICATE_API_TOKEN = current_session.get_env('REPLICATE_API_TOKEN') if current_session else ''
 
         client = replicate.Client(api_token=REPLICATE_API_TOKEN)
@@ -64,8 +66,8 @@ class ReplicateExecutor(ExecutorInterface):
             # Log the input parameters
             prompt_text = user_content.to_json() if isinstance(user_content, BroadcastData) else str(user_content)
 
-            self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
-            self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
+            self.logger.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
+            self.logger.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
 
             # Call the Replicate API in a thread to avoid blocking the event loop
             def run_replicate():
@@ -125,7 +127,7 @@ class ReplicateExecutor(ExecutorInterface):
             if not image_url:
                 raise ValueError(f"Could not extract image URL from Replicate response: {repr(output)}")
 
-            self.logger_service.info(f"[ReplicateExecutor] Resolved image URL: {image_url}")
+            self.logger.info(f"[ReplicateExecutor] Resolved image URL: {image_url}")
 
             # Download the image using async HTTP
             async with aiohttp.ClientSession() as session:
@@ -166,7 +168,7 @@ class ReplicateExecutor(ExecutorInterface):
             except Exception:
                 safe_content = "<unserializable content>"
 
-            self.logger_service.error(
+            self.logger.error(
                 f"Error during image generation: {str(e)} \n\n Prompt was type {type(user_content)} : {safe_content}"
             )
             return None

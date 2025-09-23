@@ -12,15 +12,15 @@ from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.looper import Looper
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 load_dotenv()
 
-logger = LoggerService()
+logger = LoggerService(component='core')
 
 class ForeachExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.name = None
         self.foreach_data = None
         self.input_data = None
@@ -48,21 +48,21 @@ class ForeachExecutor(ExecutorInterface):
             self.foreach_data = self.foreach_data['list']
 
         if isinstance(self.foreach_data, Iterable):
-            self.logger_service.log(f"[ForeachExecutor::run] self.parent_step '{self.parent_step}' data  type: {type(self.foreach_data)}")
-            self.logger_service.log(f"[ForeachExecutor::run] data : {self.foreach_data}")
+            self.logger.log(f"[ForeachExecutor::run] self.parent_step '{self.parent_step}' data  type: {type(self.foreach_data)}")
+            self.logger.log(f"[ForeachExecutor::run] data : {self.foreach_data}")
 
             if all(isinstance(df, pd.DataFrame) for df in self.foreach_data):
                 rows_as_dicts = []
                 for df in self.foreach_data:
                     rows_as_dicts.extend(df.to_dict(orient='records'))
 
-                self.logger_service.log(f"[ForeachExecutor::run] data converted to list of dicts, length: {len(rows_as_dicts)}")
+                self.logger.log(f"[ForeachExecutor::run] data converted to list of dicts, length: {len(rows_as_dicts)}")
 
                 for row in rows_as_dicts:
                     await self.process_row_and_execute_steps(self.name, row, steps)
             # Handle if foreach_data is a plain list
             elif isinstance(self.foreach_data, list):
-                self.logger_service.log(f"[ForeachExecutor::run] data is a list with length: {len(self.foreach_data)}")
+                self.logger.log(f"[ForeachExecutor::run] data is a list with length: {len(self.foreach_data)}")
 
                 for item in self.foreach_data:
                     await self.process_row_and_execute_steps(self.parent_step, item, steps)
@@ -100,7 +100,7 @@ class ForeachExecutor(ExecutorInterface):
         await self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
 
         for step in steps:
-            session_manager.set_global_step_name(str(uuid.uuid4()))
+            self.session_manager.set_global_step_name(str(uuid.uuid4()))
             step_result = await step.execute(step.name, self.parent_step)
             logger.info(f"[ForeachExecutor::process_row_and_execute_steps] execute result: {str(step_result['result'])}")
             self.result.append(step_result['result'])

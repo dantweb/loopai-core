@@ -7,7 +7,8 @@ logger = LoggerService()
 
 class SMMAdapter(AdapterInterface):
     def __init__(self, source: str):
-        super().__init__(source)
+        super().__init__()
+        self.source = source
         self.smm_service = SMMService()  # Initialize the SMM service
 
     def get_input(self) -> str:

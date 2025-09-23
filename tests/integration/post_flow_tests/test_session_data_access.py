@@ -204,7 +204,7 @@ class TestSessionDataAccess(unittest.TestCase):
 
                     # Now simulate what happens when lambda code tries to access the data
                     # This simulates the session_manager.get_request_data() call in WAKEUP.py
-                    from core.services.session import session_manager
+                    from core.services.session_manager import session_manager
 
                     lambda_accessible_data = None
                     try:
@@ -251,7 +251,7 @@ class TestSessionDataAccess(unittest.TestCase):
         thread_safe_session_manager.set_request_data(self.test_request_data)
 
         # Import both session managers
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # Test access from both
         thread_safe_data = thread_safe_session_manager.get_request_data()

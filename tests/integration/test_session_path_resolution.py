@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../'))
 
 from core.models.step_model import StepModel, get_session_manager
 from core.adapters.file_adapter_interface import get_loop_config_base_path_by_user_and_loop
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 from core.services.thread_safe_session import thread_safe_session_manager
 
 

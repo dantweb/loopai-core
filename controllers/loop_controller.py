@@ -17,14 +17,13 @@ class LoopController(SessionDependent):
         # Note: In the new AsyncLoopManager architecture, session is already
         # set up by the thread context. This controller should just validate
         # that the session data matches the expected parameters.
-        current_session = self.get_current_session()
-
-        if current_session:
+        if self.has_session():
             # Verify session data matches expected parameters
-            if (current_session.user_id != user_id or
-                current_session.loop_id != loop_id):
+            session_user_id = self.get_user_id()
+            session_loop_id = self.get_loop_id()
+            if (session_user_id != user_id or session_loop_id != loop_id):
                 self.logger_service.warning(
-                    f"Session data mismatch: session({current_session.user_id}, {current_session.loop_id}) "
+                    f"Session data mismatch: session({session_user_id}, {session_loop_id}) "
                     f"vs expected({user_id}, {loop_id})"
                 )
 
@@ -46,4 +45,3 @@ class LoopController(SessionDependent):
             index_uuid = str(uuid.uuid4())
             await step.execute(step.name, index_uuid)
 
-        cleanup_session()

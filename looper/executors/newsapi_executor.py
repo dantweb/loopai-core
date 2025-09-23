@@ -1,10 +1,11 @@
-# src/looper/executors/newsapi_executor.py
+##filepath:: ./loopai_src/core/looper/executors/newsapi_executor.py
 from core.looper.executors.executor_interface import ExecutorInterface
-from core.services.newsapi_service import NewsApiService, extract_string_from_list
+from core.services.newsapi_service import NewsApiService
 
 
 class NewsapiExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__()
         self.news_api_service = NewsApiService()
         self.parent_step = None
 

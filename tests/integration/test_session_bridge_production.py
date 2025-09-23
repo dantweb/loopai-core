@@ -7,7 +7,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../'))
 
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 from core.services.thread_safe_session import thread_safe_session_manager
 
 def test_session_bridge():

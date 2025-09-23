@@ -26,7 +26,7 @@ except ImportError:
     UserContextService = None
     get_user_context_service = None
 
-from core.services.session import SessionManager
+from core.services.session_manager import SessionManager
 
 
 class TestUserContextService(unittest.TestCase):
@@ -144,7 +144,7 @@ class TestUserContextService(unittest.TestCase):
 
     def test_session_integration(self):
         """Test integration with SessionManager for automatic context detection"""
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # Create session using the same session manager instance
         session_id = session_manager.create_session_for_loop(
@@ -220,7 +220,7 @@ class TestUserContextServiceIntegration(unittest.TestCase):
 
     def test_request_adapter_integration(self):
         """Test integration with RequestAdapter for user-aware HTTP requests"""
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # This test would verify that RequestAdapter uses UserContextService
         # for making HTTP requests in a user-aware manner
@@ -255,7 +255,7 @@ class TestUserContextServiceIntegration(unittest.TestCase):
 
     def test_adapter_delegation_pattern(self):
         """Test that adapters delegate to UserContextService instead of implementing user logic"""
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # This test would verify that adapters use the service
         # rather than implementing their own user-aware logic

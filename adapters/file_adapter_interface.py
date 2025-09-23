@@ -1,32 +1,21 @@
 import json
 import os
-from datetime import datetime
-
 import app_global_config as config
-from abc import ABC, abstractmethod
-from typing import List, Any, AnyStr, Dict, Union, Set, Optional
+from typing import List, Any, Dict, Union, Set, Optional
 from PIL.Image import Image
 
+from core.adapters.adapter_interface import AdapterInterface
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session_dependent import SessionDependent
+from core.services.session_manager import SessionManager
 
 
-class FileAdapterInterface(ABC, SessionDependent):
+class FileAdapterInterface(AdapterInterface):
     filesystem_path: str = ''
 
     def __init__(self):
-        SessionDependent.__init__(self)
+        super().__init__()
         self.file_mode = 'a'
-        self.logger = LoggerService()
-
-    @abstractmethod
-    async def read(self, file_path: str) -> List[str]:
-        pass
-
-    @abstractmethod
-    async def write(self, file_path: str, data: List[str]) -> None:
-        pass
 
     def set_append(self):
         self.file_mode = 'a'
@@ -36,7 +25,7 @@ class FileAdapterInterface(ABC, SessionDependent):
 
 
     def get_full_path(self, file_path_template: str) -> str:
-        return get_full_path(file_path_template)
+        return get_full_path(self.session_manager, file_path_template)
 
 
     def get_new_filename(self, filename: str) -> str:
@@ -213,22 +202,21 @@ def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
     return path
 
 
-def get_full_path(file_path_template: str) -> str:
+def get_full_path(session_manager: SessionManager, file_path_template: str) -> str:
     # Use the appropriate session manager
-    current_session = get_session_manager()
 
-    loop_index = current_session.get_loop_index()
-    step = current_session.get_global_step_name()
+    loop_index = session_manager.get_loop_index()
+    step = session_manager.get_global_step_name()
     path = f"loop.{step}.{loop_index}"
-    user_id = current_session.get_user_id()
-    loop_id = current_session.get_loop_id()
+    user_id = session_manager.get_user_id()
+    loop_id = session_manager.get_loop_id()
 
     # Add debug logging
     logger = LoggerService()
-    logger.info(f"[get_full_path] Using session manager: {type(current_session).__name__}")
+    logger.info(f"[get_full_path] Using session manager: {type(session_manager).__name__}")
     logger.info(f"[get_full_path] User ID: {user_id}, Loop ID: {loop_id}")
 
-    session_id = current_session.get_session_id()
+    session_id = session_manager.get_session_id()
     session_id_short = session_id[:8] if session_id else 'no-session'
 
     last_part_of_the_path: str = file_path_template.replace(

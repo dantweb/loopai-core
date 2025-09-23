@@ -128,7 +128,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         mock_generate.return_value = test_img
 
         # Ensure session id used for write/read is consistent
-        from core.services import session as session_module
+        from core.services import session_manager as session_module
         original_get_session_id = session_module.session_manager.get_session_id
         session_module.session_manager.get_session_id = MagicMock(return_value="test-session")
 

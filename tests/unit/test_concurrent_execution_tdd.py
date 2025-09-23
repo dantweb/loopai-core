@@ -19,7 +19,7 @@ from web.services.async_loop_executor import async_loop_executor
 from web.admin_models import Loop, User, Project
 from web.admin_models.db import db
 from core.services.logger_service import LoggerService
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 
 class TestConcurrentExecutionTDD(unittest.TestCase):

@@ -33,7 +33,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         self.executor = ReplicateExecutor(self.replicate_model)
 
         # Clean up any existing DB entries for the test session
-        from core.services import session as session_module
+        from core.services import session_manager as session_module
         self.original_get_session_id = session_module.session_manager.get_session_id
         session_module.session_manager.get_session_id = MagicMock(return_value="test-session")
         try:
@@ -56,7 +56,7 @@ class TestBroadcastReplicate(unittest.TestCase):
             pass
 
         # Restore session manager
-        from core.services import session as session_module
+        from core.services import session_manager as session_module
         session_module.session_manager.get_session_id = self.original_get_session_id
 
     def _make_test_image(self, size=(512, 512), color=(155, 0, 0)):
@@ -180,7 +180,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         base64_image = self._encode_image_to_base64(test_img)
 
         # Ensure session id consistency
-        from core.services import session as session_module
+        from core.services import session_manager as session_module
         session_module.session_manager.get_session_id = MagicMock(return_value="test-session")
 
         try:

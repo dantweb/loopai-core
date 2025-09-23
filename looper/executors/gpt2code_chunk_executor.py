@@ -1,3 +1,5 @@
+##filepath: ./loopai_src/core/looper/executors/gpt2code_chunk_executor.py
+
 from typing import List
 
 from core.looper.executors.llm_executor import LlmExecutor

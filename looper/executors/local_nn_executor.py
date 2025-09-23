@@ -5,6 +5,7 @@ from core.services.local_llm_service import LocalLLMService
 
 class LocalNNExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__()
         self.model = model
         self.local_llm_service = LocalLLMService(model)
 

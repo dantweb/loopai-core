@@ -7,12 +7,12 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.featherless_service import FeatherlessService
 
-logger = LoggerService()
+logger = LoggerService(component='core')
 
 
 class LambdaExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
 
     def prepare_prompt(self, input_data: list, prompt_template: str):

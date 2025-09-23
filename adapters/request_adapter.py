@@ -3,8 +3,6 @@ from flask import request, Flask, has_request_context
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from core.services.session import session_manager
-from core.services.thread_safe_session import thread_safe_session_manager
 
 logger = LoggerService()
 
@@ -38,26 +36,8 @@ class RequestAdapter(FileAdapterInterface):
         Returns:
             BroadcastData: Object containing the request data
         """
-        # Try to get request data from appropriate session manager first
-        def get_current_session_manager():
-            """Get the appropriate session manager based on execution context"""
-            try:
-                from core.services.session import session_manager
-                # First try the enhanced session manager (works in both thread and gevent contexts)
-                if session_manager.has_current_session():
-                    return session_manager
 
-                # If thread-safe session manager has active session, use it (backward compatibility)
-                if thread_safe_session_manager.has_current_session():
-                    return thread_safe_session_manager
-            except:
-                pass
-            # Fall back to global session manager
-            from core.services.session import session_manager
-            return session_manager
-
-        current_session = get_current_session_manager()
-        request_data = current_session.get_request_data()
+        request_data = self.session_manager.get_request_data()
 
         if request_data:
             logger.info(f"[RequestAdapter::read] Found request data in session manager: {request_data}")
@@ -122,29 +102,11 @@ class RequestAdapter(FileAdapterInterface):
         logger.error("No request context available")
         return BroadcastData({"response": "No request context available"})
 
-
     async def write(self, step_id: str, data: BroadcastData) -> bool:
 
         try:
-            session_manager.collect_broadcast(data)
+            self.add_broadcast_data(data)
             return True
         except Exception as e:
             logger.error(f"Error collecting broadcast: {e}")
             return False
-
-
-    def _extract_content_type(self, headers: Dict[str, str]) -> str:
-        """
-        Helper method to extract content type from headers.
-
-        Args:
-            headers (Dict[str, str]): Request headers
-
-        Returns:
-            str: Content type string
-        """
-        content_type = headers.get('Content-Type', '')
-        if ';' in content_type:
-            # Split and get the main content type
-            content_type = content_type.split(';')[0].strip()
-        return content_type

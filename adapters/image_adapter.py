@@ -1,7 +1,8 @@
+##filepath: ./loopai_src/core/adapters/image_adapter.py
+
 import base64
 import io
 import os
-from readline import set_completer_delims
 
 from PIL import Image
 
@@ -31,7 +32,7 @@ class ImageAdapter(FileAdapterInterface):
 
         image = data["result"]["image_base64"]
         if len(image) == len(d["result"]["image_base64"]):
-            self.logger.info(f"[ImageAdapter::write] YEEEEEEESESESESESW \n\n\n\n")
+            self.logger.info(f"[ImageAdapter::write] writing image \n\n\n\n")
 
         generated_image_bytes = base64.b64decode(image)
 

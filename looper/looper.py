@@ -1,4 +1,4 @@
-# src/looper/looper.py
+##filepath: ./loopai_src/core/looper/looper.py
 from typing import List
 from core.models.action_config import ActionConfig
 from core.models.input_config import InputConfig

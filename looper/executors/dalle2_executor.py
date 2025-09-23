@@ -17,10 +17,10 @@ logger = LoggerService()
 
 class Dalle2Executor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
 
-        current_session = self.get_current_session()
+        current_session = self.get_current_session_manager()
         open_ai_sdk_api_key = current_session.get_env("OPENAI_API_KEY") if current_session else ''
         logger.debug(f"[DalleExecutor::__init__] open_ai_sdk_api_key: {open_ai_sdk_api_key}")
         self.async_client = AsyncOpenAI(api_key=open_ai_sdk_api_key)
@@ -54,7 +54,7 @@ class Dalle2Executor(ExecutorInterface):
         if result == 'Suggestion failed.':
             raise Exception("Suggestion failed.")
 
-        self.logger_service.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
+        self.logger.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
 
         return result
 
@@ -65,8 +65,8 @@ class Dalle2Executor(ExecutorInterface):
             supported_sizes = [(256, 256), (512, 512), (1024, 1024)]
             selected_size = min(supported_sizes, key=lambda s: abs(s[0] - width) + abs(s[1] - height))
             size_param = f"{selected_size[0]}x{selected_size[1]}"
-            self.logger_service.log(f"Creating image for prompt {str(user_content)} with ")
-            self.logger_service.log(f"size {size_param}")
+            self.logger.log(f"Creating image for prompt {str(user_content)} with ")
+            self.logger.log(f"size {size_param}")
             prompt = json.dumps(user_content.__json__())
 
             # Use async OpenAI client

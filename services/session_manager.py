@@ -5,23 +5,15 @@ import os
 from typing import Optional, Any, Dict
 from core.models.broadcast_data import BroadcastData
 
-# Gevent support
-try:
-    import gevent
-    from gevent.local import local as gevent_local
-    GEVENT_AVAILABLE = True
-except ImportError:
-    GEVENT_AVAILABLE = False
-    gevent = None
-    gevent_local = None
-
+# Note: Gevent support removed to eliminate AsyncToSync conflicts
+# New architecture uses ThreadPoolExecutor with threading.local()
 
 class SessionManager:
     """
     Enhanced SessionManager providing multi-user session isolation for concurrent loop execution.
 
     Features:
-    - Thread and gevent-local storage for proper isolation
+    - Thread-local storage for proper isolation
     - Hierarchical environment variable management (Project → Loop → Step)
     - Session lifecycle management with cleanup
     - Execution mode awareness (public vs authenticated)
@@ -48,29 +40,13 @@ class SessionManager:
         self._global_sessions: Dict[str, dict] = {}
         self._execution_mode = 'authenticated'  # Default to authenticated mode
 
-        # Initialize gevent-local storage if available
-        if GEVENT_AVAILABLE:
-            self._gevent_local = gevent_local()
-
-    def _is_in_gevent_context(self) -> bool:
-        """Detect if we're running in a gevent greenlet"""
-        if not GEVENT_AVAILABLE:
-            return False
-        try:
-            current = gevent.getcurrent()
-            # If we get a greenlet that's not the main thread, we're in gevent context
-            return current is not gevent.get_hub().parent
-        except:
-            return False
 
     def _get_local_storage(self):
-        """Get appropriate local storage based on execution context"""
-        if self._is_in_gevent_context():
-            return self._gevent_local
+        """Get thread-local storage"""
         return self._local
 
     def _ensure_local_session(self):
-        """Ensure local session data exists (gevent or thread-local)"""
+        """Ensure local session data exists in thread-local storage"""
         local_storage = self._get_local_storage()
         if not hasattr(local_storage, 'session_data'):
             local_storage.session_data = {
@@ -434,29 +410,16 @@ class SessionManager:
             local_storage = self._get_local_storage()
             return local_storage.session_data.get('request_data')
 
-        # Fallback to bridge method for backward compatibility
-        try:
-            from core.services.thread_safe_session import thread_safe_session_manager
-            return thread_safe_session_manager.get_request_data()
-        except ImportError:
-            return None
-        except Exception:
-            return None
+        # No fallback needed - using unified session manager
+        return None
 
     def set_request_data(self, request_data: dict):
         """Set request data - enhanced mode with backward compatibility"""
         if self.has_current_session():
             local_storage = self._get_local_storage()
             local_storage.session_data['request_data'] = request_data
-        else:
-            # Fallback to bridge method for backward compatibility
-            try:
-                from core.services.thread_safe_session import thread_safe_session_manager
-                return thread_safe_session_manager.set_request_data(request_data)
-            except ImportError:
-                pass
-            except Exception:
-                pass
+        # No fallback needed - using unified session manager
+        pass
 
 
 # Singleton instance for global usage

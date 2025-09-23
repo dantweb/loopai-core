@@ -51,7 +51,7 @@ class StepModel(SessionDependent):
         self.output_adapters = []
         self.input_adapters = []
         # Session operations through SessionDependent methods
-        current_session = self.get_current_session()
+        current_session = self.get_current_session_manager()
         if current_session:
             current_session.set_step_name(self.name)
             current_session.set_global_loop_index('start')
@@ -94,7 +94,7 @@ class StepModel(SessionDependent):
                 self.output_adapters.append(output_adapter_class(output_config.image['name']))
             if output_config.wordpress:
                 output_adapter_class = self.load_adapter('wordpress')
-                current_session = self.get_current_session()
+                current_session = self.get_current_session_manager()
                 wp_site = current_session.get_env(output_config.wordpress['wp_site']) if current_session else ''
                 wp_username = current_session.get_env(output_config.wordpress['wp_username']) if current_session else ''
                 wp_password = current_session.get_env(output_config.wordpress['wp_password']) if current_session else ''
@@ -189,7 +189,7 @@ class StepModel(SessionDependent):
 
     async def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
-        current_session = self.get_current_session()
+        current_session = self.get_current_session_manager()
         if current_session:
             current_session.set_step_name(step_name)
             current_session.set_global_loop_index(loop_index)
@@ -441,7 +441,7 @@ class StepModel(SessionDependent):
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
-        current_session = self.get_current_session()
+        current_session = self.get_current_session_manager()
         if current_session:
             current_session.set_environment(merged_env)
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Environment {str(merged_env)}")

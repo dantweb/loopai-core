@@ -1,4 +1,4 @@
-# src/looper/executors/wordpress_executor.py
+##filesystem: ./loopai_src/core/looper/executors/wordpress_executor.py
 import base64
 import os
 
@@ -7,6 +7,7 @@ from core.looper.executors.executor_interface import ExecutorInterface
 ## deprecated with new BroadcastData and BroadcastAdapter
 class WordpressExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__()
         self.parent_step = None
 
     def prepare_prompt(self, input_data, prompt_template: str) -> str:

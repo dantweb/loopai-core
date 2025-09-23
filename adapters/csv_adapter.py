@@ -7,11 +7,10 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 
 import pandas as pd
-from pandas import Series
 
 from core.adapters.file_adapter_interface import FileAdapterInterface
 
-logger = LoggerService()
+logger = LoggerService(component='core')
 
 class CsvAdapter(FileAdapterInterface):
     def __init__(self, file_path: str, fields: list, mapping: dict) -> None:

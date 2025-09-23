@@ -27,7 +27,7 @@ import re
 from typing import Optional, Dict, Any
 from concurrent.futures import ThreadPoolExecutor
 
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 from core.services.logger_service import LoggerService
 
 

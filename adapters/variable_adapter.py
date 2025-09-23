@@ -1,8 +1,9 @@
 import importlib
 from core.models.broadcast_data import BroadcastData
+from core.services.session_dependent import SessionDependent
 
 
-class VariableAdapter:
+class VariableAdapter(SessionDependent):
     """
     Dynamically handles the initialization of multiple adapters defined in the input data.
 

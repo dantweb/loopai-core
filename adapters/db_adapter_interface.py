@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from core.adapters.adapter_interface import AdapterInterface
 
-class DbAdapterInterface(ABC):
+
+class DbAdapterInterface(AdapterInterface):
 
     @abstractmethod
     async def read(self, session_id: str, step_id: str):

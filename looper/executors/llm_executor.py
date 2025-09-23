@@ -1,4 +1,4 @@
-# src/looper/executors/llm_executor.py
+##filepath: ./loopai_src/core/looper/executors/llm_executor.py
 import json
 import re
 from app_global_config import is_valid_json
@@ -7,12 +7,12 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.featherless_service import FeatherlessService
 
-logger = LoggerService()
+logger = LoggerService(component='core')
 
 
 class LlmExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
         self.featherless = FeatherlessService(model)
 

@@ -6,6 +6,7 @@ from core.looper.executors.executor_interface import ExecutorInterface
 
 class IfExecutor(ExecutorInterface):
     def __init__(self, model: str):
+        super().__init__()
         self.model = model
 
     def prepare_prompt(self, input_data: list, prompt_template: str):

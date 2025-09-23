@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from core.adapters.file_adapter_interface import get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 
 
 load_dotenv()
@@ -14,7 +14,7 @@ load_dotenv()
 class DockerExecutor(ExecutorInterface):
 
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
         # Default Docker image if not specified in config
         self.default_image = "python:3.10-slim"
@@ -126,20 +126,19 @@ class DockerExecutor(ExecutorInterface):
     async def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         # Get bash script path
         bash_script_path = config.get('bash_script_path')
-        self.logger_service.log(f"Bash script path: {bash_script_path}")
+        self.logger.log(f"Bash script path: {bash_script_path}")
 
         if not bash_script_path:
             raise ValueError("Bash script path not provided in the config.")
 
-        # Resolve full path of the script
-        command = get_full_path(bash_script_path)
-        self.logger_service.log(f"Full command path: {command}")
+        command = get_full_path(self.session_manager, bash_script_path)
+        self.logger.log(f"Full command path: {command}")
 
         if not os.path.exists(command):
             raise ValueError("Bash script path does not exist.")
 
-        user_id = session_manager.get_user_id()
-        loop_id = session_manager.get_loop_id()
+        user_id = self.session_manager.get_user_id()
+        loop_id = self.session_manager.get_loop_id()
 
         try:
             # Execute bash script in Docker container
@@ -150,7 +149,7 @@ class DockerExecutor(ExecutorInterface):
             )
 
         except Exception as e:
-            self.logger_service.log(f"Execution error: {str(e)}")
+            self.logger.log(f"Execution error: {str(e)}")
             return {
                 "result": str(e),
                 "success": False

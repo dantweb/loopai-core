@@ -131,7 +131,7 @@ def main():
 
     try:
         # Import session manager to get request data
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # Get the request data from HTTP adapter
         request_data = session_manager.get_request_data()
@@ -157,7 +157,7 @@ def main():
 
         # Still try to broadcast the error
         try:
-            from core.services.session import session_manager
+            from core.services.session_manager import session_manager
             session_manager.collect_broadcast({'result': {'error': error_msg}})
         except:
             pass

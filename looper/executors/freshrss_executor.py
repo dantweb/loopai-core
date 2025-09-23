@@ -5,10 +5,10 @@ from core.models.broadcast_data import BroadcastData
 from core.services.freshrss_service import FreshRssService
 from core.services.logger_service import LoggerService
 
-logger = LoggerService()
+logger = LoggerService(component='core')
 
 class FreshrssExecutor(ExecutorInterface):
-    def __init__(self, model: str):
+    def __init__(self):
         self.freshrss_service = FreshRssService()
         self.parent_step = None
 

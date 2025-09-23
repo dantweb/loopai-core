@@ -32,7 +32,7 @@ except ImportError:
     ExecutionModeBroadcastingService = None
     get_broadcasting_service = None
 
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 from core.services.logger_service import LoggerService
 
 

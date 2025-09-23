@@ -1,12 +1,16 @@
-from abc import abstractmethod
+##filepath: ./loopai_src/core/adapters/adapter_interface.py
 
+from abc import abstractmethod, ABC
 from core.models.broadcast_data import BroadcastData
+from core.services.logger_service import LoggerService
+from core.services.session_dependent import SessionDependent
 
 
-class AdapterInterface:
+class AdapterInterface(SessionDependent):
     @abstractmethod
-    def __init__(self, source: str):
-        pass
+    def __init__(self):
+        super().__init__()
+        self.logger = LoggerService(component='core')
 
     def get_input(self) -> str:
         pass

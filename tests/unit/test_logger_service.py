@@ -138,7 +138,7 @@ class TestLoggerServiceEnhancement(unittest.TestCase):
     def test_user_context_logging(self):
         """Test that logger can include user context in log messages"""
         with patch.dict(os.environ, {'LOOPAI_LOG_PATH': self.log_path}):
-            from core.services.session import session_manager
+            from core.services.session_manager import session_manager
 
             # Create session with user context
             session_id = session_manager.create_session_for_loop(
@@ -244,7 +244,7 @@ class TestLoggerServiceIntegration(unittest.TestCase):
     def test_session_manager_integration(self):
         """Test that LoggerService integrates with SessionManager for user context"""
         with patch.dict(os.environ, {'LOOPAI_LOG_PATH': self.log_path}):
-            from core.services.session import session_manager
+            from core.services.session_manager import session_manager
 
             # Create session
             session_id = session_manager.create_session_for_loop(

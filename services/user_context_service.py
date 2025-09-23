@@ -25,7 +25,7 @@ from typing import Dict, Any, Optional
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from core.services.session import session_manager
+from core.services.session_manager import session_manager
 from core.services.logger_service import LoggerService
 
 

@@ -1,3 +1,5 @@
+##filepath: ./loopai_src/core/looper/executors/bash_executor.py
+
 import os
 import subprocess
 import asyncio
@@ -6,7 +8,7 @@ from core.looper.executors.executor_interface import ExecutorInterface
 
 class BashExecutor(ExecutorInterface):
     def __init__(self, model: str):
-        super().__init__(model)
+        super().__init__()
         self.model = model
 
     def prepare_prompt(self, input_data: list, prompt_template: str):
@@ -84,14 +86,14 @@ class BashExecutor(ExecutorInterface):
 
     async def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         bash_script_path = config.get('bash_script_path')
-        self.logger_service.log(f"Bash script path: {bash_script_path}")
+        self.logger.log(f"Bash script path: {bash_script_path}")
 
         if not bash_script_path:
             raise ValueError("Bash script path not provided in the config.")
 
         # Resolve the full path of the script using the provided helper
-        full_script_path = get_full_path(bash_script_path)
-        self.logger_service.log(f"Full script path: {full_script_path}")
+        full_script_path = get_full_path(self.session_manager, bash_script_path)
+        self.logger.log(f"Full script path: {full_script_path}")
 
         if not os.path.exists(full_script_path):
             raise ValueError("Bash script does not exist at the resolved path.")
@@ -99,15 +101,15 @@ class BashExecutor(ExecutorInterface):
         # Get filesystem path for the loop using SessionDependent methods
         user_id = self.get_user_id()
         loop_id = self.get_loop_id()
-        self.logger_service.log(f"User ID: {user_id}, Loop ID: {loop_id}")
+        self.logger.log(f"User ID: {user_id}, Loop ID: {loop_id}")
         filesystem_path = get_file_system_by_user_and_loop(user_id, loop_id)
-        self.logger_service.log(f"Using filesystem root: {filesystem_path}")
+        self.logger.log(f"Using filesystem root: {filesystem_path}")
 
         try:
             # Execute bash script using async subprocess to avoid blocking the event loop
             return await self.run_bash_on_host_async(full_script_path, filesystem_path)
         except Exception as e:
-            self.logger_service.log(f"Execution error: {str(e)}")
+            self.logger.log(f"Execution error: {str(e)}")
             return {
                 "result": str(e),
                 "success": False

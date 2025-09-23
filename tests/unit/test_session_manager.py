@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch, MagicMock
 
 # Import the SessionManager that we'll be enhancing
-from core.services.session import SessionManager, session_manager
+from core.services.session_manager import SessionManager, session_manager
 from core.models.broadcast_data import BroadcastData
 
 
@@ -279,7 +279,7 @@ class TestSessionManagerCompatibility(unittest.TestCase):
     def test_singleton_instance_compatibility(self):
         """Test that global session_manager instance still works"""
         # The global instance should still be accessible
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
         self.assertIsNotNone(session_manager)
 
         # Basic methods should work
@@ -288,7 +288,7 @@ class TestSessionManagerCompatibility(unittest.TestCase):
 
     def test_bridge_methods_compatibility(self):
         """Test that bridge methods for request data still work"""
-        from core.services.session import session_manager
+        from core.services.session_manager import session_manager
 
         # Bridge methods should work without error
         test_data = {'test': 'data'}
