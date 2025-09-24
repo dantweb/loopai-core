@@ -15,13 +15,13 @@ class SMMAdapter(AdapterInterface):
         # Method to retrieve input, if necessary. For now, return the source as the input.
         return self.source
 
-    async def read(self, session_id: str, step_id: str) -> BroadcastData:
+    def read(self, session_id: str, step_id: str) -> BroadcastData:
         # For now, this method is not necessary for the SMMAdapter
         # In a real-world scenario, it could read from a database or external source
         logger.info(f'[SMMAdapter::read] Reading data for session {session_id}, step {step_id}')
         return BroadcastData(result={})  # Placeholder
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         """
         The write method should use the SMM service to publish the given broadcast data to the
         active social networks.

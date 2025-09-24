@@ -2,11 +2,7 @@
 import os
 import json
 from core.adapters.file_adapter_interface import FileAdapterInterface
-from typing import List
 from core.models.broadcast_data import BroadcastData
-
-from core.services.session_manager import session_manager
-
 
 class TextAdapter(FileAdapterInterface):
     def __init__(self, source: str):
@@ -15,7 +11,7 @@ class TextAdapter(FileAdapterInterface):
         self.path = self.get_full_path(self.source)
 
 
-    async def read(self, p1: str, p2: str, ignore_read_status: bool = False, *args) -> BroadcastData:
+    def read(self, p1: str, p2: str, ignore_read_status: bool = False, *args) -> BroadcastData:
         """
         Reads a text file and attempts to parse it as JSON.
         If parsing succeeds, returns a BroadcastData with the parsed data.
@@ -62,7 +58,7 @@ class TextAdapter(FileAdapterInterface):
             self.logger.error(f"Error: An IOError occurred: {e}")
             return BroadcastData()
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         """
         Writes the content of BroadcastData to a text file in JSON format.
 
@@ -81,7 +77,7 @@ class TextAdapter(FileAdapterInterface):
             os.makedirs(directory)
 
         # Add session_id to the data
-        data.set('session_id', session_manager.get_session_id())
+        data.set('session_id', self.session_manager.get_session_id())
 
         # Filter binary data if needed
         data_filtered: BroadcastData = self.filter_binary_data(data)

@@ -1,11 +1,9 @@
 ##filepath: ./loopai_src/core/looper/executors/replicate_executor.py
 
 import json
-import asyncio
 from io import BytesIO
 from typing import Any
-
-import aiohttp
+import requests
 from PIL import Image
 import replicate
 from sqlalchemy.util import md5_hex
@@ -23,7 +21,7 @@ class ReplicateExecutor(ExecutorInterface):
 
     def prepare_prompt(self, input_data: BroadcastData, prompt_template):
         if input_data is None or input_data == '':
-            raise Exception("Input data is empty.")
+            raise Exception(f"[ReplicateExecutor::prepare_prompt] Input data is empty. Parent step {self.parent_step}")
 
         if isinstance(input_data, BroadcastData):
             request_content_json = json.dumps(input_data.__json__())
@@ -39,11 +37,11 @@ class ReplicateExecutor(ExecutorInterface):
         self.logger.info(f"[ReplicateExecutor::prepare_prompt] generated prompt_template : {prompt_template}")
         return prompt_template
 
-    async def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
+    def run(self, model: str, system_content: dict, user_content: Any, max_tokens: int = 4096, **kwargs):
         """
         Run the executor: generate an image from replicate and return the PIL Image.
         """
-        result = await self.generate_image_from_replicate(model, user_content)
+        result = self.generate_image_from_replicate(model, user_content)
 
         bd = BroadcastData()
         base64_encoded = bd.convert_to_base64(result)
@@ -51,39 +49,42 @@ class ReplicateExecutor(ExecutorInterface):
 
         return BroadcastData({"image_base64": base64_encoded, "image_file": filename })
 
-    async def generate_image_from_replicate(self, model: str, user_content: Any, width: int = 1024, height: int = 1024):
+    def generate_image_from_replicate(self, model: str, user_content: Any, width: int = 1024, height: int = 1024):
         """
         Calls Replicate API to generate an image and returns a PIL.Image on success,
         otherwise returns None. Handles multiple possible response formats from
         replicate.Client.run (list of urls, list of FileOutput objects, dicts, etc).
         """
-        current_session = self.get_current_session_manager()
-        REPLICATE_API_TOKEN = current_session.get_env('REPLICATE_API_TOKEN') if current_session else ''
+        REPLICATE_API_TOKEN = session_manager.get_env('REPLICATE_API_TOKEN')
 
         client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
         try:
             # Log the input parameters
+            self.logger_service.info(f"[ReplicateExecutor] Generating image with model: {model}")
+            self.logger_service.info(f"[ReplicateExecutor] User content type: {type(user_content)}")
+
+            # Ensure prompt is a plain string. If user_content is a BroadcastData or dict, serialize safely and truncate.
             prompt_text = user_content.to_json() if isinstance(user_content, BroadcastData) else str(user_content)
 
-            self.logger.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
-            self.logger.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
+            self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
+            self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
 
-            # Call the Replicate API in a thread to avoid blocking the event loop
-            def run_replicate():
-                return client.run(
-                    model,
-                    input={
-                        "prompt": prompt_text,
-                        "width": width,
-                        "height": height,
-                    }
-                )
+            # Call the Replicate API
+            output = client.run(
+                model,
+                input={
+                    "prompt": prompt_text,
+                    "width": width,
+                    "height": height,
+                }
+            )
 
-            output = await asyncio.to_thread(run_replicate)
-
+            self.logger_service.info(f"[ReplicateExecutor] Raw API response: {str(output)}")
+            # Normalize output to a single URL string if possible
             image_url = None
 
+            # If output is a list, prefer first non-empty element
             if isinstance(output, list):
                 first = output[0] if len(output) > 0 else None
                 candidate = first
@@ -127,16 +128,15 @@ class ReplicateExecutor(ExecutorInterface):
             if not image_url:
                 raise ValueError(f"Could not extract image URL from Replicate response: {repr(output)}")
 
-            self.logger.info(f"[ReplicateExecutor] Resolved image URL: {image_url}")
+            self.logger_service.info(f"[ReplicateExecutor] Resolved image URL: {image_url}")
 
-            # Download the image using async HTTP
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url, timeout=aiohttp.ClientTimeout(total=30)) as response:
-                    response.raise_for_status()
-                    image_data = await response.read()
+            # Download the image
+            response = requests.get(image_url, timeout=30)
+            response.raise_for_status()
+            requests.session().close()  # Close the session
 
             # Open the image
-            img = Image.open(BytesIO(image_data))
+            img = Image.open(BytesIO(response.content))
             img.load()  # Load the image data
 
             # Convert to RGB if necessary
@@ -154,6 +154,8 @@ class ReplicateExecutor(ExecutorInterface):
             imp = Image.open(BytesIO(jpeg_data))  # Wrap jpeg_data in BytesIO
             imp.load()  # Load the new image data
 
+            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {imp}")
+
             return imp  # Return the new image object
 
 
@@ -168,7 +170,7 @@ class ReplicateExecutor(ExecutorInterface):
             except Exception:
                 safe_content = "<unserializable content>"
 
-            self.logger.error(
+            self.logger_service.error(
                 f"Error during image generation: {str(e)} \n\n Prompt was type {type(user_content)} : {safe_content}"
             )
             return None

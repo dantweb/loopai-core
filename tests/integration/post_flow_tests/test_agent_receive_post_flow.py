@@ -224,11 +224,10 @@ class TestAgentReceivePostFlow(unittest.TestCase):
             mock_session.get_broadcast_collection.return_value = [mock_broadcast_data]
 
             # Execute filesystem adapter
-            import asyncio
             from core.models.broadcast_data import BroadcastData
 
             broadcast_data = BroadcastData(mock_broadcast_data)
-            result = asyncio.run(filesystem_adapter.write('test_step', broadcast_data))
+            result = filesystem_adapter.write('test_step', broadcast_data)
 
             # Verify file creation (simulate the file creation)
             expected_file = os.path.join(self.agent_inbox, f'dir_save_{self.sample_message_id}.json')

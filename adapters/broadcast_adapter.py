@@ -31,7 +31,7 @@ class BroadcastAdapter(FileAdapterInterface):
         self.field = None
         self.image_file = None
 
-    async def read(self, self_step_id: str, ref_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
+    def read(self, self_step_id: str, ref_step_id: str = '', ignore_read_status: bool = False) -> Any | None:
         logger_service.info(f"[BroadcastAdapter::read] Reading DB step {self_step_id} from step {ref_step_id}")
         if ignore_read_status:
             query = """
@@ -64,7 +64,7 @@ class BroadcastAdapter(FileAdapterInterface):
             self.logger.error(f"Error reading from database: {e}")
             return None
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[BroadcastAdapter::write] Writing to DB step '{step_id}': data type '{type(data)}'")
         self.logger.info(f"[BroadcastAdapter::write] data of type {type(data)} : '{data}'")
 

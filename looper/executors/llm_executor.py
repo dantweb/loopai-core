@@ -20,7 +20,7 @@ class LlmExecutor(ExecutorInterface):
         self.logger.info("[LlmExecutor::prepare_prompt] Preparing prompt for LLM...")
 
         if not input_data:
-            raise ValueError("Input data is empty.")
+            raise ValueError("[LlmExecutorInput] data is empty.")
 
         # if isinstance(input_data[0], pd.DataFrame):
         #     request_content = input_data[0].to_dict(orient='records')
@@ -33,7 +33,7 @@ class LlmExecutor(ExecutorInterface):
 
         return prompt_template
 
-    async def run(self, model, system_content, user_content, temperature=0.7, **kwargs) -> BroadcastData:
+    def run(self, model, system_content, user_content, temperature=0.7, **kwargs) -> BroadcastData:
         logger.info(f"[LlmExecutor::run] Calling LLM with model: {model}")
 
         valid_response = False
@@ -41,7 +41,7 @@ class LlmExecutor(ExecutorInterface):
         response = None
 
         while (not valid_response) and count < 10:
-            response = await self.send_prompt_to_llm(model, system_content, user_content, temperature)
+            response = self.send_prompt_to_llm(model, system_content, user_content, temperature)
             valid_response = is_valid_json(response)
             if valid_response:
                 count = 99
@@ -78,7 +78,7 @@ class LlmExecutor(ExecutorInterface):
 
         return broadcast_data
 
-    async def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.7):
+    def send_prompt_to_llm(self, model, system_content, user_content: BroadcastData, temperature=0.7):
 
         if temperature is None:
             temperature = 0.7
@@ -94,7 +94,7 @@ class LlmExecutor(ExecutorInterface):
 
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
 
-        return await self.featherless.get_response(model, system_content, user_content, temperature)
+        return self.featherless.get_response(model, system_content, user_content, temperature)
 
 
     @staticmethod

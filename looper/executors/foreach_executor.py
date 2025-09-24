@@ -38,7 +38,7 @@ class ForeachExecutor(ExecutorInterface):
     def set_foreach_data(self, foreach_data) -> str:
         self.foreach_data = foreach_data
 
-    async def run(self, model, system_content, user_content, fine_tuning):
+    def run(self, model, system_content, user_content, fine_tuning):
         logger.info(f"[ForeachExecutor::run] ..going to run foreach-executor")
 
         looper = Looper(self.loop_data, self.loop_data['session']['code_source'], self.parent_step)
@@ -59,30 +59,30 @@ class ForeachExecutor(ExecutorInterface):
                 self.logger.log(f"[ForeachExecutor::run] data converted to list of dicts, length: {len(rows_as_dicts)}")
 
                 for row in rows_as_dicts:
-                    await self.process_row_and_execute_steps(self.name, row, steps)
+                    self.process_row_and_execute_steps(self.name, row, steps)
             # Handle if foreach_data is a plain list
             elif isinstance(self.foreach_data, list):
                 self.logger.log(f"[ForeachExecutor::run] data is a list with length: {len(self.foreach_data)}")
 
                 for item in self.foreach_data:
-                    await self.process_row_and_execute_steps(self.parent_step, item, steps)
+                    self.process_row_and_execute_steps(self.parent_step, item, steps)
             else:
                 raise ValueError("Foreach data must be either a list of pandas DataFrames or a list of other elements.")
 
-            await self.send_foreach_data_to_output_adapters(self.parent_step, BroadcastData(self.result))
+            self.send_foreach_data_to_output_adapters(self.parent_step, BroadcastData(self.result))
 
 
 
     def set_output_adapters(self, adapters: List[AdapterInterface]):
         self.output_adapters: list[AdapterInterface] = adapters
 
-    async def send_step_data_to_output_adapters(self, step_id: str, data):
+    def send_step_data_to_output_adapters(self, step_id: str, data):
         for adapter in self.output_adapters:
-            await adapter.write(step_id, data)
+            adapter.write(step_id, data)
 
-    async def send_foreach_data_to_output_adapters(self, step_id: str, data):
+    def send_foreach_data_to_output_adapters(self, step_id: str, data):
         for adapter in self.output_adapters:
-            await adapter.write(step_id, data)
+            adapter.write(step_id, data)
 
     def set_loop(self, loop_data):
         self.loop_data = loop_data
@@ -91,17 +91,17 @@ class ForeachExecutor(ExecutorInterface):
         broadcast_adapter = BroadcastAdapter()
         broadcast_adapter.delete_entries_by_session_id()
 
-    async def process_row_and_execute_steps(self, step_name, row, steps):
+    def process_row_and_execute_steps(self, step_name, row, steps):
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Step_name: '{step_name}'")
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Processing row data: {row}")
         logger.info(f"[ForeachExecutor::process_row_and_execute_steps] Datatype is: {type(row)}")
 
         broadcast_data = BroadcastData(row)
-        await self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
+        self.send_step_data_to_output_adapters(self.parent_step, broadcast_data)
 
         for step in steps:
             self.session_manager.set_global_step_name(str(uuid.uuid4()))
-            step_result = await step.execute(step.name, self.parent_step)
+            step_result = step.execute(step.name, self.parent_step)
             logger.info(f"[ForeachExecutor::process_row_and_execute_steps] execute result: {str(step_result['result'])}")
             self.result.append(step_result['result'])
 

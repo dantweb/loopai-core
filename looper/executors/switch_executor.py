@@ -2,14 +2,10 @@
 
 import json
 
-import replicate
-import requests
-
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.looper.executors.gpt_executor import fix_json
 from core.models.broadcast_data import BroadcastData
 from core.models.step_model import load_executor_class
-from core.services.logger_service import LoggerService
 
 
 class SwitchExecutor(ExecutorInterface):
@@ -21,7 +17,7 @@ class SwitchExecutor(ExecutorInterface):
         self.logger.info("[LlmExecutor::prepare_prompt] Preparing prompt for LLM...")
 
         if not input_data:
-            raise ValueError("Input data is empty.")
+            raise ValueError(f"[LlmExecutor::prepare_prompt] Input data is empty. Parent step {self.parent_step}")
 
         # if isinstance(input_data[0], pd.DataFrame):
         #     request_content = input_data[0].to_dict(orient='records')
@@ -35,7 +31,7 @@ class SwitchExecutor(ExecutorInterface):
         return prompt_template
 
 
-    async def run(self, model, system_content, user_content, max_tokens):
+    def run(self, model, system_content, user_content, max_tokens):
 
         broadcast_data_json = fix_json(json.loads(str(user_content.flatten_data())))
         self.logger.info(f"[SwtichExecutor::run] SwtichExecutor input type: {type(broadcast_data_json)}")
@@ -53,7 +49,7 @@ class SwitchExecutor(ExecutorInterface):
         executor_object = load_executor_class(switch)
         self.logger.info(f"[SwtichExecutor::run] SwtichExecutor class {executor_object} is loaded")
 
-        result = await executor_object.run(
+        result = executor_object.run(
             model,
             system_content,
             user_content,

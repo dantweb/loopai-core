@@ -24,7 +24,7 @@ class RequestAdapter(FileAdapterInterface):
         super().__init__()
 
 
-    async def read(self, step_id: str, *args: str) -> BroadcastData:
+    def read(self, step_id: str, *args: str) -> BroadcastData:
         """
         Reads the HTTP request data from session and packs it into a BroadcastData object.
         Handles POST, GET, PUT and other HTTP methods.
@@ -102,7 +102,7 @@ class RequestAdapter(FileAdapterInterface):
         logger.error("No request context available")
         return BroadcastData({"response": "No request context available"})
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
 
         try:
             self.add_broadcast_data(data)

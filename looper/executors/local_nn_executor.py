@@ -12,7 +12,7 @@ class LocalNNExecutor(ExecutorInterface):
     def prepare_prompt(self, input_data, prompt_template: str) -> str:
         return prompt_template.replace("{{input_data}}", str(input_data))
 
-    async def run(self, model: str, message: str, max_tokens: int) -> str:
+    def run(self, model: str, message: str, max_tokens: int) -> str:
         prompt = self.prepare_prompt(message, "{{input_data}}")
         response = self.local_llm_service.predict(prompt)
         return response

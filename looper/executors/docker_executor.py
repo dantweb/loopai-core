@@ -1,11 +1,12 @@
+##filepath: ./loopai_src/core/looper/executors/docker_executor.py
+
 import os
 import subprocess
 from dotenv import load_dotenv
 import tempfile
 import shutil
-from core.adapters.file_adapter_interface import get_full_path, get_file_system_by_user_and_loop
 from core.looper.executors.executor_interface import ExecutorInterface
-from core.services.session_manager import session_manager
+from core.services.loop_path_resolver import loop_path_resolver
 
 
 load_dotenv()
@@ -25,7 +26,7 @@ class DockerExecutor(ExecutorInterface):
 
     def run_bash_in_container(self, script_name, user_id: str, loop_id: str):
         # 1. Get the filesystem path for the specific user and loop
-        filesystem_path = get_file_system_by_user_and_loop(user_id, loop_id)
+        filesystem_path = loop_path_resolver.get_file_system_by_user_and_loop(user_id, loop_id)
         container_name = f'loop_{loop_id}'
 
         try:
@@ -123,7 +124,7 @@ class DockerExecutor(ExecutorInterface):
             subprocess.run(['docker', 'rm', '-f', '-v', container_name], capture_output=True)
 
 
-    async def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
+    def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         # Get bash script path
         bash_script_path = config.get('bash_script_path')
         self.logger.log(f"Bash script path: {bash_script_path}")
@@ -131,7 +132,7 @@ class DockerExecutor(ExecutorInterface):
         if not bash_script_path:
             raise ValueError("Bash script path not provided in the config.")
 
-        command = get_full_path(self.session_manager, bash_script_path)
+        command = loop_path_resolver.get_full_path(self.session_manager, bash_script_path)
         self.logger.log(f"Full command path: {command}")
 
         if not os.path.exists(command):

@@ -1,13 +1,12 @@
 import json
 import os
-import app_global_config as config
 from typing import List, Any, Dict, Union, Set, Optional
 from PIL.Image import Image
 
 from core.adapters.adapter_interface import AdapterInterface
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
-from core.services.session_manager import SessionManager
+from core.services.loop_path_resolver import loop_path_resolver
 
 
 class FileAdapterInterface(AdapterInterface):
@@ -23,10 +22,8 @@ class FileAdapterInterface(AdapterInterface):
     def set_replace(self):
         self.file_mode = 'w'
 
-
     def get_full_path(self, file_path_template: str) -> str:
-        return get_full_path(self.session_manager, file_path_template)
-
+        return loop_path_resolver.get_full_path(self.session_manager, file_path_template)
 
     def get_new_filename(self, filename: str) -> str:
         base, extension = os.path.splitext(filename)
@@ -166,71 +163,6 @@ class FileAdapterInterface(AdapterInterface):
                 seen.add(item_tuple)
         return output_list
 
-
-def get_file_system_by_user_and_loop(user_id: str, loop_id: str):
-
-    if config.WEB_OR_CLI == 'cli':
-        path_root = config.LOOPAI_SINGLE_FILESYSTEM_PATH
-    else:
-        path_root = config.LOOPAI_WEB_USERS_FILESYSTEM_PATH
-
-    path = os.path.join(
-        path_root,
-        str(user_id),
-        'loops',
-        str(loop_id),
-        'filesystem'
-    )
-    return path
-
-
-def get_loop_config_base_path_by_user_and_loop(user_id: str, loop_id: str):
-
-    if config.WEB_OR_CLI == 'cli':
-        path_root = config.LOOPAI_SINGLE_FILESYSTEM_PATH
-    else:
-        path_root = config.LOOPAI_WEB_USERS_FILESYSTEM_PATH
-
-    path = os.path.join(
-        path_root,
-        str(user_id),
-        'loops',
-        str(loop_id),
-        'config'
-    )
-
-    return path
-
-
-def get_full_path(session_manager: SessionManager, file_path_template: str) -> str:
-    # Use the appropriate session manager
-
-    loop_index = session_manager.get_loop_index()
-    step = session_manager.get_global_step_name()
-    path = f"loop.{step}.{loop_index}"
-    user_id = session_manager.get_user_id()
-    loop_id = session_manager.get_loop_id()
-
-    # Add debug logging
-    logger = LoggerService()
-    logger.info(f"[get_full_path] Using session manager: {type(session_manager).__name__}")
-    logger.info(f"[get_full_path] User ID: {user_id}, Loop ID: {loop_id}")
-
-    session_id = session_manager.get_session_id()
-    session_id_short = session_id[:8] if session_id else 'no-session'
-
-    last_part_of_the_path: str = file_path_template.replace(
-        '{{SESSION_ID}}', session_id_short
-    ).replace(
-        '{{FOREACH_STEP_UUID}}', str(loop_index)
-    ).replace('{{PATH}}', path)
-
-    base_path = get_file_system_by_user_and_loop(user_id, loop_id)
-
-    full_path = f'{base_path}/{last_part_of_the_path}'
-    logger.info(f"[get_full_path] Resolved path: {full_path}")
-
-    return full_path
 
 def clean_env_content(env_content: str) -> str:
     # Define the regex pattern to match comments (lines starting with `#` or those following a value)

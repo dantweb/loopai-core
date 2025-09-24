@@ -9,6 +9,7 @@ import json
 
 from aiohttp import ClientResponse
 from dotenv import load_dotenv
+from requests import Response
 from requests.auth import HTTPBasicAuth
 from core.models.broadcast_data import BroadcastData
 from core.services.service_interface import ServiceInterface
@@ -35,32 +36,21 @@ class LoopAIDirectWPAPIService(ServiceInterface):
         self.wp_application_password = wp_password
         self.auth = HTTPBasicAuth(self.wp_username, self.wp_application_password)
 
-    async def create_post(self, data: BroadcastData) -> Optional[ClientResponse]:
+    def create_post(self, data: BroadcastData) -> Response:
         url = f"{self.wp_site}/wp-json/loopai-adapter/v1/create-post"
         headers = {'Content-Type': 'application/json'}
         if DEBUG_LEVEL == "DEBUG":
             self.logger.info(f"[LoopAIDirectWPAPIService::create_post] typeof='{type(data)}' : {str(data)}")
 
-        try:
-            async with aiohttp.ClientSession(
-                    auth=aiohttp.BasicAuth(self.wp_username, self.wp_application_password)) as session:
-                async with session.post(
-                        url,
-                        headers=headers,
-                        json=data.__json__(),
-                        timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)
-                ) as response:
-                    if response.status != 200:
-                        text = await response.text()
-                        self.logger.error(
-                            f"[LoopAIDirectWPAPIService::create_post] HTTP error {response.status}: {text[:200]}...")
-                        raise Exception(f"HTTP error: {response.status} - {text[:200]}...")
-                    text = await response.text()
-                    self.logger.info(f"[LoopAIDirectWPAPIService::create_post] Success: {text[:100]}...")
-                    return response
-        except Exception as e:
-            self.logger.error(f"Failed to create post: {str(e)}")
-            return None
+        # Send the data_to_send as JSON
+        response = requests.post(url, auth=self.auth, headers=headers, json=data.__json__())
+        if response.ok:
+            self.logger.info(f"Post created successfully: {response}")
+        else:
+            self.logger.error(f"Failed to create post: {response.status_code} - {response.text}")
+
+        return response
+
 
     def get_all_posts(self) -> list:
         url = f"{self.wp_site}/wp-json/wp/v2/posts"

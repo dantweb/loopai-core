@@ -46,7 +46,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         return img
 
     @patch.object(ReplicateExecutor, "generate_image_from_replicate")
-    async def test_replicate_produces_image_and_broadcast_adapter_handles_payload(self, mock_generate):
+    def test_replicate_produces_image_and_broadcast_adapter_handles_payload(self, mock_generate):
         """
         Integration test:
          - mock ReplicateExecutor.generate_image_from_replicate to return a PIL Image
@@ -60,7 +60,7 @@ class TestBroadcastReplicate(unittest.TestCase):
         mock_generate.return_value = test_img
 
         # Act: call the (mocked) executor to "generate" an image
-        generated_image = await self.executor.generate_image_from_replicate(
+        generated_image = self.executor.generate_image_from_replicate(
             model=self.replicate_model,
             user_content="test prompt",
             width=256,
@@ -113,7 +113,7 @@ class TestBroadcastReplicate(unittest.TestCase):
 
 
     @patch.object(ReplicateExecutor, "generate_image_from_replicate")
-    async def test_replicate_run_saved_and_read_via_broadcast_adapter(self, mock_generate):
+    def test_replicate_run_saved_and_read_via_broadcast_adapter(self, mock_generate):
         """
         End-to-end test using the real database connection (no fake cursor).
          - mock ReplicateExecutor.generate_image_from_replicate to return a PIL Image
@@ -142,7 +142,7 @@ class TestBroadcastReplicate(unittest.TestCase):
 
         try:
             # Act: call executor.run() which under the hood will call generate_image_from_replicate (mocked)
-            generated = await self.executor.run(self.replicate_model, {}, "test prompt")
+            generated = self.executor.run(self.replicate_model, {}, "test prompt")
 
             self.assertIsInstance(generated, BroadcastData)
             image_base64 = generated.get("image_base64")
@@ -159,12 +159,12 @@ class TestBroadcastReplicate(unittest.TestCase):
             bd = BroadcastData({"model_id": self.replicate_model, "step_id": "replicate_step", "result": generated})
 
             # Write to DB via BroadcastAdapter (real DB)
-            write_success = await self.adapter.write("replicate_step", bd)
+            write_success = self.adapter.write("replicate_step", bd)
             self.assertTrue(write_success, "BroadcastAdapter.write should return True")
 
             # Now read it back using BroadcastAdapter.read() (real DB)
             self.adapter.field = "result"
-            read_result = await self.adapter.read(self_step_id="replicate_step", ref_step_id="replicate_step",
+            read_result = self.adapter.read(self_step_id="replicate_step", ref_step_id="replicate_step",
                                             ignore_read_status=True)
 
             # The adapter.prepare_result may return BroadcastData or dict — normalize

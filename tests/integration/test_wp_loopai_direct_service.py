@@ -13,7 +13,7 @@ class MockResponse:
         self.status = status
         self._text = text
 
-    async def text(self):
+    def text(self):
         return self._text
 
 class TestLoopAIDirectWPAPIServiceIntegration(unittest.IsolatedAsyncioTestCase):
@@ -42,17 +42,17 @@ class TestLoopAIDirectWPAPIServiceIntegration(unittest.IsolatedAsyncioTestCase):
         })
 
     @patch('aiohttp.ClientSession.post')
-    async def test_create_post_success(self, mock_post):
+    def test_create_post_success(self, mock_post):
         mock_response = MockResponse(status=200, text='{"status": "success", "post_id": 123}')
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value = mock_response
         mock_post.return_value = mock_context
 
-        result = await self.service.create_post(self.sample_data)
+        result = self.service.create_post(self.sample_data)
 
         self.assertIsNotNone(result)
         self.assertEqual(result.status, 200)
-        text = await result.text()
+        text = result.text()
         self.assertIn("success", text)
 
         mock_post.assert_called_once()
@@ -67,14 +67,14 @@ class TestLoopAIDirectWPAPIServiceIntegration(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(called_kwargs['timeout'], aiohttp.ClientTimeout)
 
     @patch('aiohttp.ClientSession.post')
-    async def test_create_post_failure(self, mock_post):
+    def test_create_post_failure(self, mock_post):
         mock_response = MockResponse(status=400, text='{"error": "Bad Request"}')
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value = mock_response
         mock_post.return_value = mock_context
 
         with self.assertRaises(Exception) as context:
-            await self.service.create_post(self.sample_data)
+            self.service.create_post(self.sample_data)
             self.assertIn("HTTP error: 400", str(context.exception))
 
     @patch('requests.get')

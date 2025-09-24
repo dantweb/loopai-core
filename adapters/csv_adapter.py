@@ -22,7 +22,7 @@ class CsvAdapter(FileAdapterInterface):
         self.mapping: dict = mapping
 
     # Public Methods
-    async def read(self, step_id: str, *args: str) -> BroadcastData:
+    def read(self, step_id: str, *args: str) -> BroadcastData:
         path: str = self.get_full_path(self.file_path)
         self.logger.info('[CsvAdapter::read] Reading CSV file' + path)
         df: pd.DataFrame = pd.read_csv(path, sep=self.separator)
@@ -31,7 +31,7 @@ class CsvAdapter(FileAdapterInterface):
         self.logger.info(f'[CsvAdapter::read] Converted DataFrame to list of dicts: {data_list}')
         return BroadcastData({'list':data_list})
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         self.logger.info(f"[CsvAdapter::write] data type of : {type(data)}")
         self.logger.info(f"[CsvAdapter::write] data : {str(data)}")
 

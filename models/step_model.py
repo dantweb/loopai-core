@@ -9,7 +9,7 @@ from PIL.Image import Image
 from dotenv import dotenv_values
 
 from core.adapters.broadcast_adapter import BroadcastAdapter
-from core.adapters.file_adapter_interface import FileAdapterInterface, get_loop_config_base_path_by_user_and_loop
+from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.looper.executors.docker_executor import DockerExecutor
 from core.looper.executors.bash_executor import BashExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
@@ -20,6 +20,7 @@ from core.models.output_config import OutputConfig
 from core.services.logger_service import LoggerService
 from core.services.session_dependent import SessionDependent
 from web.admin_models import db
+from core.services.loop_path_resolver import loop_path_resolver
 
 logger = LoggerService()
 
@@ -187,7 +188,7 @@ class StepModel(SessionDependent):
         return load_executor_class(executor_type)
 
 
-    async def execute(self, step_name: str, loop_index: str):
+    def execute(self, step_name: str, loop_index: str):
         self.compile_environment_for_step(step_name)
         current_session = self.get_current_session_manager()
         if current_session:
@@ -234,9 +235,9 @@ class StepModel(SessionDependent):
             logger.info(f"[StepModel::execute] args for adapter a1={first_parameter} a2={second_parameter}")
 
             if isinstance(self.executor, WordpressExecutor) or isinstance(input_adapter, BroadcastAdapter):
-                fresh_data_from_input = await input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
+                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter, ignore_read_status=True)
             else:
-                fresh_data_from_input = await input_adapter.read(first_parameter, second_parameter)
+                fresh_data_from_input = input_adapter.read(first_parameter, second_parameter)
 
             logger.info(f"[StepModel::execute] Read data from adapter {input_adapter.__class__}")
             logger.info(f"[StepModel::execute] Data we have read: {fresh_data_from_input}")
@@ -264,7 +265,7 @@ class StepModel(SessionDependent):
             raise RuntimeError(msg)
 
         if self.type == 'foreach':
-            await self.run_foreach(step_input_data)
+            self.run_foreach(step_input_data)
             return 'foreach_end'
 
         prompt_template = self.get_prompt_templates().get(self.action.prompt)
@@ -297,9 +298,9 @@ class StepModel(SessionDependent):
 
         if isinstance(self.executor, DockerExecutor) or isinstance(self.executor, BashExecutor):
             config = self.action.config if hasattr(self.action, 'config') else {}
-            result = await self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
+            result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
-            result = await self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning)
+            result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning)
 
         # Write output
         step_id = self.name  # or another appropriate identifier
@@ -308,12 +309,12 @@ class StepModel(SessionDependent):
         self.packed_blob['step_id'] = step_id
         self.packed_blob['result'] = result
 
-        await self.write(step_id)
+        self.write(step_id)
         self.cleanup(step_id)
 
         return self.packed_blob
 
-    async def write(self, step_id: str):
+    def write(self, step_id: str):
 
         self.logger_service.log(f"Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
 
@@ -327,7 +328,7 @@ class StepModel(SessionDependent):
             self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__} BroadcastData {str(broadcast_data)}")
 
             try:
-                a = await output_adapter.write(step_id, broadcast_data)
+                a = output_adapter.write(step_id, broadcast_data)
                 if a is True:
                     self.logger_service.log(f"Step \"{self.name}\" is saved by the adapter {output_adapter.__class__} ")
                 else:
@@ -336,14 +337,14 @@ class StepModel(SessionDependent):
                 self.logger_service.error(e)
                 raise
 
-    async def run_foreach(self, input_data):
+    def run_foreach(self, input_data):
         msg = f"[StepModel::run_foreach] for the step '{self.name}'"
         self.logger_service.info(msg)
         self.executor.set_loop(self.loop_data)
         self.executor.set_parent_step(self.name)
         self.executor.set_foreach_data(input_data)
         self.executor.set_output_adapters(self.output_adapters)
-        await self.executor.run(self.action.model, '', '', '')
+        self.executor.run(self.action.model, '', '', '')
 
     def cleanup(self, step_id):
         pass
@@ -365,7 +366,7 @@ class StepModel(SessionDependent):
         logger.info(f"[StepModel::load_code_module] User ID: {user_id}, Loop ID: {loop_id}")
 
         module_absolute_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
+            loop_path_resolver.get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
             module_path
         )
 
@@ -405,7 +406,7 @@ class StepModel(SessionDependent):
             logger.warning(f"[StepModel::get_loop_env] Missing user_id ({user_id}) or loop_id ({loop_id})")
             return {}
 
-        loop_env_path = os.path.join(get_loop_config_base_path_by_user_and_loop(user_id, loop_id), ".env")
+        loop_env_path = os.path.join(loop_path_resolver.get_loop_config_base_path_by_user_and_loop(user_id, loop_id), ".env")
         if os.path.exists(loop_env_path):
             return dotenv_values(loop_env_path)
         return {}
@@ -419,7 +420,7 @@ class StepModel(SessionDependent):
             return {}
 
         step_env_path = os.path.join(
-            get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
+            loop_path_resolver.get_loop_config_base_path_by_user_and_loop(user_id, loop_id),
             f"{step_name}.env")
         # step .env are in filesystem root of the current loop
         step_env_path = step_env_path.replace('/config/', '/filesystem/')

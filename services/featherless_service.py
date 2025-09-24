@@ -1,9 +1,9 @@
 ## ./loopai_src/core/services/featherless_service.py
 import json
 import re
-import asyncio
+from time import sleep
 
-from openai import OpenAI, AsyncOpenAI
+from openai import OpenAI
 from dotenv import load_dotenv
 
 from core.models.broadcast_data import BroadcastData
@@ -21,9 +21,8 @@ class FeatherlessService(ServiceInterface):
         super().__init__(model)
         self.response = None
         self.logger = LoggerService()
-        # We'll create the async client when needed instead of here
 
-    async def get_response(
+    def get_response(
         self,
         model: str,
         system_content: dict,
@@ -44,7 +43,7 @@ class FeatherlessService(ServiceInterface):
         if not featherless_url or not featherless_key:
             raise ValueError(f"Missing Featherless API configuration: URL={featherless_url}, KEY={'set' if featherless_key else 'missing'}")
 
-        async_client = AsyncOpenAI(
+        open_ai_client = OpenAI(
             base_url=featherless_url,
             api_key=featherless_key,
             timeout=120
@@ -54,8 +53,8 @@ class FeatherlessService(ServiceInterface):
         for attempt in range(1, self.RETRY_ATTEMPTS + 1):
             self.logger.info(f"[FeatherlessService::get_response] Attempt {attempt} of {self.RETRY_ATTEMPTS}")
             try:
-                self.response = await self.fetch_response_with_retries(
-                    async_client,
+                self.response = self.fetch_response_with_retries(
+                    open_ai_client,
                     model,
                     system_content,
                     user_content,
@@ -96,11 +95,11 @@ class FeatherlessService(ServiceInterface):
                 last_exception = e
 
                 if attempt < self.RETRY_ATTEMPTS:
-                    await asyncio.sleep(self.RETRY_DELAY)
+                    sleep(self.RETRY_DELAY)
                 else:
                     raise last_exception
 
-    async def fetch_response_with_retries(self, client, model, system_content, user_content, temperature, max_retries, pause_time):
+    def fetch_response_with_retries(self, client, model, system_content, user_content, temperature, max_retries, pause_time):
         """
         Repeats the API call X times with a pause if the response is empty.
 
@@ -120,7 +119,7 @@ class FeatherlessService(ServiceInterface):
         for attempt in range(max_retries):
             try:
                 if "o3-mini" in model:
-                    response = await client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
@@ -130,7 +129,7 @@ class FeatherlessService(ServiceInterface):
                     )
                 else:
                     # Make the request
-                    response = await client.chat.completions.create(
+                    response = client.chat.completions.create(
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
@@ -148,12 +147,11 @@ class FeatherlessService(ServiceInterface):
 
                 # If empty, print a message and retry
                 self.logger.info(f"Attempt {attempt + 1}/{max_retries}: Empty response, retrying in {pause_time} seconds...")
-                await asyncio.sleep(pause_time)
+                sleep(pause_time)
 
             except Exception as e:
                 # Handle exceptions (e.g., network issues) and retry
                 self.logger.error(f"Attempt {attempt + 1}/{max_retries}: Error occurred: {e}. Retrying in {pause_time} seconds...")
-                await asyncio.sleep(pause_time)
 
         # If all retries fail, return None
         self.logger.info(f"All {max_retries} attempts failed. No valid response received.")

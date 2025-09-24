@@ -6,8 +6,8 @@ import xml.etree.ElementTree as ET
 from typing import Optional, Dict
 
 import aiohttp
+import requests
 from bs4 import BeautifulSoup
-from gevent import sleep
 
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
@@ -24,9 +24,9 @@ class HttpAdapter(FileAdapterInterface):
         self.url = url
         super().__init__()
 
-    async def read(self, step_id: str, *args: str) -> BroadcastData:
+    def read(self, step_id: str, *args: str) -> BroadcastData:
         try:
-            content = await self._get_url_contents(self.url)
+            content = self._get_url_contents(self.url)
             content_type = self.detect_content_type(content)
             if content_type == 'rss':
                 result = self.process_rss_content(content)
@@ -41,43 +41,41 @@ class HttpAdapter(FileAdapterInterface):
             logger.error(f"[HttpAdapter::read] Failed: {str(e)}")
             raise
 
-    async def write(self, step_id: str, data: BroadcastData) -> bool:
+    def write(self, step_id: str, data: BroadcastData) -> bool:
         headers = {'Content-Type': 'application/json'}
         DEBUG_LEVEL = os.getenv("DEBUG_LEVEL", "INFO")
         if DEBUG_LEVEL == "DEBUG":
             logger.info(f"[HttpAdapter::write] typeof='{type(data)}' : {str(data)}")
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.url, headers=headers, json=data.to_json(), timeout=aiohttp.ClientTimeout(total=self.DEFAULT_TIMEOUT)) as response:
-                    sleep(0)
-                    if response.status == 200:
-                        logger.info(f"[HttpAdapter::write] Post created successfully: {response}")
-                        return True
-                    text = await response.text()
-                    logger.error(f"[HttpAdapter::write] Failed to create post: {response.status} - {text}")
-                    return False
+            response = requests.post(self.url, headers=headers, json=data.to_json())
+            request_status_code = response.status_code
+            if request_status_code == 200:
+                logger.info(f"[HttpAdapter::write] Successfully posted to {self.url}")
+                return True
+            else:
+                logger.error(f"[HttpAdapter::write] Failed to post to {self.url}. Status code: {request_status_code}")
+
         except Exception as e:
             logger.error(f"[HttpAdapter::write] Failed: {str(e)}")
             return False
 
-    async def _get_url_contents(self, url, timeout=None):
+    def _get_url_contents(self, url, timeout=None):
         if timeout is None:
             timeout = self.DEFAULT_TIMEOUT
         self.logger.info(f"[HttpAdapter::_get_url_contents] Attempting to fetch: {url} (timeout={timeout})")
         for attempt in range(self.RETRY_ATTEMPTS):
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=timeout)) as response:
-                        if response.status != 200:
-                            text = await response.text()
-                            self.logger.error(f"[HttpAdapter::_get_url_contents] HTTP error {response.status}: {text[:200]}...")
-                            raise Exception(f"HTTP error: {response.status} - {text[:200]}...")
-                        text = await response.text()
-                        self.logger.info(f"[HttpAdapter::_get_url_contents] Success: {text[:100]}...")
-                        return text
+
+                response = requests.get(url)
+                if response.status_code == 200:
+                    return response.text
+                else:
+                    self.logger.error(f"[HttpAdapter::_get_url_contents] Attempt {attempt + 1} failed: {response.status_code}")
+
             except Exception as e:
                 self.logger.error(f"[HttpAdapter::_get_url_contents] Attempt {attempt + 1} failed: {str(e)}")
                 if attempt < self.RETRY_ATTEMPTS - 1:
+                    from time import sleep
                     sleep(self.RETRY_DELAY)
                 else:
                     raise Exception(f"Failed to fetch {url} after {self.RETRY_ATTEMPTS} attempts: {str(e)}")

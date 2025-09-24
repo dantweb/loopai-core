@@ -19,7 +19,7 @@ class TechnewsExecutor(ExecutorInterface):
         ## Extract the first element from the list
         return prompt_template
 
-    async def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
+    def run(self, model, system_content, user_content, max_tokens) -> BroadcastData:
         newsapi_response = {
             'response': self.technews_service.get_fresh_headlines(
                 system_content, user_content, '', max_tokens

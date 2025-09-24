@@ -7,7 +7,7 @@ from core.adapters.adapter_interface import AdapterInterface
 class DbAdapterInterface(AdapterInterface):
 
     @abstractmethod
-    async def read(self, session_id: str, step_id: str):
+    def read(self, session_id: str, step_id: str):
         """
         Reads data from the database based on session_id and step_id.
 
@@ -18,7 +18,7 @@ class DbAdapterInterface(AdapterInterface):
         pass
 
     @abstractmethod
-    async def write(self, data: Any) -> bool:
+    def write(self, data: Any) -> bool:
         """
         Writes data to the database.
 

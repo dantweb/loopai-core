@@ -1,4 +1,4 @@
-# src/looper/executors/gpt_executor_interface.py
+# ./loopai_src/core/looper/executors/gpt_executor_interface.py
 from abc import ABC, abstractmethod
 from typing import Any
 from core.models.broadcast_data import BroadcastData
@@ -18,7 +18,7 @@ class ExecutorInterface(SessionDependent):
         pass
 
     @abstractmethod
-    async def run(self,
+    def run(self,
             model,
             system_content,
             user_content,
