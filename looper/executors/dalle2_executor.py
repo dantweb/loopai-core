@@ -5,6 +5,7 @@ import requests
 from openai import OpenAI
 from PIL import Image
 from dotenv import load_dotenv
+from sqlalchemy.util import md5_hex
 
 from core.looper.executors.executor_interface import ExecutorInterface
 from core.models.broadcast_data import BroadcastData
@@ -50,12 +51,12 @@ class Dalle2Executor(ExecutorInterface):
     def run(self, model, system_content, user_content, fine_tuning = {}, **kwargs):
         result = self.generate_image_from_dalle(model, user_content)
 
-        if result == 'Suggestion failed.':
-            raise Exception("Suggestion failed.")
+        logger.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
+        bd = BroadcastData()
+        base64_encoded = bd.convert_to_base64(result)
+        filename = md5_hex(base64_encoded) + ".jpg"
 
-        self.logger.info(f"[DalleExecutor::run] DalleExecutor response type: {type(result)}")
-
-        return result
+        return BroadcastData({"image_base64": base64_encoded, "image_file": filename})
 
     def generate_image_from_dalle(self, model, user_content, width: int = 1024, height: int = 1024):
 
@@ -74,15 +75,12 @@ class Dalle2Executor(ExecutorInterface):
                 quality="standard",
                 n=1,
             )
-            self.logger.info(f"[dalle2_executor] Generated image response: {response}")
+            logger.info(f"[dalle2_executor] Generated image response: {response}")
             image_url = response.data[0].url
-            self.logger.info(f"[dalle2_executor] Generated image URL: {image_url}")
+            logger.info(f"[dalle2_executor] Generated image URL: {image_url}")
             response = requests.get(image_url)
             img = Image.open(BytesIO(response.content))
-
-            bd = BroadcastData()
-            base64_encoded = bd.convert_to_base64(img)
-            return BroadcastData({"image_base64": base64_encoded})
+            return img
         except Exception as e:
-            self.logger.error(f"Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
+            self.logger.error(f"[Dalle2Executor::generate_image_from_dalle] Error during image generation: {str(e)} \n\n prompt was type {user_content} : {user_content}")
             return None

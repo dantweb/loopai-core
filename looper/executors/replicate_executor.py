@@ -55,8 +55,7 @@ class ReplicateExecutor(ExecutorInterface):
         otherwise returns None. Handles multiple possible response formats from
         replicate.Client.run (list of urls, list of FileOutput objects, dicts, etc).
         """
-        REPLICATE_API_TOKEN = session_manager.get_env('REPLICATE_API_TOKEN')
-
+        REPLICATE_API_TOKEN = self.session_manager.get_env('REPLICATE_API_TOKEN')
         client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
         try:
@@ -65,7 +64,7 @@ class ReplicateExecutor(ExecutorInterface):
             self.logger_service.info(f"[ReplicateExecutor] User content type: {type(user_content)}")
 
             # Ensure prompt is a plain string. If user_content is a BroadcastData or dict, serialize safely and truncate.
-            prompt_text = user_content.to_json() if isinstance(user_content, BroadcastData) else str(user_content)
+            prompt_text = str(user_content.to_json()) if isinstance(user_content, BroadcastData) else str(user_content)
 
             self.logger_service.info(f"[ReplicateExecutor] Final prompt (truncated): {str(prompt_text)[:500]}...")
             self.logger_service.info(f"[ReplicateExecutor] Width: {width}, Height: {height}")
@@ -151,12 +150,12 @@ class ReplicateExecutor(ExecutorInterface):
             img.close()  # Close the original image
 
             # Re-open the JPEG data as a new image
-            imp = Image.open(BytesIO(jpeg_data))  # Wrap jpeg_data in BytesIO
-            imp.load()  # Load the new image data
+            img_byte = Image.open(BytesIO(jpeg_data))  # Wrap jpeg_data in BytesIO
+            img_byte.load()  # Load the new image data
 
-            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {imp}")
+            self.logger_service.info(f"[ReplicateExecutor] Image successfully downloaded and opened: {img_byte}")
 
-            return imp  # Return the new image object
+            return img_byte  # Return the new image object
 
 
         except Exception as e:

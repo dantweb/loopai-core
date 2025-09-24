@@ -30,4 +30,4 @@ class WordpressAdapter(FileAdapterInterface):
             self.logger.error("WordPress API call failed - received None response")
             return False
 
-        return True if return_from_wp.status == 200 else False
+        return True
