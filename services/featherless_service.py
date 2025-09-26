@@ -6,6 +6,7 @@ from time import sleep
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from app_global_config import is_valid_json
 from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
@@ -31,11 +32,8 @@ class FeatherlessService(ServiceInterface):
     ) -> str:
         session = session_manager
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
-        self.logger.info(f"[FeatherlessService::get_response] Type of user_content: {type(user_content)}")
-        self.logger.info(f"[FeatherlessService::get_response] user_content: {str(user_content)}")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
         self.logger.info(f"[FeatherlessService::get_response] url: {session.get_env('FEATHERLESS_API_URL')}")
-
 
         featherless_url = session.get_env('FEATHERLESS_API_URL')
         featherless_key = session.get_env('FEATHERLESS_API_KEY')
@@ -123,7 +121,7 @@ class FeatherlessService(ServiceInterface):
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
-                            {"role": "user", "content": json.dumps(user_content.to_json())}
+                            {"role": "user", "content": user_content.to_json()}
                         ],
                         timeout=300
                     )
@@ -133,7 +131,7 @@ class FeatherlessService(ServiceInterface):
                         model=model,
                         messages=[
                             {"role": "system", "content": json.dumps(system_content)},
-                            {"role": "user", "content": json.dumps(user_content.__json__())}
+                            {"role": "user", "content": user_content.to_json()}
                         ],
                         timeout=600,
                         temperature=temperature,

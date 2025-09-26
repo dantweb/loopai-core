@@ -80,22 +80,32 @@ class BroadcastData(UserDict):
 
         # Try parsing with original quotes
         try:
-            return json.loads(text)
+            parsed = json.loads(text)
+            # Return compact version
+            return json.loads(json.dumps(parsed, separators=(',', ':')))
         except json.JSONDecodeError:
             pass
 
-        # Try normalizing single quotes to double quotes
+        # Your existing normalization code...
         normalized = re.sub(r"(?<!\\)'", '"', text)
-        try:
-            return json.loads(normalized)
-        except json.JSONDecodeError:
-            pass
 
-        # Handle escaped quotes
-        normalized = re.sub(r"\\(['\"])", r'\1', normalized)  # Remove escaping for quotes
+        # Remove whitespace after normalization
+        normalized = re.sub(r'\s+', ' ', normalized)  # Replace multiple whitespace with single space
+        normalized = re.sub(r'\s*([\{\}\[\],:])\s*', r'\1', normalized)  # Remove space around punctuation
+
+        # Recursively unescape until no more changes
+        def unescape_quotes(s):
+            prev = s
+            # Remove one level of escaping from quotes and backslashes
+            s = re.sub(r'\\(["\'\\])', r'\1', s)
+            return s if s == prev else unescape_quotes(s)
+
+        normalized = unescape_quotes(normalized)
+
+        # Additional normalizations
         normalized = normalized.replace("True", "true").replace("False", "false").replace("None", "null")
-        normalized = re.sub(r'(\w+):', r'"\1":', normalized)  # Quote unquoted keys
-        normalized = re.sub(r',\s*}', '}', normalized)  # Remove trailing commas
+        normalized = re.sub(r'(\w+):', r'"\1":', normalized)
+        normalized = re.sub(r',\s*}', '}', normalized)
         normalized = re.sub(r',\s*]', ']', normalized)
         normalized = re.sub(r'\s+', ' ', normalized)
 
@@ -137,7 +147,7 @@ class BroadcastData(UserDict):
 
     def to_json(self) -> str:
         try:
-            return json.dumps(self.to_serializable(), ensure_ascii=False)
+            return json.dumps(self.to_serializable(), separators=(',', ':'), ensure_ascii=False)
         except (TypeError, OverflowError) as e:
             raise ValueError(f"Data contains non-serializable values: {e}")
 
@@ -320,3 +330,4 @@ class BroadcastData(UserDict):
             return base64.b64encode(input_obj.encode('utf-8')).decode('utf-8')
         else:
             raise TypeError(f"Unsupported type for base64 conversion: {type(input_obj)}")
+

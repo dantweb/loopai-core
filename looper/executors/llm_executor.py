@@ -55,19 +55,20 @@ class LlmExecutor(ExecutorInterface):
                     self.logger.info(f"[LlmExecutor::run] Valid JSON response from LLM from __clean_json_string! ")
                 else:
                     self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM ... retrying ...")
-                    user_content['error'] = ("Your response cannot be converted to a valid JSON." 
-                                             "Please try again. Avoid using special or escaped symbols"
-                                             "Keep it ASCII complient.")
-                    self.logger.error(f"[LlmExecutor::run] content of system_content: {str(user_content)}")
+                    user_content["error"] = ("Try to restructure your JSON reply."
+                                            "Your response cannot be converted to a valid JSON. "
+                                            "But every string is enclosed with double quotes. "
+                                            "No whitespace characters. Only pure JSON")
+                    self.logger.error(f"[LlmExecutor::run] content of user: {str(user_content)}")
 
                     count += 1
 
-        if not (valid_response and count >= 5):
+        if not valid_response and count >= 5:
             self.logger.error(f"[LlmExecutor::run] Invalid JSON response from LLM")
             raise ValueError("Invalid JSON response from LLM")
 
         try:
-            broadcast_data = BroadcastData(self.fix_json(response))
+            broadcast_data = BroadcastData(response)
             self.logger.info(f"[LlmExecutor::run] Broadcast data created successfully 1 : {str(broadcast_data)}")
 
         except json.JSONDecodeError as e:
@@ -83,13 +84,11 @@ class LlmExecutor(ExecutorInterface):
         if temperature is None:
             temperature = 0.7
 
-        # Ensure temperature is a float and within valid range
         try:
             temperature = float(temperature)
         except (TypeError, ValueError):
             temperature = 0.7
 
-        # Clamp temperature between 0.0 and 1.0
         temperature = max(0.0, min(1.0, temperature))
 
         logger.info(f"[LlmExecutor::send_prompt_to_llm] Sending request to LLM service...")
