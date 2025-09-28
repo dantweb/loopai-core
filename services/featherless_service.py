@@ -11,6 +11,7 @@ from core.models.broadcast_data import BroadcastData
 from core.services.logger_service import LoggerService
 from core.services.service_interface import ServiceInterface
 from core.services.session_manager import session_manager
+from web.services.json_helper import JsonHelper
 
 load_dotenv()
 
