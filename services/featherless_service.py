@@ -2,6 +2,7 @@
 import json
 import re
 from time import sleep
+from typing import Union, Any, Optional
 
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -30,7 +31,7 @@ class FeatherlessService(ServiceInterface):
         system_content: dict,
         user_content: BroadcastData,
         temperature: float
-    ) -> str:
+    ) -> Union[Optional[str], Any]:
         session = session_manager
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
@@ -124,7 +125,8 @@ class FeatherlessService(ServiceInterface):
                             {"role": "system", "content": json.dumps(system_content)},
                             {"role": "user", "content": user_content.to_json()}
                         ],
-                        timeout=300
+                        timeout=300,
+                        response_format={"type": "json_object"}
                     )
                 else:
                     # Make the request
@@ -138,6 +140,7 @@ class FeatherlessService(ServiceInterface):
                         temperature=temperature,
                         presence_penalty=0.5,  # Encourage new topics
                         frequency_penalty=0.5, # Reduce repetition
+                        response_format={"type": "json_object"}
                     )
 
                 # Check if response is not empty
