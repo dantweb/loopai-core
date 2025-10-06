@@ -89,9 +89,9 @@ class FeatherlessService(ServiceInterface):
             except Exception as e:
                 self.logger.error(
                     f"[FeatherlessService::get_response] Attempt {attempt} failed with error: {str(e)}"
+                    f"[FeatherlessService::get_response] Problematic response: {str(self.response)}"
+                    f"[FeatherlessService::get_response] No response available\n\n"
                 )
-                self.logger.error(f"[FeatherlessService::get_response] Problematic response: {str(self.response)}")
-                self.logger.error("[FeatherlessService::get_response] No response available")
                 last_exception = e
 
                 if attempt < self.RETRY_ATTEMPTS:

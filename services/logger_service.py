@@ -175,6 +175,8 @@ class LoggerService(SessionDependent):
         self.log(str(message), 'debug')
 
     def error(self, message: str):
+        import traceback
+        traceback.print_exc()
         self.log(str(message), 'error')
 
     def get_logs(self):
