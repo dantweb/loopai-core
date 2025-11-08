@@ -61,7 +61,7 @@ class FilesystemAdapter(FileAdapterInterface):
                             file_content = f.read()
 
                         relative_path = os.path.relpath(file_path, self.absolute_path)
-                        file_paths.append({'path': relative_path, 'file_content': file_content})
+                        file_paths.append({'code_dir': self.source,  'path': relative_path, 'file_content': file_content})
                         file_count += 1
                         self.logger.debug(f"[FilesystemAdapter::read] Successfully read file {file_count}: {relative_path} ({len(file_content)} chars)")
 
