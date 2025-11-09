@@ -309,6 +309,14 @@ class StepModel(SessionDependent):
         self.packed_blob['step_id'] = step_id
         self.packed_blob['result'] = result
 
+        self.packed_blob['executor'] = self.action.executor
+
+        if self.action.executor == 'if' and result:
+            self.packed_blob['next'] = self.action.config['condition_func_true']
+
+        if self.action.executor == 'if' and not result:
+            self.packed_blob['next'] = self.action.config['condition_func_false']
+
         self.write(step_id)
         self.cleanup(step_id)
 
