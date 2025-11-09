@@ -13,14 +13,11 @@ class IfExecutor(ExecutorInterface):
         # Not needed for IfExecutor
         pass
 
-    def run(self, model, system_content, user_content, max_tokens):
+    def run(self, model, system_content, user_content, fine_tuning, config, **kwargs):
         try:
-            # Dynamically import the module and function
-            module_path = os.path.join(os.getcwd(), system_content['module_path'])
-            spec = importlib.util.spec_from_file_location("module.name", module_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            func = getattr(module, system_content['function_name'])
-            return func(user_content)
+            func = getattr(self.module, config['condition_func'])
+            arguments_list = config['condition_func_args']
+            self.logger.log(f"[IfExecutor::run] condition_func: {func} {str(arguments_list)}")
+            return func(arguments_list)
         except Exception as e:
             return {"result": str(e), "success": False}

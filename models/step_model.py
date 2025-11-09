@@ -12,6 +12,7 @@ from core.adapters.broadcast_adapter import BroadcastAdapter
 from core.adapters.file_adapter_interface import FileAdapterInterface
 from core.looper.executors.docker_executor import DockerExecutor
 from core.looper.executors.bash_executor import BashExecutor
+from core.looper.executors.if_executor import IfExecutor
 from core.looper.executors.wordpress_executor import WordpressExecutor
 from core.models.action_config import ActionConfig
 from core.models.broadcast_data import BroadcastData
@@ -199,6 +200,7 @@ class StepModel(SessionDependent):
         # Load executor
         executor_class = self.load_executor(self.action.executor)
         self.executor = executor_class(self.action.model)
+        self.executor.set_module(self.code_module)
         logger.info(f"[StepModel::execute] step name '{step_name}'...")
         logger.info(f"[StepModel::execute] executor of this step is '{self.action.executor}'...")
         logger.info(f"[StepModel::execute] input adapters (total={len(self.input_adapters)}) {self.input_adapters}...")
@@ -296,7 +298,9 @@ class StepModel(SessionDependent):
 
         prompt = BroadcastData(prompt)
 
-        if isinstance(self.executor, DockerExecutor) or isinstance(self.executor, BashExecutor):
+        if (isinstance(self.executor, DockerExecutor)
+                or isinstance(self.executor, BashExecutor)
+                    or isinstance(self.executor, IfExecutor)):
             config = self.action.config if hasattr(self.action, 'config') else {}
             result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning, config)
         else:
@@ -312,9 +316,11 @@ class StepModel(SessionDependent):
         self.packed_blob['executor'] = self.action.executor
 
         if self.action.executor == 'if' and result:
+            self.logger_service.log(f"[Step_model::if] Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
             self.packed_blob['next'] = self.action.config['condition_func_true']
 
         if self.action.executor == 'if' and not result:
+            self.logger_service.log(f"[Step_model::if] Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
             self.packed_blob['next'] = self.action.config['condition_func_false']
 
         self.write(step_id)

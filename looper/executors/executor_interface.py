@@ -7,6 +7,8 @@ from core.services.session_dependent import SessionDependent
 
 
 class ExecutorInterface(SessionDependent):
+    module = None
+
     @abstractmethod
     def __init__(self):
         super().__init__()
@@ -29,3 +31,6 @@ class ExecutorInterface(SessionDependent):
     def set_parent_step(self, parent_step):
         self.parent_step = parent_step
         pass
+
+    def set_module(self, module):
+        self.module = module
