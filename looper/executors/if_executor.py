@@ -18,6 +18,6 @@ class IfExecutor(ExecutorInterface):
             func = getattr(self.module, config['condition_func'])
             arguments_list = config['condition_func_args']
             self.logger.log(f"[IfExecutor::run] condition_func: {func} {str(arguments_list)}")
-            return func(arguments_list)
+            return func(arguments_list, self.session_manager)
         except Exception as e:
             return {"result": str(e), "success": False}

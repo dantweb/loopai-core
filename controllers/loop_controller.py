@@ -57,6 +57,10 @@ class LoopController(SessionDependent):
 
             if 'next' in execution_result_packed_blob:
                 next_step_name = execution_result_packed_blob['next']
+
+                if next_step_name == '_exit':
+                    break
+
                 current_index = step_index_map.get(next_step_name)
 
                 if current_index is None:
