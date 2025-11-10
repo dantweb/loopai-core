@@ -451,8 +451,8 @@ class StepModel(SessionDependent):
 
         self.logger_service.info(f"[StepModel::compile_environment_for_step] Project ID: {project_id}, Loop ID: {loop_id}")
 
-        project_env = self.project_env(project_id)
-        loop_env = self.get_loop_env(loop_id)
+        project_env = self.project_env(str(project_id))
+        loop_env = self.get_loop_env(str(loop_id))
         step_env = self.get_step_env(step_name)
 
         merged_env = {**project_env, **loop_env, **step_env}
