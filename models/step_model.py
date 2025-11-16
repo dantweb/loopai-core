@@ -306,6 +306,25 @@ class StepModel(SessionDependent):
         else:
             result = self.executor.run(self.action.model, system_content, prompt, self.action.fine_tuning)
 
+        # LLM RESPONSE LOGGING - Phase 1: Visibility & Reliability
+        logger.info(f"========== LLM RESPONSE LOGGING START ==========")
+        logger.info(f"[StepModel::execute] Step: {self.name}")
+        logger.info(f"[StepModel::execute] Executor: {self.action.executor}")
+        logger.info(f"[StepModel::execute] Result type: {type(result)}")
+        logger.info(f"[StepModel::execute] Result repr: {repr(result)}")
+
+        # Log the actual result content
+        if isinstance(result, BroadcastData):
+            logger.info(f"[StepModel::execute] Result is BroadcastData")
+            logger.info(f"[StepModel::execute] BroadcastData.data: {result.data}")
+        else:
+            logger.info(f"[StepModel::execute] Raw result: {result}")
+
+        logger.info(f"[StepModel::execute] Output adapters count: {len(self.output_adapters)}")
+        for idx, adapter in enumerate(self.output_adapters):
+            logger.info(f"[StepModel::execute] Output adapter {idx}: {adapter.__class__.__name__}")
+        logger.info(f"========== LLM RESPONSE LOGGING END ==========")
+
         # Write output
         step_id = self.name  # or another appropriate identifier
 
@@ -332,6 +351,13 @@ class StepModel(SessionDependent):
 
         self.logger_service.log(f"Step {self.name} tries to save data typeof({type(self.packed_blob['result'])}) {self.packed_blob['result']} ")
 
+        # FILE OPERATION LOGGING - Phase 1: Visibility
+        logger.info(f"========== FILE OPERATION START ==========")
+        logger.info(f"[StepModel::write] Step: {self.name}")
+        logger.info(f"[StepModel::write] Step ID: {step_id}")
+        logger.info(f"[StepModel::write] packed_blob keys: {list(self.packed_blob.keys())}")
+        logger.info(f"[StepModel::write] Output adapters: {len(self.output_adapters)}")
+
         for output_adapter in self.output_adapters:
 
             if isinstance(output_adapter, BroadcastAdapter) and isinstance(self.packed_blob['result'], Image):
@@ -341,15 +367,25 @@ class StepModel(SessionDependent):
 
             self.logger_service.log(f"Trying so save {self.name} adapter {output_adapter.__class__} BroadcastData {str(broadcast_data)}")
 
+            # Detailed adapter write logging
+            logger.info(f"[StepModel::write] Processing adapter: {output_adapter.__class__.__name__}")
+            logger.info(f"[StepModel::write] BroadcastData type: {type(broadcast_data)}")
+            logger.info(f"[StepModel::write] BroadcastData.data keys: {list(broadcast_data.data.keys()) if hasattr(broadcast_data, 'data') and isinstance(broadcast_data.data, dict) else 'N/A'}")
+
             try:
                 a = output_adapter.write(step_id, broadcast_data)
                 if a is True:
                     self.logger_service.log(f"Step \"{self.name}\" is saved by the adapter {output_adapter.__class__} ")
+                    logger.info(f"[StepModel::write] ✓ SUCCESS: Adapter {output_adapter.__class__.__name__} completed successfully")
                 else:
                     self.logger_service.error(f"Cannot save the step data\"{self.name}\" by the adapter {output_adapter.__class__}")
+                    logger.error(f"[StepModel::write] ✗ FAILURE: Adapter {output_adapter.__class__.__name__} returned False")
             except Exception as e:
                 self.logger_service.error(e)
+                logger.error(f"[StepModel::write] ✗ EXCEPTION in adapter {output_adapter.__class__.__name__}: {str(e)}")
                 raise
+
+        logger.info(f"========== FILE OPERATION END ==========")
 
     def run_foreach(self, input_data):
         msg = f"[StepModel::run_foreach] for the step '{self.name}'"
