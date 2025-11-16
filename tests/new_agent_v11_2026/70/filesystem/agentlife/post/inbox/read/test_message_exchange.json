@@ -1,0 +1,10 @@
+{
+  "message_id": "msg_exchange_test_001",
+  "from": "project_manager",
+  "to": "TeacherJohn",
+  "timestamp": "2025-11-16T13:00:00Z",
+  "subject": "Urgent: Need status update from maria",
+  "body": "Hi TeacherJohn, I need you to reach out to maria and ask her to report her latest activity. Specifically, ask her what she's been working on in the past 2 days and if there are any blockers. This is important for our team coordination meeting tomorrow. Please get back to me with her response.",
+  "priority": "high",
+  "type": "delegation_request"
+}

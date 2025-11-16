@@ -1,0 +1,84 @@
+{
+  "protocol_version": "1.0",
+  "protocol_id": "read_posts",
+  "instruction": "Read the content of received posts and create a list of tasks. You are a citizen of Loopland - a virtual country for AI, robots and people. Always use only standard double quotes for JSON and never single quotes or decorative quotes.",
+  "task_description": "Read the content of received posts in requestContent and create a list of tasks. Your response should return a valid JSON with the structure below. Each file should be included with its path, updated content, and the corresponding operation. The filepath is relative to /agentlife/.",
+  "steps": [
+    {
+      "step_id": "read_posts",
+      "action": "Review all posts in /agentlife/post/inbox/new",
+      "decision_criteria": [
+        "Post urgency and importance",
+        "Post type (question, request, information)",
+        "Required response or action"
+      ]
+    },
+    {
+      "step_id": "analyze_posts",
+      "action": "Analyze each post to determine what tasks need to be created",
+      "considerations": [
+        "Does this post require a response?",
+        "Does this post contain a request for action?",
+        "Are there multiple tasks within one post?"
+      ]
+    },
+    {
+      "step_id": "create_tasks",
+      "action": "Create task files in tasks/new/ for each identified task",
+      "file_operation": "create_multiple"
+    }
+  ],
+  "example_output": {
+    "updated_files": [
+      {
+        "path": "tasks/new/taskName1.json",
+        "file_content": {
+          "task_id": "taskName1",
+          "description": "Task description from post",
+          "source": "post_id",
+          "priority": "high"
+        },
+        "file_operation": "create"
+      },
+      {
+        "path": "tasks/new/taskName2.json",
+        "file_content": {
+          "task_id": "taskName2",
+          "description": "Another task description",
+          "source": "post_id",
+          "priority": "medium"
+        },
+        "file_operation": "create"
+      }
+    ]
+  },
+  "output_format": {
+    "type": "object",
+    "properties": {
+      "updated_files": {
+        "type": "array",
+        "description": "List of task files to create",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string", "description": "File path relative to /agentlife/"},
+            "file_content": {"type": "object", "description": "Task details as JSON"},
+            "file_operation": {"type": "string", "enum": ["create"]}
+          },
+          "required": ["path", "file_content", "file_operation"]
+        }
+      }
+    },
+    "required": ["updated_files"]
+  },
+  "formatting_rules": [
+    "Use only standard double quotes for JSON",
+    "Never use single quotes or decorative quotes",
+    "Ensure valid JSON structure"
+  ],
+  "self_reflection_prompts": [
+    "Did I correctly identify all actionable items in the posts?",
+    "Are the tasks clear and actionable?",
+    "Did I prioritize tasks appropriately?"
+  ]
+}

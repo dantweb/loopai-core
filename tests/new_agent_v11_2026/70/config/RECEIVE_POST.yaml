@@ -1,0 +1,21 @@
+session:
+  name: test code generator, bash and if executors
+  code_source: 'WAKEUP.py'
+  environment:
+  loop:
+    send_post_to_agent:
+      type: lambda
+      description: "Send email to agent"
+      input:
+        - request:
+            method: POST
+      output:
+        - filesystem:
+            code_dir: /agentlife/post/inbox/new
+        - text:
+            name: output.txt
+        - request:
+            method: POST
+      action:
+        executor: lambda
+

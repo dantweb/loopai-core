@@ -1,0 +1,22 @@
+session:
+  name: self_reflection
+  description: "Periodic self-reflection loop to review agent activities and generate improvements"
+  code_source: 'REFLEX.py'
+  environment:
+  loop:
+    SELF_REFLECTION:
+      description: "Analyze recent activities, completed tasks, sent/received messages, and pending tasks to generate insights and improvements"
+      type: llm
+      input:
+        - filesystem:
+            code_dir: /agentlife/skills/project_thinking/protocols/reflex
+        - filesystem:
+            code_dir: /agentlife
+      output:
+        - filesystem:
+            code_dir: /agentlife
+      action:
+        executor: llm
+        model: deepseek-chat
+        prompt: PROMPT_SELF_REFLECT
+        system_content: SYSTEM_SELF_REFLECT

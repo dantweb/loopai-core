@@ -1,0 +1,33 @@
+session:
+  name: test code generator, bash and if executors
+  code_source: 'WAKEUP.py'
+  environment:
+  loop:
+    wakeup_and_give_posts_to_agent:
+      description: "Create editorial tasks"
+      type: lambda
+      input:
+        - request:
+            method: POST
+        - filesystem:
+            code_dir: /agentlife/post/outbox/new
+      output:
+        - request:
+            method: POST
+      action:
+        executor: lambda
+
+
+    CLEAN_UP_OUTBOX:
+      description: "Cleanup outbox"
+      type: root
+      input:
+        - filesystem:
+            code_dir: /agentlife/post/outbox/new
+      output:
+        - text:
+            name: output.txt
+      action:
+        executor: bash
+        config:
+          bash_script_path: bash/cleanup_outbox.sh

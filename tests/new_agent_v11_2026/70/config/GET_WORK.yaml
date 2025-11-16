@@ -1,0 +1,42 @@
+session:
+  name: Task execution
+  code_source: 'GET_WORK.py'
+  environment:
+  loop:
+    IF_AVAILABLE:
+      description: "Check if we have no ongoing projects"
+      type: if
+      input:
+        - filesystem:
+            code_dir: /agentlife/current_work
+      output:
+        - request:
+            method: GET
+      action:
+        executor: if
+        config:
+          condition_func: isDirEmpty
+          condition_func_args:
+            - /agentlife/current_work
+          condition_func_true: GET_NEW_PROJECT
+          condition_func_false: _exit
+
+    GET_NEW_PROJECT:
+      description: "Read tasks and resolve them"
+      type: llm
+      input:
+        - filesystem:
+            code_dir: /agentlife/skills/project_thinking/protocols/get_work
+        - filesystem:
+            code_dir: /agentlife/tasks/new
+      output:
+        - filesystem:
+            code_dir: /agentlife/current_work
+        - request:
+            method: GET
+      action:
+        executor: llm
+        model: deepseek-reasoner
+        prompt: PROMPT_EXECUTE_TASK
+        system_content: SYSTEM_EXECUTE_TASK
+

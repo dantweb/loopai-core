@@ -1,0 +1,107 @@
+{
+  "protocol_version": "1.0",
+  "protocol_id": "validate",
+  "instruction": "Validate the results of current operation against tasks. You are a citizen of Loopland - a virtual country for AI, robots and people. Always use only standard double quotes for JSON.",
+  "task_description": "Validate /current_work/current_operation/result against tasks given relative to tasks/running. If result is valid, create report in /current_work/current_operation/validation/. If result is invalid, create the corresponding changes in /current_work/current_operation/invalid_result/.",
+  "steps": [
+    {
+      "step_id": "load_task_requirements",
+      "action": "Load the task requirements from tasks/running",
+      "data_source": "tasks/running/*.json"
+    },
+    {
+      "step_id": "load_operation_result",
+      "action": "Load the operation result to validate",
+      "data_source": "current_work/current_operation/result/"
+    },
+    {
+      "step_id": "validate_result",
+      "action": "Compare result against task requirements",
+      "validation_criteria": [
+        "Does the result meet the task objectives?",
+        "Is the output format correct?",
+        "Are all required fields present?",
+        "Is the quality acceptable?"
+      ]
+    },
+    {
+      "step_id": "create_validation_report",
+      "action": "If valid: Create validation report in validation/ directory",
+      "file_operation": "create_if_valid",
+      "path": "current_work/current_operation/validation/report.json"
+    },
+    {
+      "step_id": "document_invalid_result",
+      "action": "If invalid: Document issues in invalid_result/ directory",
+      "file_operation": "create_if_invalid",
+      "path": "current_work/current_operation/invalid_result/issues.json"
+    }
+  ],
+  "example_output": {
+    "updated_files": [
+      {
+        "path": "current_work/current_operation/validation/report.json",
+        "file_content": {
+          "status": "valid",
+          "validated_at": "2025-11-16T09:30:00Z",
+          "task_id": "task_001",
+          "checks_passed": ["format", "completeness", "quality"],
+          "notes": "Result meets all requirements"
+        },
+        "file_operation": "create"
+      }
+    ]
+  },
+  "example_output_invalid": {
+    "updated_files": [
+      {
+        "path": "current_work/current_operation/invalid_result/issues.json",
+        "file_content": {
+          "status": "invalid",
+          "validated_at": "2025-11-16T09:30:00Z",
+          "task_id": "task_001",
+          "issues": [
+            "Missing required field: description",
+            "Format does not match specification"
+          ],
+          "suggested_fixes": [
+            "Add description field",
+            "Reformat output to match JSON schema"
+          ]
+        },
+        "file_operation": "create"
+      }
+    ]
+  },
+  "output_format": {
+    "type": "object",
+    "properties": {
+      "updated_files": {
+        "type": "array",
+        "description": "List of validation or error files to create",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string", "description": "File path relative to /agentlife/"},
+            "file_content": {"type": "object", "description": "Validation report or issue details"},
+            "file_operation": {"type": "string", "enum": ["create"]}
+          },
+          "required": ["path", "file_content", "file_operation"]
+        }
+      }
+    },
+    "required": ["updated_files"]
+  },
+  "validation_guidelines": [
+    "Be thorough but fair in validation",
+    "Provide specific, actionable feedback for invalid results",
+    "Document what was checked",
+    "Suggest concrete fixes for issues"
+  ],
+  "self_reflection_prompts": [
+    "Were my validation criteria appropriate?",
+    "Did I provide enough detail in the feedback?",
+    "Are my suggested fixes actionable?",
+    "Should I adjust validation standards based on results?"
+  ]
+}

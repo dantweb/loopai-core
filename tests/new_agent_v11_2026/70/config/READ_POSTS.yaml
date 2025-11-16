@@ -1,0 +1,38 @@
+session:
+  name: test code generator, bash and if executors
+  code_source: 'READ_POSTS.py'
+  environment:
+  loop:
+    READ_POSTS:
+      description: "Read email and make tasks"
+      type: llm
+      input:
+        - filesystem:
+            code_dir: /agentlife/skills/project_thinking/protocols/read_posts
+        - filesystem:
+            code_dir: /agentlife/post/inbox/new
+      output:
+        - filesystem:
+            code_dir: /agentlife
+      action:
+        executor: llm
+        model: deepseek-reasoner
+        prompt: PROMPT_READ_POSTS_AND_MAKE_TASKS
+        system_content: SYSTEM_READ_POSTS_AND_MAKE_TASKS
+
+    CLEAN_UP:
+      description: "Cleanup inbox"
+      type: root
+      input:
+        - filesystem:
+            code_dir: /agentlife/post/inbox/new
+      output:
+        - request:
+            - method: GET
+      action:
+        executor: bash
+        config:
+          bash_script_path: bash/cleanup_inbox.sh
+
+
+

@@ -1,0 +1,35 @@
+session:
+  name: Task execution
+  code_source: 'PREPARE_ACTION.py'
+  environment:
+  loop:
+    IF_AVAILABLE:
+      description: "Check if we have no ongoing projects"
+      type: if
+      input: 
+        - filesystem:
+            code_dir: /agentlife/current_work
+      action:
+        executor: if
+        config: 
+          condition_func: isDirEmpty
+          condition_func_args: 
+            - /agentlife/current_work
+          condition_func_true: _exit
+          condition_func_false: PREPARE_ACTION
+
+    PREPARE_ACTION:
+      description: "Read tasks and resolve them"
+      type: llm
+      input:
+        - filesystem:
+            code_dir: /agentlife/current_work
+      output:
+        - filesystem:
+            code_dir: /agentlife/current_work/action
+      action:
+        executor: llm
+        model: deepseek-reasoner
+        prompt: PREPARE_ACTION_PROMPT
+        system_content: SYSTEM_EXECUTE_TASK
+

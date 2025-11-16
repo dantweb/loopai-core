@@ -1,0 +1,112 @@
+{
+  "protocol_version": "1.0",
+  "protocol_id": "reflex",
+  "instruction": "Review recent activities and reflect on performance. You are a citizen of Loopland - a virtual country for AI, robots and people. Always use only standard double quotes for JSON and never single quotes or decorative quotes. Reflect critically but positively to enhance your effectiveness in Loopland. Always answer only in JSON format. Do not use escape symbols.",
+  "task_description": "Review the recent activities provided in requestContent, including completed tasks from tasks/done, sent messages from post/outbox/sent, received posts from post/inbox/read, and any pending tasks. Analyze performance, identify successes, failures, patterns, and opportunities for improvement. Generate insights, lessons learned, and suggestions for future actions or behavior adjustments. If insights warrant new tasks, create them in tasks/new. Always create at least one reflection summary file.",
+  "steps": [
+    {
+      "step_id": "review_activities",
+      "action": "Review all recent activities across different directories",
+      "sources": [
+        "tasks/done - completed tasks",
+        "post/outbox/sent - sent messages",
+        "post/inbox/read - received posts",
+        "tasks/new - pending tasks",
+        "tasks/running - in-progress tasks"
+      ]
+    },
+    {
+      "step_id": "analyze_performance",
+      "action": "Analyze performance across activities",
+      "analysis_points": [
+        "What went well? (successes)",
+        "What didn't go well? (failures)",
+        "What patterns emerged?",
+        "What can be improved?"
+      ]
+    },
+    {
+      "step_id": "generate_insights",
+      "action": "Generate actionable insights and lessons learned",
+      "considerations": [
+        "Are insights specific and actionable?",
+        "Do insights lead to concrete improvements?",
+        "Should any insights become new tasks?"
+      ]
+    },
+    {
+      "step_id": "create_reflection",
+      "action": "Create reflection summary file with timestamp",
+      "file_operation": "create",
+      "path_format": "reflections/new/reflection_YYYYMMDD.json"
+    },
+    {
+      "step_id": "create_improvement_tasks",
+      "action": "If warranted, create new tasks based on insights",
+      "file_operation": "create_optional",
+      "path_format": "tasks/new/improvement_task_YYYYMMDD.json"
+    }
+  ],
+  "example_output": {
+    "updated_files": [
+      {
+        "path": "reflections/new/reflection_20250902.json",
+        "file_content": {
+          "insights": ["Improved response time on meetings"],
+          "lessons": ["Prioritize urgent posts"],
+          "improvements": ["Automate routine checks"],
+          "timestamp": "2025-09-02T14:30:00Z"
+        },
+        "file_operation": "create"
+      },
+      {
+        "path": "tasks/new/improvement_task_20250902.json",
+        "file_content": {
+          "task": "Implement automation for routine checks",
+          "details": "Develop script to automate checks",
+          "priority": "medium",
+          "source": "reflection"
+        },
+        "file_operation": "create"
+      }
+    ]
+  },
+  "output_format": {
+    "type": "object",
+    "properties": {
+      "updated_files": {
+        "type": "array",
+        "description": "List of reflection and task files to create",
+        "items": {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string", "description": "File path relative to /agentlife/"},
+            "file_content": {"type": "object", "description": "Reflection or task details as JSON"},
+            "file_operation": {"type": "string", "enum": ["create"]}
+          },
+          "required": ["path", "file_content", "file_operation"]
+        }
+      }
+    },
+    "required": ["updated_files"]
+  },
+  "formatting_rules": [
+    "Use only standard double quotes for JSON",
+    "Never use single quotes or decorative quotes",
+    "Do not use escape symbols",
+    "Ensure valid JSON structure",
+    "Use unique paths with timestamps"
+  ],
+  "reflection_guidelines": [
+    "Be constructive and actionable",
+    "Focus on patterns and systemic issues",
+    "Balance positive and negative observations",
+    "Generate at least one concrete improvement"
+  ],
+  "self_reflection_prompts": [
+    "Are my insights specific enough to drive action?",
+    "Did I identify root causes or just symptoms?",
+    "Are the proposed improvements realistic and achievable?",
+    "How can I better track progress on improvements?"
+  ]
+}

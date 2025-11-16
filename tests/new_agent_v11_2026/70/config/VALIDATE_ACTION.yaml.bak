@@ -1,0 +1,42 @@
+session:
+  name: Task execution
+  code_source: 'VALIDATE_ACTION.py'
+  environment:
+  loop:
+    IF_AVAILABLE:
+      description: "Check if we have no ongoing projects"
+      type: if
+      input:
+        - filesystem:
+            code_dir: /agentlife/current_work/action
+      action:
+        executor: if
+        config:
+          condition_func: isDirEmpty
+          condition_func_args:
+            - /agentlife/current_work/action
+          condition_func_true: _exit
+          condition_func_false: VALIDATE_ACTION
+
+    VALIDATE_ACTION:
+      description: "Read tasks and resolve them"
+      type: llm
+      input:
+        - filesystem:
+            code_dir: /agentlife/skills/project_thinking/protocols/validate
+        - filesystem:
+            code_dir: /agentlife/current_work/action
+        - filesystem:
+            code_dir: /agentlife/tasks/running
+      output:
+        - filesystem:
+            code_dir: /agentlife/current_work/action
+      action:
+        executor: llm
+        model: deepseek-chat
+        prompt: VALIDATE_ACTION_TASK
+        system_content: SYSTEM_EXECUTE_TASK
+
+
+
+
