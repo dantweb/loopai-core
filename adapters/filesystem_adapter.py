@@ -96,9 +96,11 @@ class FilesystemAdapter(FileAdapterInterface):
                 self.logger.error(f"[FilesystemAdapter::write] Adapter has not found any files to write.")
                 return False
 
-        if 'path' in updated_files[0]:
+        # FIX: Properly unwrap nested list structure [[file1, file2, ...]] to [file1, file2, ...]
+        # The find_value_recursive_by_key sometimes returns a list containing a list of files
+        if isinstance(updated_files, list) and len(updated_files) == 1 and isinstance(updated_files[0], list):
             updated_files = updated_files[0]
-            self.logger.log(f"FilesystemAdapter::write:: found path in first sublist: {updated_files[0]['path']}")
+            self.logger.log(f"FilesystemAdapter::write:: unwrapped nested list, now have {len(updated_files)} files")
 
         try:
             for file_info in updated_files:
