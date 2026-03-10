@@ -4,6 +4,7 @@ import re
 from time import sleep
 from typing import Union, Any, Optional
 
+import anthropic
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -15,6 +16,11 @@ from core.services.session_manager import session_manager
 from web.services.json_helper import JsonHelper
 
 load_dotenv()
+
+
+def _is_anthropic_model(model: str) -> bool:
+    return model.startswith("claude-")
+
 
 class FeatherlessService(ServiceInterface):
     RETRY_ATTEMPTS = 5
@@ -35,6 +41,10 @@ class FeatherlessService(ServiceInterface):
         session = session_manager
         self.logger.info("[FeatherlessService::get_response] Requesting response from Featherless API...")
         self.logger.info(f"[FeatherlessService::get_response] model: {model}")
+
+        if _is_anthropic_model(model):
+            return self._get_anthropic_response(model, system_content, user_content, temperature)
+
         self.logger.info(f"[FeatherlessService::get_response] url: {session.get_env('FEATHERLESS_API_URL')}")
 
         featherless_url = session.get_env('FEATHERLESS_API_URL')
@@ -91,6 +101,61 @@ class FeatherlessService(ServiceInterface):
                     f"[FeatherlessService::get_response] Attempt {attempt} failed with error: {str(e)}"
                     f"[FeatherlessService::get_response] Problematic response: {str(self.response)}"
                     f"[FeatherlessService::get_response] No response available\n\n"
+                )
+                last_exception = e
+
+                if attempt < self.RETRY_ATTEMPTS:
+                    sleep(self.RETRY_DELAY)
+                else:
+                    raise last_exception
+
+    def _get_anthropic_response(
+        self,
+        model: str,
+        system_content: dict,
+        user_content: BroadcastData,
+        temperature: float
+    ) -> Optional[str]:
+        session = session_manager
+        anthropic_key = session.get_env('ANTHROPIC_API_KEY')
+        if not anthropic_key:
+            raise ValueError("Missing ANTHROPIC_API_KEY environment variable")
+
+        client = anthropic.Anthropic(api_key=anthropic_key)
+
+        last_exception = None
+        for attempt in range(1, self.RETRY_ATTEMPTS + 1):
+            self.logger.info(f"[FeatherlessService::_get_anthropic_response] Attempt {attempt} of {self.RETRY_ATTEMPTS}")
+            try:
+                self.response = client.messages.create(
+                    model=model,
+                    max_tokens=8192,
+                    system=json.dumps(system_content),
+                    messages=[
+                        {"role": "user", "content": user_content.to_json()}
+                    ],
+                    temperature=temperature,
+                )
+
+                result_content = self.response.content[0].text
+
+                result_content = re.sub(
+                    r'^```json\s*|\s*```$', '',
+                    result_content, flags=re.MULTILINE
+                )
+
+                self.logger.info(
+                    f"[FeatherlessService::_get_anthropic_response] Got response on attempt {attempt}: {result_content}"
+                )
+
+                if not result_content:
+                    raise Exception("Empty Anthropic response")
+
+                return result_content
+
+            except Exception as e:
+                self.logger.error(
+                    f"[FeatherlessService::_get_anthropic_response] Attempt {attempt} failed: {str(e)}"
                 )
                 last_exception = e
 
