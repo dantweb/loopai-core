@@ -43,6 +43,7 @@ class Looper:
                     broadcast=output.get('broadcast', False),
                     image=output.get('image'),
                     wordpress=output.get('wordpress'),
+                    vbwdcmspost=output.get('vbwdcmspost'),
                     filesystem=output.get('filesystem') if 'filesystem' in output else None,
                     request=output.get('request') if 'request' in output else None
                 ) for output in step_details['output']

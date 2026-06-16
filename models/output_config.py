@@ -9,6 +9,7 @@ class OutputConfig:
     image: Dict[str, str] = None
     broadcast: Dict[str, str] = None
     wordpress: Dict[str, str] = None
+    vbwdcmspost: Dict[str, str] = None
     filesystem: Dict[str, str] = None
     request: Dict[str, str] = None
     http: Dict[str, str] = None

@@ -109,6 +109,19 @@ class StepModel(SessionDependent):
                     )
                 )
 
+            if output_config.vbwdcmspost:
+                output_adapter_class = self.load_adapter('vbwdcmspost')
+                current_session = self.get_current_session_manager()
+                vbwd_site = current_session.get_env(output_config.vbwdcmspost['vbwd_site']) if current_session else ''
+                vbwd_api_key = current_session.get_env(output_config.vbwdcmspost['vbwd_api_key']) if current_session else ''
+                self.output_adapters.append(
+                    output_adapter_class(
+                        connector_id = output_config.vbwdcmspost['connector'],
+                        vbwd_site = vbwd_site,
+                        vbwd_api_key = vbwd_api_key,
+                    )
+                )
+
             if output_config.filesystem:
                 logger.info(f"[StepModel::__init__] filesystem step {self.name} has defined mapping: {str(output_config.filesystem)}")
                 output_adapter_class = self.load_adapter('filesystem')
