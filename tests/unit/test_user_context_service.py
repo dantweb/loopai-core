@@ -191,9 +191,11 @@ class TestUserContextService(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.service.get_http_client(user_id=-1)
 
-        # Test making request without session context
-        with self.assertRaises(RuntimeError):
-            self.service.get_current_user_http_client()
+        # Test making request without session context (session_manager is a
+        # process-wide singleton, so earlier tests may have left a user in it)
+        with patch.object(self.service._session_manager, 'get_user_id', return_value=None):
+            with self.assertRaises(RuntimeError):
+                self.service.get_current_user_http_client()
 
     def test_singleton_pattern(self):
         """Test that service follows singleton pattern"""

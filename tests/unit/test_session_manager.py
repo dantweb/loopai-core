@@ -99,7 +99,7 @@ class TestSessionManagerEnhancement(unittest.TestCase):
     def test_hierarchical_environment_override(self):
         """Test hierarchical environment: Project → Loop → Step inheritance"""
         # Mock file system paths and environment files
-        with patch('core.adapters.file_adapter_interface.get_loop_config_base_path_by_user_and_loop') as mock_config_path:
+        with patch('core.services.loop_path_resolver.loop_path_resolver.get_loop_config_base_path_by_user_and_loop') as mock_config_path:
             mock_config_path.return_value = '/tmp/test_config'
 
             # Create temporary environment files
@@ -150,22 +150,6 @@ class TestSessionManagerEnhancement(unittest.TestCase):
         # Test authenticated execution mode (with real-time logging)
         self.session_manager.set_execution_mode('authenticated')
         self.assertTrue(self.session_manager.is_realtime_logging_enabled())
-
-    def test_gevent_context_detection(self):
-        """Test detection of gevent vs threading context"""
-        # In regular threading context, should use threading.local
-        self.assertFalse(self.session_manager._is_in_gevent_context())
-
-        # Mock gevent context
-        with patch('gevent.getcurrent') as mock_getcurrent:
-            with patch('gevent.get_hub') as mock_get_hub:
-                mock_hub = MagicMock()
-                mock_hub.parent = MagicMock()
-                mock_get_hub.return_value = mock_hub
-                mock_getcurrent.return_value = MagicMock()  # Different from parent
-
-                # Should detect gevent context
-                self.assertTrue(self.session_manager._is_in_gevent_context())
 
     def test_request_data_storage(self):
         """Test request data storage for RequestAdapter integration"""

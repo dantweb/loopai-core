@@ -160,13 +160,13 @@ class SessionManager:
         Load hierarchical environment variables: Project → Loop → Step inheritance
         Each level can override the previous level's variables.
         """
-        from core.adapters.file_adapter_interface import get_loop_config_base_path_by_user_and_loop
+        from core.services.loop_path_resolver import loop_path_resolver
 
         # Start with base environment variables - skip OS environment for testing
         env = {}
 
         # Get loop config path
-        loop_config_path = get_loop_config_base_path_by_user_and_loop(str(user_id), str(loop_id))
+        loop_config_path = loop_path_resolver.get_loop_config_base_path_by_user_and_loop(str(user_id), str(loop_id))
 
         # Load loop-level .env file
         try:

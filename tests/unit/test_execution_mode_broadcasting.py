@@ -19,6 +19,8 @@ import time
 from unittest.mock import patch, MagicMock, Mock
 from concurrent.futures import ThreadPoolExecutor
 
+from flask import Flask
+
 # Import existing broadcasting service
 try:
     from web.services.socket_io_service import send_message_to_user
@@ -87,7 +89,8 @@ class TestExecutionModeBroadcasting(unittest.TestCase):
         # Mock the broadcasting service
         with patch.object(self.service, 'broadcast_log_message') as mock_broadcast:
             # Logger should use broadcasting service
-            with patch('web.services.socket_io_service.send_message_to_user') as mock_send:
+            with patch('core.services.logger_service.send_message_to_user') as mock_send, \
+                    patch('core.services.logger_service.config.WEB_OR_CLI', 'web'):
                 logger.info("Test message for authenticated mode")
 
                 # Should broadcast in authenticated mode
@@ -311,13 +314,15 @@ class TestExecutionModeBroadcastingIntegration(unittest.TestCase):
 
         logger = LoggerService()
 
-        # Logger should use broadcasting service for execution mode awareness
-        with patch.object(self.service, 'should_broadcast', return_value=True) as mock_should_broadcast:
-            with patch('web.services.socket_io_service.send_message_to_user') as mock_send:
-                logger.info("Integration test message")
+        # Logger consults the session's execution mode (the same source as
+        # should_broadcast(); calling the service itself would recurse, as it logs)
+        with patch.object(session_manager, 'is_realtime_logging_enabled', return_value=False) as mock_realtime, \
+                patch('core.services.logger_service.send_message_to_user') as mock_send, \
+                patch('core.services.logger_service.config.WEB_OR_CLI', 'web'):
+            logger.info("Integration test message")
 
-                # Broadcasting service should be consulted
-                mock_should_broadcast.assert_called()
+            mock_realtime.assert_called()
+            mock_send.assert_not_called()
 
     def test_session_manager_integration(self):
         """Test integration with SessionManager for execution mode detection"""
@@ -349,9 +354,7 @@ class TestExecutionModeBroadcastingIntegration(unittest.TestCase):
 
         for route, expected_mode in test_cases:
             with self.subTest(route=route):
-                with patch('flask.request') as mock_request:
-                    mock_request.path = route
-
+                with Flask(__name__).test_request_context(route):
                     detected_mode = self.service.detect_execution_mode_from_request()
                     self.assertEqual(detected_mode, expected_mode)
 

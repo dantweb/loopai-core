@@ -156,7 +156,7 @@ class LoggerService(SessionDependent):
             filtered_message = f"{filtered_message}: \nTraceback:\n{traceback.format_exc()}"
 
 
-        if config.WEB_OR_CLI == 'web':
+        if config.WEB_OR_CLI == 'web' and self._realtime_logging_enabled():
             # Send the log message to the user if needed.
             current_user_id = self._get_current_user_id()
             if current_user_id:
@@ -164,6 +164,11 @@ class LoggerService(SessionDependent):
 
         self.logs.append(log_message)
         self._logger.debug(str(log_message))
+
+    def _realtime_logging_enabled(self) -> bool:
+        """Public-mode executions (api/public/...) do not broadcast logs, see ExecutionModeBroadcastingService"""
+        is_enabled = getattr(self.session_manager, 'is_realtime_logging_enabled', None)
+        return is_enabled() if is_enabled else True
 
     def info(self, message: str):
         self.log(str(message), 'info')
